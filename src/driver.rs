@@ -4,7 +4,7 @@ use std::path::Path;
 use crate::compiler;
 use crate::options::Options;
 
-#[derive(PartialEq, PartialOrd, Clone, Copy)]
+#[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
 pub enum Stage {
     Exe,
     Obj,
@@ -28,7 +28,7 @@ fn filename2stage(filename: &str) -> Stage {
 }
 
 pub fn drive(options: Options) -> Result<(), ()> {
-    println!("{}", Stage::C < Stage::Ppc);
+    log::info!("driver started");
     for filename in options.input {
         let file_stem = Path::new(&filename)
             .file_stem()
@@ -37,22 +37,31 @@ pub fn drive(options: Options) -> Result<(), ()> {
             .to_string();
         let begin_stage = filename2stage(&filename);
         let last_stage = options.last_stage;
+        log::debug!("Going from {:?} to {:?}", begin_stage, last_stage);
         let /*mut*/ _next_filename = filename.clone();
 
-        if begin_stage == Stage::C { // Invoke preprocessor
-             /*Currently ignored*/
+        if begin_stage == Stage::C {
+            // Invoke preprocessor
+            /*Currently ignored*/
+            log::info!("Preprocessor started");
         }
-        if begin_stage <= Stage::Ppc && last_stage > Stage::Ppc {
+        if begin_stage >= Stage::Ppc && last_stage < Stage::Ppc {
             // Invoke compiler
+            log::info!("Compiler started");
             let compiler_filename = filename.clone();
             let assembler_filename = "./".to_string() + &file_stem + ".s";
             compiler::compile(compiler_filename, assembler_filename).unwrap();
+            log::info!("Compiler finished");
         }
-        if begin_stage <= Stage::Asm && last_stage > Stage::Asm { // Invoke assembler
-             /*TODO*/
+        if begin_stage <= Stage::Asm && last_stage > Stage::Asm {
+            // Invoke assembler
+            log::info!("Assembler started");
+            /*TODO*/
         }
-        if begin_stage <= Stage::Obj && last_stage > Stage::Obj { // Invoke linker
-             /*TODO*/
+        if begin_stage <= Stage::Obj && last_stage > Stage::Obj {
+            // Invoke linker
+            log::info!("Linker started");
+            /*TODO*/
         }
     }
     Ok(())

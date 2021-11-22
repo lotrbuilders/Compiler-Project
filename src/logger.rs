@@ -7,7 +7,7 @@ impl log::Log for SimpleLogger {
         metadata.level()
             <= match metadata.target() {
                 "lexer" => Level::Trace,
-                _ => Level::Info,
+                _ => Level::Debug,
             }
     }
 

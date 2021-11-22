@@ -3,6 +3,7 @@ use std::fs::read_to_string;
 use colored::Colorize;
 
 use crate::lexer::Lexer;
+use crate::parser::Parser;
 
 fn open(filename: String) -> Result<String, String> {
     let contents = read_to_string(filename.clone());
@@ -19,6 +20,9 @@ fn open(filename: String) -> Result<String, String> {
 pub fn compile(filename: String, _output: String) -> Result<(), String> {
     let mut lexer = Lexer::new(&filename);
     let file = open(filename)?;
-    lexer.lex(&mut file.chars()).unwrap();
+    let tokens = lexer.lex(&mut file.chars()).unwrap();
+    let file_table = lexer.file_table();
+    let mut parser = Parser::new(file_table);
+    let (_ast, _parse_errors) = parser.parse(tokens);
     Ok(())
 }

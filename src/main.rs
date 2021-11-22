@@ -1,5 +1,6 @@
 mod compiler;
 mod driver;
+mod error;
 mod lexer;
 mod logger;
 mod options;

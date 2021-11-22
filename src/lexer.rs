@@ -81,7 +81,7 @@ impl Lexer {
                 }
                 _ => {
                     self.next(input);
-                    errors.push(format!("Todo"));
+                    errors.push(crate::error!(self.here(), "Todo{}", 1));
                 }
             }
         }
