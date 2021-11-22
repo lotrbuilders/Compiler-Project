@@ -3,6 +3,7 @@ mod driver;
 mod lexer;
 mod logger;
 mod options;
+mod parser;
 mod span;
 mod token;
 

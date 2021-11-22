@@ -21,6 +21,9 @@ impl Lexer {
             last_char: None,
         }
     }
+    pub fn file_table(&self) -> Vec<String> {
+        self.filenames.clone()
+    }
 }
 
 impl Lexer {
