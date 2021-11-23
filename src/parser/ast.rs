@@ -10,6 +10,7 @@ pub struct TranslationUnit {
 pub struct ExternalDeclaration {
     pub span: Span,
     pub ast_type: Vec<Type>,
+    pub name: String,
     pub function_body: Option<Vec<Statement>>,
 }
 

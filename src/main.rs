@@ -5,6 +5,7 @@ mod lexer;
 mod logger;
 mod options;
 mod parser;
+mod semantic_analysis;
 mod span;
 mod token;
 

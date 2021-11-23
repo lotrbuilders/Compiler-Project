@@ -13,7 +13,6 @@ impl Parser {
         );
         let mut result = Vec::<Statement>::new();
         loop {
-            println!("a");
             if let Some(TokenType::RBrace) = self.peek_type() {
                 self.next();
                 break;

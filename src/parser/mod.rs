@@ -1,10 +1,10 @@
-mod ast;
+pub mod ast;
 mod parse_declaration;
 mod parse_expression;
 mod parse_global;
 mod parse_statement;
 mod recovery;
-mod r#type;
+pub mod r#type;
 
 //use self::ast::*;
 //use self::parse_global::*;

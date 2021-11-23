@@ -14,7 +14,7 @@ impl Type {
             _ => false,
         }
     }
-    pub fn _get_name(input: &Vec<Type>) -> Option<String> {
+    pub fn get_name(input: &Vec<Type>) -> Option<String> {
         match input.get(0) {
             Some(Type::Name(name)) => Some(name.clone()),
             _ => None,

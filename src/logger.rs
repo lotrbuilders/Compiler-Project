@@ -6,7 +6,8 @@ impl log::Log for SimpleLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
         metadata.level()
             <= match metadata.target() {
-                "lexer" => Level::Trace,
+                "lexer" => Level::Info,
+                "parser" => Level::Info,
                 _ => Level::Debug,
             }
     }

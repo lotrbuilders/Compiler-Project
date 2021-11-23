@@ -22,10 +22,11 @@ pub fn compile(filename: String, _output: String) -> Result<(), String> {
     let file = open(filename)?;
     log::info!("Lexer started");
     let tokens = lexer.lex(&mut file.chars()).unwrap();
-    log::debug!("Lexed tokens: {:?}", tokens);
+    log::trace!(target: "lexer","Lexed tokens: {:?}", tokens);
     let file_table = lexer.file_table();
     log::info!("Parser started");
     let mut parser = Parser::new(file_table);
     let (_ast, _parse_errors) = parser.parse(tokens);
+    log::info!("Parser finished");
     Ok(())
 }
