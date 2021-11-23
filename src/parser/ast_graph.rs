@@ -72,7 +72,6 @@ impl Graph for Statement {
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
                 expression.graph(buffer, node_number, number)?;
             }
-            _ => (),
         }
         Ok(())
     }
@@ -93,7 +92,6 @@ impl Graph for Expression {
                 writeln!(buffer, "n{} [label=\"int {}\"]", number, value)?;
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
             }
-            _ => (),
         }
         Ok(())
     }

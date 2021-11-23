@@ -8,9 +8,6 @@ impl Analysis for Expression {
         use ExpressionVariant::*;
         match &mut self.variant {
             ConstI(_) => {}
-            _ => {
-                //Error Unimplemented
-            }
         }
     }
 }

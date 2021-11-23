@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 pub enum RecoveryStrategy {
     UpTo(char),
     Until(char),
@@ -6,6 +7,7 @@ pub enum RecoveryStrategy {
     Nothing,
 }
 
+#[allow(dead_code)]
 impl RecoveryStrategy {
     pub fn or(a: RecoveryStrategy, b: RecoveryStrategy) -> RecoveryStrategy {
         RecoveryStrategy::Or(Box::new(a), Box::new(b))

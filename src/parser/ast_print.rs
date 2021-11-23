@@ -18,7 +18,6 @@ fn type2string(typ: &[Type]) -> String {
                 result.push_str(&format!("{}()", type2string(&typ[0..i])));
                 break;
             }
-            _ => result.push_str("unimplemented"),
         };
     }
     result
@@ -54,8 +53,10 @@ impl Display for Statement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use Statement::*;
         match self {
-            Return { span, expression } => writeln!(f, "return {};", expression)?,
-            _ => write!(f, "Unimplemented")?,
+            Return {
+                span: _,
+                expression,
+            } => writeln!(f, "return {};", expression)?,
         }
         Ok(())
     }
@@ -66,7 +67,6 @@ impl Display for Expression {
         use ExpressionVariant::*;
         match self.variant {
             ConstI(value) => write!(f, "{}", value)?,
-            _ => write!(f, "Unimplemented")?,
         }
         Ok(())
     }

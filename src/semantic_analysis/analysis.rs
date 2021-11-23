@@ -32,10 +32,10 @@ impl Analysis for Statement {
     fn analyze(&mut self, analyzer: &mut SemanticAnalyzer) -> () {
         use Statement::*;
         match self {
-            Return { span, expression } => expression.analyze(analyzer),
-            _ => {
-                //Error
-            }
+            Return {
+                span: _,
+                expression,
+            } => expression.analyze(analyzer),
         }
     }
 }
