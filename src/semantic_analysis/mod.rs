@@ -20,7 +20,7 @@ impl SemanticAnalyzer {
 
     pub fn analyze(&mut self, translation_unit: &mut TranslationUnit) -> Result<(), Vec<String>> {
         translation_unit.analyze(self);
-        if self.errors.is_empty() {
+        if !self.errors.is_empty() {
             Err(self.errors.clone())
         } else {
             Ok(())
