@@ -31,6 +31,7 @@ pub fn compile(filename: String, _output: String) -> Result<(), String> {
     let mut parser = Parser::new(file_table.clone());
     let (mut ast, _parse_errors) = parser.parse(tokens);
     log::debug!("Parser result:\n{}", ast);
+    let _ = crate::parser::ast_graph::print_graph("graph.gv", &ast);
 
     log::info!("Analyzer started");
     let mut analyzer = SemanticAnalyzer::new(file_table);

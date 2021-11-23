@@ -1,4 +1,5 @@
 pub mod ast;
+pub mod ast_graph;
 pub mod ast_print;
 mod parse_declaration;
 mod parse_expression;
