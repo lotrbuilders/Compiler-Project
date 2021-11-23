@@ -52,8 +52,8 @@ impl From<char> for TokenType {
         match c {
             '{' => LBrace,
             '}' => RBrace,
-            '(' => RParenthesis,
-            ')' => LParenthesis,
+            '(' => LParenthesis,
+            ')' => RParenthesis,
             ';' => Semicolon,
             _ => {
                 log::warn!(

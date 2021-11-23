@@ -19,6 +19,7 @@ impl Parser {
         }
         let mut result = Vec::<Type>::new();
         while let Some(token) = self.peek().filter(Parser::is_type_qualifier) {
+            self.next();
             result.push(token.into());
         }
         Ok(result)

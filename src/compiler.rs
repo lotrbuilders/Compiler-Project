@@ -20,8 +20,11 @@ fn open(filename: String) -> Result<String, String> {
 pub fn compile(filename: String, _output: String) -> Result<(), String> {
     let mut lexer = Lexer::new(&filename);
     let file = open(filename)?;
+    log::info!("Lexer started");
     let tokens = lexer.lex(&mut file.chars()).unwrap();
+    log::debug!("Lexed tokens: {:?}", tokens);
     let file_table = lexer.file_table();
+    log::info!("Parser started");
     let mut parser = Parser::new(file_table);
     let (_ast, _parse_errors) = parser.parse(tokens);
     Ok(())

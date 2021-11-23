@@ -3,7 +3,9 @@ macro_rules! error {
     ($span:expr,$( $exp:expr ),*) => {
         {
             use colored::Colorize;
-            format!("{:?}: error: {}",$span,format!($($exp,)*).red())
+            let string= format!("{:?}: error: {}",$span,format!($($exp,)*).red());
+            eprintln!("{}",string);
+            string
         }
     };
 }

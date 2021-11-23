@@ -76,16 +76,19 @@ impl Lexer {
                     self.next(input);
                     output.push(Token::new(token::punct(c), self.here()));
                 }
-                ' ' | '\t' | '\n' => {
+                ' ' | '\t' | '\n' | '\r' => {
                     self.next(input);
                 }
                 _ => {
                     self.next(input);
-                    errors.push(crate::error!(self.here(), "Todo{}", 1));
+                    errors.push(crate::error!(self.here(), "Unknown character {}", c));
                 }
             }
         }
-        Err(Vec::new())
+        match errors.is_empty() {
+            true => Ok(output),
+            false => Err(errors),
+        }
     }
 
     pub fn lex_identifier<T: Iterator<Item = char>>(&mut self, input: &mut T) -> Token {
