@@ -15,6 +15,7 @@ pub use self::r#type::Type;
 use crate::span::Span;
 use crate::token::{Token, TokenType};
 
+#[allow(dead_code)]
 pub struct Parser {
     file_table: Vec<String>,
     errors: Vec<String>,

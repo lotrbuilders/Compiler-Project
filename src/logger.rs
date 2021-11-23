@@ -8,7 +8,8 @@ impl log::Log for SimpleLogger {
             <= match metadata.target() {
                 "lexer" => Level::Info,
                 "parser" => Level::Info,
-                _ => Level::Debug,
+                "utcc::semantic_analysis" => Level::Trace,
+                _ => Level::Trace,
             }
     }
 

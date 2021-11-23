@@ -1,6 +1,8 @@
+mod backend;
 mod compiler;
 mod driver;
 mod error;
+mod eval;
 mod lexer;
 mod logger;
 mod options;

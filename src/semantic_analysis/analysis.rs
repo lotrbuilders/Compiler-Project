@@ -10,7 +10,7 @@ pub(super) trait Analysis {
 impl Analysis for TranslationUnit {
     fn analyze(&mut self, analyzer: &mut SemanticAnalyzer) -> () {
         for declaration in &mut self.global_declarations {
-            let _ = declaration.analyze(analyzer);
+            declaration.analyze(analyzer);
         }
     }
 }
@@ -20,7 +20,7 @@ impl Analysis for ExternalDeclaration {
         match &mut self.function_body {
             Some(statements) => {
                 for statement in statements {
-                    let _ = statement.analyze(analyzer);
+                    statement.analyze(analyzer);
                 }
             }
             None => (),
