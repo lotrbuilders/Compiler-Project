@@ -13,11 +13,15 @@ impl Parser {
                 Err(_) => (),
             }
         }
+        let result = match self.errors.is_empty() {
+            true => Ok(()),
+            false => Err(self.errors.clone()),
+        };
         (
             TranslationUnit {
                 global_declarations,
             },
-            Ok(()),
+            result,
         )
     }
 

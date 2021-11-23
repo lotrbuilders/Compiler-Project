@@ -5,7 +5,7 @@ use self::analysis::Analysis;
 use crate::parser::ast::*;
 
 #[derive(Clone, Debug)]
-struct SemanticAnalyzer {
+pub struct SemanticAnalyzer {
     file_table: Vec<String>,
     errors: Vec<String>,
 }
