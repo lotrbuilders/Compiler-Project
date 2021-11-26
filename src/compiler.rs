@@ -2,6 +2,7 @@ use std::fs::read_to_string;
 
 use colored::Colorize;
 
+use crate::backend;
 use crate::eval::evaluate;
 use crate::lexer::Lexer;
 use crate::parser::Parser;
@@ -46,8 +47,12 @@ pub fn compile(filename: String, _output: String) -> Result<(), String> {
     log::info!("Evaluation started");
     log::debug!("\n{}", ast);
     let ir_functions = evaluate(&ast);
-    for ir in ir_functions {
+    for ir in &ir_functions {
         log::debug!("Evaluation result:\n{}", ir);
     }
+
+    log::info!("Started the backend");
+    log::info!("Using backend amd64");
+    backend::generate_code(ir_functions, "amd64".to_string()).expect("Unsupported backend");
     Ok(())
 }
