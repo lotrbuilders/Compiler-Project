@@ -44,15 +44,18 @@ impl IRInstruction {
             &Self::Ret(..) => None,
         }
     }
+
+    pub fn get_result(&self) -> Option<IRReg> {
+        match self {
+            &Self::Imm(_, result, _) => Some(result),
+            _ => None,
+        }
+    }
 }
 
 pub fn get_definition_indices(instructions: &Vec<IRInstruction>) -> Vec<u32> {
-    use IRInstruction::*;
     instructions
         .iter()
-        .filter_map(|ins| match ins {
-            Imm(_, result, _) => Some(*result),
-            _ => None,
-        })
+        .filter_map(|ins| ins.get_result())
         .collect()
 }
