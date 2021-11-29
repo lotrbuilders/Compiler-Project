@@ -1,4 +1,7 @@
 /target
-test.c
+test
+test.*
 *.svg
 *.gv
+
+test.s
