@@ -14,6 +14,7 @@ rburg::rburg_main! {
 }
 
 //Currently only caller safed registers
+// Registers classes that are used. Should be automatically generated
 const REG_COUNT: usize = 6;
 const REG_CLASS_EAX: [bool; REG_COUNT] = [true, false, false, false, false, false];
 const REG_CLASS_IREG: [bool; REG_COUNT] = [true; REG_COUNT];
@@ -22,6 +23,8 @@ const REG_LOOKUP: [Register; REG_COUNT] = {
     use Register::*;
     [Rax, Rcx, Rdx, R8, R9, R10]
 };
+
+// An enum for all available registers to show effects
 #[derive(Clone, Debug, Copy)]
 enum Register {
     Rax = 0,
@@ -31,7 +34,6 @@ enum Register {
     R9 = 4,
     R10 = 5,
 }
-
 impl Register {
     pub fn to_string(&self) -> &'static str {
         match self {
@@ -45,6 +47,8 @@ impl Register {
     }
 }
 
+// A vector of this is added to the instruction
+// Shows operation that need to happen to make modifications to the register file
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 enum RegisterRelocation {
@@ -58,6 +62,8 @@ impl Backend for BackendAMD64 {
         "burg"
     }
 
+    // Generates assembly for a single function
+    // Modifies the storage for the backend to allow for this
     fn generate(&mut self, function: &IRFunction) -> String {
         self.function_name = function.name.clone();
         self.instructions = function.instructions.clone();
@@ -93,6 +99,8 @@ impl Backend for BackendAMD64 {
 }
 
 impl BackendAMD64 {
+    // Should be automatically generated
+    // Gets the rule that is assocatiated with the specific non_terminal used
     fn get_rule(&self, index: u32, non_terminal: usize) -> u16 {
         let state = &self.instruction_states[index as usize];
         let rule = state.rule[non_terminal];
@@ -104,33 +112,6 @@ impl BackendAMD64 {
             );
         }
         rule
-    }
-
-    fn emit_asm(&self) -> String {
-        let mut result = self.emit_prologue();
-        for instruction in 0..self.instructions.len() {
-            let handwritten = self.emit_asm2(instruction);
-            if let Some(assembly) = handwritten {
-                result.push_str(&assembly);
-            } else {
-                result.push_str(&self.gen_asm(instruction));
-            }
-        }
-        result
-    }
-
-    fn emit_asm2(&self, index: usize) -> Option<String> {
-        let instruction = &self.instructions[index];
-        let _rule = self.rules[index];
-        use IRInstruction::*;
-        match instruction {
-            Ret(_size, _vreg) => Some(format!("\tret\n")),
-            _ => None,
-        }
-    }
-
-    fn emit_prologue(&self) -> String {
-        format!("{}:\n", self.function_name)
     }
 
     // Does not currrently support instructions with seperate levels of terminals, these need to be weeded out of the tree first
@@ -157,6 +138,46 @@ impl BackendAMD64 {
         true
     }
 
+    // Should be automatically generated
+    // Emits handwritten assembly if necessary, otherwise uses the automatic generated function
+    fn emit_asm(&self) -> String {
+        let mut result = self.emit_prologue();
+        for instruction in 0..self.instructions.len() {
+            let handwritten = self.emit_asm2(instruction);
+            if let Some(assembly) = handwritten {
+                result.push_str(&assembly);
+            } else {
+                result.push_str(&self.gen_asm(instruction));
+            }
+        }
+        result
+    }
+
+    // Should be handwritten for any backend
+    // Might use a macro to generate parts
+    // Emits handwritten assembly for instruction that are too complex to process normally
+    fn emit_asm2(&self, index: usize) -> Option<String> {
+        let instruction = &self.instructions[index];
+        let _rule = self.rules[index];
+        use IRInstruction::*;
+        match instruction {
+            Ret(_size, _vreg) => Some(format!("\tret\n")),
+            _ => None,
+        }
+    }
+
+    // Should be handwritten for any backend
+    // Might use a macro to generate parts
+    // Emits the prologue for a function, such that it will be correct for the compiler
+    fn emit_prologue(&self) -> String {
+        format!(
+            "global {}\nsection .text\n{}:\n",
+            self.function_name, self.function_name
+        )
+    }
+
+    // Should be generated in a seperate file preferably
+    // Allocates registers for an entire function
     fn allocate_registers(&mut self) -> () {
         let length = self.definition_index.len();
         let mut last_use = vec![0u32; length];

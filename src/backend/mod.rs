@@ -4,6 +4,9 @@ pub mod ir;
 pub mod print_ir;
 
 use self::ir::*;
+
+// Generates all functions for the specific backend specified
+
 pub fn generate_code(functions: Vec<IRFunction>, architecture: String) -> Result<String, String> {
     let mut backend: Box<dyn Backend> = match &architecture as &str {
         "amd64" => Box::new(amd64::BackendAMD64::new()),
@@ -23,6 +26,7 @@ pub fn generate_code(functions: Vec<IRFunction>, architecture: String) -> Result
 }
 
 pub trait Backend {
+    // Gives the backend type for processing
     fn backend_type(&self) -> &'static str;
 
     fn label(&mut self, _index: u32) -> () {
@@ -34,6 +38,7 @@ pub trait Backend {
         String::new()
     }
 
+    // Generates the assembly for a function
     fn generate(&mut self, function: &IRFunction) -> String {
         log::error!("Generate is not implemented for this backend");
         format!(
