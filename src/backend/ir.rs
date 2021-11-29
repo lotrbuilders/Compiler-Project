@@ -51,6 +51,17 @@ impl IRInstruction {
             _ => None,
         }
     }
+    pub fn get_value(&self) -> String {
+        match self {
+            &Self::Imm(_, _, value) => {
+                format!("{}", value)
+            }
+            _ => {
+                log::error!("get value called without value");
+                format!("")
+            }
+        }
+    }
 }
 
 pub fn get_definition_indices(instructions: &Vec<IRInstruction>) -> Vec<u32> {

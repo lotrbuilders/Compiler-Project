@@ -9,7 +9,7 @@ use super::Backend;
 
 rburg::rburg_main! {
     BackendAMD64,
-:       Ret(a %eax) "#\n"
+:       Ret(_a %eax) "#\n"
 %ireg:  Imm(#i) "mov {res},{i}\n" {1}
 }
 
@@ -59,6 +59,7 @@ impl Backend for BackendAMD64 {
     }
 
     fn generate(&mut self, function: &IRFunction) -> String {
+        self.function_name = function.name.clone();
         self.instructions = function.instructions.clone();
         self.definition_index = get_definition_indices(&function.instructions);
         self.instruction_states = vec![State::new(); self.instructions.len()];
@@ -84,7 +85,10 @@ impl Backend for BackendAMD64 {
         log::info!("Starting register allocation");
         self.allocate_registers();
 
-        String::new()
+        log::info!("Starting assembly generation");
+        let assembly = self.emit_asm();
+        log::info!("Assembly:\n{}", assembly);
+        assembly
     }
 }
 
@@ -100,6 +104,33 @@ impl BackendAMD64 {
             );
         }
         rule
+    }
+
+    fn emit_asm(&self) -> String {
+        let mut result = self.emit_prologue();
+        for instruction in 0..self.instructions.len() {
+            let handwritten = self.emit_asm2(instruction);
+            if let Some(assembly) = handwritten {
+                result.push_str(&assembly);
+            } else {
+                result.push_str(&self.gen_asm(instruction));
+            }
+        }
+        result
+    }
+
+    fn emit_asm2(&self, index: usize) -> Option<String> {
+        let instruction = &self.instructions[index];
+        let _rule = self.rules[index];
+        use IRInstruction::*;
+        match instruction {
+            Ret(_size, _vreg) => Some(format!("\tret\n")),
+            _ => None,
+        }
+    }
+
+    fn emit_prologue(&self) -> String {
+        format!("{}:\n", self.function_name)
     }
 
     // Does not currrently support instructions with seperate levels of terminals, these need to be weeded out of the tree first

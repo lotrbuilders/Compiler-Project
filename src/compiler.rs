@@ -1,4 +1,6 @@
 use std::fs::read_to_string;
+use std::fs::File;
+use std::io::Write;
 
 use colored::Colorize;
 
@@ -20,7 +22,30 @@ fn open(filename: String) -> Result<String, String> {
     }
 }
 
-pub fn compile(filename: String, _output: String) -> Result<(), String> {
+fn write(filename: String, content: String) -> Result<(), String> {
+    let mut file = match File::create(&filename) {
+        Err(reason) => {
+            return Err(format!(
+                "{}",
+                format!("File error: {}", reason).bright_red()
+            ))
+        }
+        Ok(file) => file,
+    };
+
+    match file.write_all(content.as_bytes()) {
+        Err(reason) => {
+            return Err(format!(
+                "{}",
+                format!("File error: {}", reason).bright_red()
+            ))
+        }
+        Ok(file) => file,
+    }
+    Ok(())
+}
+
+pub fn compile(filename: String, output: String) -> Result<(), String> {
     let mut lexer = Lexer::new(&filename);
     let file = open(filename)?;
 
@@ -53,6 +78,9 @@ pub fn compile(filename: String, _output: String) -> Result<(), String> {
 
     log::info!("Started the backend");
     log::info!("Using backend amd64");
-    backend::generate_code(ir_functions, "amd64".to_string()).expect("Unsupported backend");
+    let assembly =
+        backend::generate_code(ir_functions, "amd64".to_string()).expect("Unsupported backend");
+
+    write(output, assembly)?;
     Ok(())
 }
