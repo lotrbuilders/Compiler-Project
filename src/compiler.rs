@@ -50,23 +50,22 @@ pub fn compile(filename: String, output: String) -> Result<(), String> {
     let file = open(filename)?;
 
     log::info!("Lexer started");
-    let tokens = lexer.lex(&mut file.chars()).unwrap();
-    let file_table = lexer.file_table();
+    let (tokens, lexer_errors) = lexer.lex(&mut file.chars());
     log::trace!(target: "lexer","Lexed tokens: {:?}", tokens);
 
     log::info!("Parser started");
-    let mut parser = Parser::new(file_table.clone());
+    let mut parser = Parser::new();
     let (mut ast, parse_errors) = parser.parse(tokens);
     log::debug!("Parser result:\n{}", ast);
     let _ = crate::parser::ast_graph::print_graph("graph.gv", &ast);
 
     log::info!("Analyzer started");
-    let mut analyzer = SemanticAnalyzer::new(file_table);
+    let mut analyzer = SemanticAnalyzer::new();
     let analysis_errors = analyzer.analyze(&mut ast);
 
-    if parse_errors.is_err() || analysis_errors.is_err() {
+    if lexer_errors.is_err() || parse_errors.is_err() || analysis_errors.is_err() {
         log::info!("Exited due to errors");
-        return Err("Error in parsing or analysis".to_string());
+        return Err("Error in lexing parsing or analysis".to_string());
     }
 
     log::info!("Evaluation started");
@@ -78,8 +77,7 @@ pub fn compile(filename: String, output: String) -> Result<(), String> {
 
     log::info!("Started the backend");
     log::info!("Using backend amd64");
-    let assembly =
-        backend::generate_code(ir_functions, "amd64".to_string()).expect("Unsupported backend");
+    let assembly = backend::generate_code(ir_functions, "amd64".to_string())?;
 
     write(output, assembly)?;
     Ok(())

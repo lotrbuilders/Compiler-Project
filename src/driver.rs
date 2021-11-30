@@ -94,7 +94,7 @@ pub fn drive(options: Options) -> Result<(), ()> {
                 compiler_filename
             );
 
-            compiler::compile(compiler_filename, assembler_filename.clone()).unwrap();
+            compiler::compile(compiler_filename, assembler_filename.clone()).map_err(|_| ())?;
             log::info!("Compiler finished");
         }
         if begin_stage >= Stage::Asm && last_stage < Stage::Asm {
@@ -123,6 +123,9 @@ pub fn drive(options: Options) -> Result<(), ()> {
                 String::from_utf8(output.stdout).unwrap(),
                 String::from_utf8(output.stderr).unwrap()
             );
+            if !output.status.success() {
+                return Err(());
+            }
         }
         if begin_stage >= Stage::Obj && last_stage < Stage::Obj {
             // Invoke linker
@@ -155,6 +158,9 @@ pub fn drive(options: Options) -> Result<(), ()> {
                 String::from_utf8(output.stdout).unwrap(),
                 String::from_utf8(output.stderr).unwrap()
             );
+            if !output.status.success() {
+                return Err(());
+            }
         }
     }
     Ok(())

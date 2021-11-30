@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::span::Span;
 
 #[allow(dead_code)]
@@ -77,6 +79,26 @@ impl From<&str> for TokenType {
                 );
                 Semicolon
             }
+        }
+    }
+}
+
+impl Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use TokenType::*;
+        match &self.token {
+            Int => write!(f, "'int'"),
+
+            Return => write!(f, "'return'"),
+
+            LBrace => write!(f, "'{{'"),
+            RBrace => write!(f, "'}}'"),
+            LParenthesis => write!(f, "'('"),
+            RParenthesis => write!(f, "')'"),
+            Semicolon => write!(f, "';'"),
+
+            Ident(val) => write!(f, "'{}'", val),
+            ConstI(val) => write!(f, "'{}'", val),
         }
     }
 }

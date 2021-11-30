@@ -1,10 +1,11 @@
+use crate::file_table;
 use crate::span::Span;
 use crate::token;
 use crate::token::Token;
 use crate::token::TokenType;
 
 pub struct Lexer {
-    filenames: Vec<String>,
+    file_index: u32,
     line: u32,
     column: u32,
     offset: u32,
@@ -13,28 +14,23 @@ pub struct Lexer {
 
 impl Lexer {
     pub fn new(filename: &String) -> Lexer {
+        unsafe {
+            file_table::reset();
+        }
+        file_table::add_sourcefile(filename);
         Lexer {
-            filenames: vec![filename.clone()],
+            file_index: 0,
             line: 1,
             column: 1,
             offset: 0,
             last_char: None,
         }
     }
-    pub fn file_table(&self) -> Vec<String> {
-        self.filenames.clone()
-    }
 }
 
 impl Lexer {
     fn here(&mut self) -> Span {
-        Span::new(
-            (self.filenames.len() - 1) as u32,
-            self.line,
-            self.column,
-            self.offset,
-            1,
-        )
+        Span::new(self.file_index, self.line, self.column, self.offset, 1)
     }
 
     pub fn peek<T: Iterator<Item = char>>(&mut self, it: &mut T) -> Option<char> {
@@ -59,7 +55,7 @@ impl Lexer {
     pub fn lex<T: Iterator<Item = char>>(
         &mut self,
         input: &mut T,
-    ) -> Result<Vec<Token>, Vec<String>> {
+    ) -> (Vec<Token>, Result<(), Vec<String>>) {
         let mut output = Vec::<Token>::new();
         let mut errors = Vec::<String>::new();
         while let Some(c) = self.peek(input).clone() {
@@ -86,8 +82,8 @@ impl Lexer {
             }
         }
         match errors.is_empty() {
-            true => Ok(output),
-            false => Err(errors),
+            true => (output, Ok(())),
+            false => (output, Err(errors)),
         }
     }
 
@@ -96,7 +92,7 @@ impl Lexer {
         let mut identifier = String::new();
         while let Some(c) = self.peek(input) {
             match c {
-                'a'..='z' | 'A'..='Z' | '_' => {
+                'a'..='z' | 'A'..='Z' | '_' | '0' | '1'..='9' => {
                     self.next(input);
                     identifier.push(c);
                 }

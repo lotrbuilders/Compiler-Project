@@ -1,6 +1,7 @@
 use super::ast::*;
 //use super::RecoveryStrategy;
 use super::Parser;
+use crate::error;
 use crate::expect;
 use crate::token::TokenType;
 
@@ -18,7 +19,10 @@ impl Parser {
                 break;
             }
             if self.peek() == None {
-                break;
+                let loc = self.peek_span();
+                self.errors
+                    .push(error!(loc, "Expected }} before end of file"));
+                return Err(());
             }
             result.push(self.parse_statement()?);
         }

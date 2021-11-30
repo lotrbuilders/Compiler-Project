@@ -1,8 +1,8 @@
-use std::path::PathBuf;
-use std::process::Command;
-use std::{fs, string};
-use std::{io, io::Write, path::Path};
-use utcc_lib;
+use std::{
+    fs, io,
+    path::{Path, PathBuf},
+    process::Command,
+};
 use utcc_lib as utcc;
 
 fn get_options(path: &PathBuf) -> utcc::options::Options {
@@ -52,7 +52,8 @@ fn test_stage(dir: PathBuf, failures: &mut Vec<String>) -> io::Result<i32> {
     let mut invalid_dir = dir.clone();
     valid_dir.push("valid/");
     invalid_dir.push("invalid/");
-    let fail_count = test_valid(valid_dir.as_path(), failures)? + 0; //test_invalid(invalid_dir.as_path())?;
+    let fail_count =
+        test_valid(valid_dir.as_path(), failures)? + test_invalid(invalid_dir.as_path(), failures)?;
     Ok(fail_count)
 }
 
@@ -123,7 +124,10 @@ fn test_invalid(dir: &Path, failures: &mut Vec<String>) -> io::Result<i32> {
             match utcc::driver::drive(options.clone()) {
                 Err(()) => (),
                 Ok(()) => {
-                    failures.push(options.input[0].clone());
+                    failures.push(format!(
+                        "Invalid example did not produce error: {}",
+                        options.input[0].clone()
+                    ));
                     fail_count += 1;
                 }
             }

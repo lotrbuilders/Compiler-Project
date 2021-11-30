@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 /// Struct too show were a token or AST section originates from.
 // .file_index gives the index into the list of files
 // .line is the line number of the start of the token/AST.
@@ -55,5 +57,13 @@ impl Span {
             self.offset,
             other.offset - self.offset + other.length,
         )
+    }
+}
+
+impl Display for Span {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use crate::file_table;
+        let file = file_table::get_sourcefile(self.file_index);
+        write!(f, "{}:{}:{}:", file, self.line, self.column)
     }
 }

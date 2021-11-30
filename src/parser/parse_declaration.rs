@@ -14,8 +14,9 @@ impl Parser {
 
     fn parse_declaration_specifiers(&mut self) -> Result<Vec<Type>, ()> {
         if self.peek().filter(Parser::is_type_qualifier) == None {
-            todo!();
-            //return Err(());
+            //todo!(); proper recovery
+            self.next();
+            return Err(());
         }
         let mut result = Vec::<Type>::new();
         while let Some(token) = self.peek().filter(Parser::is_type_qualifier) {

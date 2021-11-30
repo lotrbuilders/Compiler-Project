@@ -17,16 +17,14 @@ use crate::token::{Token, TokenType};
 
 #[allow(dead_code)]
 pub struct Parser {
-    file_table: Vec<String>,
     errors: Vec<String>,
     tokens: Vec<Token>,
     token_index: usize,
 }
 
 impl Parser {
-    pub fn new(file_table: Vec<String>) -> Parser {
+    pub fn new() -> Parser {
         Parser {
-            file_table,
             errors: Vec::new(),
             tokens: Vec::new(),
             token_index: 0,
@@ -83,6 +81,10 @@ macro_rules! expect {
         match $self.peek() {
             None => {
                 //Error code
+                let loc = $self.peek_span();
+                $self
+                    .errors
+                    .push(crate::error!(loc, "Unexpected end of file"));
                 Err(())
             }
             Some(token) => match token.token() {
@@ -93,6 +95,10 @@ macro_rules! expect {
                 _ => {
                     //Error code
                     //Recovery
+                    let loc = $self.peek_span();
+                    $self
+                        .errors
+                        .push(crate::error!(loc, "Unexpected token {}", token));
                     Err(())
                 }
             },

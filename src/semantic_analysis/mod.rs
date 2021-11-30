@@ -6,16 +6,12 @@ use crate::parser::ast::*;
 
 #[derive(Clone, Debug)]
 pub struct SemanticAnalyzer {
-    file_table: Vec<String>,
     errors: Vec<String>,
 }
 
 impl SemanticAnalyzer {
-    pub fn new(file_table: Vec<String>) -> SemanticAnalyzer {
-        SemanticAnalyzer {
-            file_table,
-            errors: Vec::new(),
-        }
+    pub fn new() -> SemanticAnalyzer {
+        SemanticAnalyzer { errors: Vec::new() }
     }
 
     pub fn analyze(&mut self, translation_unit: &mut TranslationUnit) -> Result<(), Vec<String>> {
