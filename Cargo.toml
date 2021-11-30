@@ -1,12 +1,21 @@
 [package]
+edition = "2018"
 name = "utcc"
 version = "0.1.0"
-edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+crate-type = ["lib", "cdylib"]
+name = "utcc_lib"
+path = "src/lib.rs"
+
+[[bin]]
+name = "utcc"
+path = "src/main.rs"
+
 [dependencies]
+clap = "~2.33.3"
 colored = "~2.0.0"
 log = "~0.4.14"
-clap = "~2.33.3"
-rburg = {path="./src/rburg"}
+rburg = {path = "./src/rburg"}

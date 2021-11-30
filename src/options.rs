@@ -2,6 +2,7 @@ use crate::driver::Stage;
 use clap::{App, Arg, ArgGroup};
 use colored::Colorize;
 
+#[derive(Clone)]
 pub struct Options {
     pub input: Vec<String>,
     pub output: String,

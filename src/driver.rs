@@ -28,6 +28,19 @@ fn filename2stage(filename: &str) -> Stage {
     }
 }
 
+fn new_or_final<'a>(
+    filename: &'a String,
+    last_filename: &'a String,
+    last_stage: Stage,
+    stage: Stage,
+) -> &'a String {
+    if stage == last_stage {
+        last_filename
+    } else {
+        filename
+    }
+}
+
 pub fn drive(options: Options) -> Result<(), ()> {
     log::info!("driver started");
     for filename in options.input {
@@ -35,10 +48,31 @@ pub fn drive(options: Options) -> Result<(), ()> {
             .file_stem()
             .and_then(OsStr::to_str)
             .unwrap_or(&filename)
-            .to_string();
+            .chars()
+            .map(|c| match c {
+                '\\' => '/',
+                _ => c,
+            })
+            .collect::<String>();
+
         let begin_stage = filename2stage(&filename);
         let last_stage = options.last_stage;
+        let last_filename = options.output.clone();
+        let parent = Path::new(&filename)
+            .parent()
+            .expect("")
+            .to_str()
+            .expect("msg");
+        let parent = parent
+            .chars()
+            .map(|c| match c {
+                '\\' => '/',
+                _ => c,
+            })
+            .collect::<String>();
+
         log::debug!("Going from {:?} to {:?}", begin_stage, last_stage);
+        log::debug!("file_stem {}, parent {}", file_stem, parent);
         let mut next_filename = filename.clone();
 
         if begin_stage == Stage::C {
@@ -48,23 +82,41 @@ pub fn drive(options: Options) -> Result<(), ()> {
         }
         if begin_stage >= Stage::Ppc && last_stage < Stage::Ppc {
             // Invoke compiler
-            log::info!("Compiler started");
             let compiler_filename = next_filename;
-            let assembler_filename = "./".to_string() + &file_stem + ".s";
+            let assembler_filename = parent.clone() + "/" + &file_stem + ".s";
+            let assembler_filename =
+                new_or_final(&assembler_filename, &last_filename, last_stage, Stage::Ppc);
             next_filename = assembler_filename.clone();
-            compiler::compile(compiler_filename, assembler_filename).unwrap();
+
+            log::info!(
+                "Compiler started -o {} {}",
+                assembler_filename,
+                compiler_filename
+            );
+
+            compiler::compile(compiler_filename, assembler_filename.clone()).unwrap();
             log::info!("Compiler finished");
         }
         if begin_stage >= Stage::Asm && last_stage < Stage::Asm {
             // Invoke assembler
-            log::info!("Assembler started");
             let assembler_filename = next_filename;
-            let linker_filename = "./".to_string() + &file_stem + ".o";
+            if parent.contains(":/") {}
+            let linker_filename = parent.clone() + "/" + &file_stem + ".o";
+            let linker_filename =
+                new_or_final(&linker_filename, &last_filename, last_stage, Stage::Asm);
             next_filename = linker_filename.clone();
+
+            log::info!(
+                "Assembler started -o {} {}",
+                linker_filename,
+                assembler_filename
+            );
+
             let output = Command::new("nasm")
                 .args(["-felf64", "-o", &linker_filename, &assembler_filename])
                 .output()
                 .expect("failed to run assembler");
+
             log::info!(
                 "status {}\nstdout: {}\nstderr: {}",
                 output.status,
@@ -74,20 +126,29 @@ pub fn drive(options: Options) -> Result<(), ()> {
         }
         if begin_stage >= Stage::Obj && last_stage < Stage::Obj {
             // Invoke linker
-            log::info!("Linker started");
             let linker_filename = next_filename;
-            let executable_filename = "./".to_string() + &file_stem + "";
-            let output = Command::new("wsl")
-                .args([
-                    "--",
-                    "gcc",
-                    "-m64",
-                    "-o",
-                    &executable_filename,
-                    &linker_filename,
-                ])
+            let result = last_filename.clone();
+
+            /*let result = if result.contains(":\\") {
+                "/mnt/".to_string()
+                    + &result
+                        .chars()
+                        .next()
+                        .unwrap()
+                        .to_ascii_lowercase()
+                        .to_string()
+                    + &result.chars().skip_while(|c| *c != '/').collect::<String>()
+            } else {
+                result
+            };*/
+
+            log::info!("Linker started -o {} {}", result, linker_filename);
+
+            let output = Command::new("gcc")
+                .args(["-m64", "-o", &result, &linker_filename])
                 .output()
                 .expect("failed to run linker");
+
             log::info!(
                 "status {}\nstdout: {}\nstderr: {}",
                 output.status,

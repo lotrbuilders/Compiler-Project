@@ -4,4 +4,6 @@ test.*
 *.svg
 *.gv
 
-test.s
+*.o
+*.s
+*.exe

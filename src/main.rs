@@ -1,29 +1,12 @@
-mod backend;
-mod compiler;
-mod driver;
-mod error;
-mod eval;
-mod lexer;
-mod logger;
-mod options;
-mod parser;
-mod semantic_analysis;
-mod span;
-mod token;
-
-use crate::span::Span;
+use utcc_lib;
+use utcc_lib as utcc;
 
 fn main() {
-    let options = options::get();
-    println!("Hello, world!");
-    crate::logger::init().expect("Logger initialization filled");
+    let options = utcc::options::get();
+    utcc::logger::init().expect("Logger initialization failed");
     log::info!("hello logger");
-    let a = Span::new(0, 1, 1, 0, 1);
-    let b = Span::new(0, 1, 2, 1, 1);
-    let c = a.to(&b);
-    println!("{:?}", c);
 
-    if let Err(()) = driver::drive(options) {
+    if let Err(()) = utcc::driver::drive(options) {
         std::process::exit(1);
     }
 }
