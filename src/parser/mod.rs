@@ -78,9 +78,8 @@ impl Parser {
 #[macro_export]
 macro_rules! expect {
     ($self:ident, $expected: pat, $recover: expr) => {
-        match $self.peek() {
+        /*match $self.peek() {
             None => {
-                //Error code
                 let loc = $self.peek_span();
                 $self
                     .errors
@@ -93,12 +92,37 @@ macro_rules! expect {
                     Ok(token)
                 }
                 _ => {
-                    //Error code
-                    //Recovery
+                    $self.recover(&$recover);
                     let loc = $self.peek_span();
                     $self
                         .errors
                         .push(crate::error!(loc, "Unexpected token {}", token));
+                    Err(())
+                }
+            },
+        }*/
+        expect!($self,$expected,$recover,"Unexpected token {}")
+    };
+    ($self:ident, $expected: pat, $recover: expr, $( $exp:expr ),*) => {
+        match $self.peek() {
+            None => {
+                let loc = $self.peek_span();
+                $self
+                    .errors
+                    .push(crate::error!(loc, "Unexpected end of file"));
+                Err(())
+            }
+            Some(token) => match token.token() {
+                $expected => {
+                    $self.next();
+                    Ok(token)
+                }
+                _ => {
+                    $self.recover(&$recover);
+                    let loc = $self.peek_span();
+                    $self
+                        .errors
+                        .push(crate::error!(loc, $($exp,)* token));
                     Err(())
                 }
             },

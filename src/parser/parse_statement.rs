@@ -1,4 +1,5 @@
 use super::ast::*;
+use super::recovery::RecoveryStrategy;
 use super::Parser;
 use crate::error;
 use crate::expect;

@@ -1,5 +1,5 @@
 use super::ast::*;
-use super::{Parser, Type};
+use super::{recovery::RecoveryStrategy, Parser, Type};
 use crate::expect;
 use crate::token::TokenType;
 
