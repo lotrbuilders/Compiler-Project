@@ -1,9 +1,10 @@
 use super::ast::*;
-//use super::RecoveryStrategy;
 use super::{Parser, Type};
 use crate::expect;
 use crate::token::TokenType;
 
+// Expression parsing is done using Pratt parsing(unimplemented)
+// Everything that is hard to parse, starting from cast expression is handwritten
 impl Parser {
     pub(super) fn parse_expression(&mut self) -> Result<Expression, ()> {
         let begin = self.peek_span();

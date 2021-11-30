@@ -28,6 +28,8 @@ fn filename2stage(filename: &str) -> Stage {
     }
 }
 
+// Return either the current filename or the last_filename
+// Depending if we're in the last stage
 fn new_or_final<'a>(
     filename: &'a String,
     last_filename: &'a String,
@@ -41,6 +43,11 @@ fn new_or_final<'a>(
     }
 }
 
+// This function calls all seperate sub-components with the correct parameters being
+// - Preprocessor
+// - Compiler
+// - Assembler
+// - Linking
 pub fn drive(options: Options) -> Result<(), ()> {
     log::info!("driver started");
     for filename in options.input {
@@ -63,6 +70,7 @@ pub fn drive(options: Options) -> Result<(), ()> {
             .expect("")
             .to_str()
             .expect("msg");
+
         let parent = parent
             .chars()
             .map(|c| match c {

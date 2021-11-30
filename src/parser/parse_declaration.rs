@@ -1,8 +1,5 @@
-//use super::ast::*;
-//use super::RecoveryStrategy;
 use super::{Parser, Type};
 use crate::expect;
-//use crate::token;
 use crate::token::TokenType;
 
 impl Parser {
@@ -12,6 +9,8 @@ impl Parser {
         Ok(Type::combine(base_type, declarator))
     }
 
+    // Parses all type qualifiers (const, int, void)
+    // <declaration-specifiers> ::= <type-qualifier>+
     fn parse_declaration_specifiers(&mut self) -> Result<Vec<Type>, ()> {
         if self.peek().filter(Parser::is_type_qualifier) == None {
             //todo!(); proper recovery
@@ -26,6 +25,8 @@ impl Parser {
         Ok(result)
     }
 
+    // Parse a declarator optionally containing pointers and function
+    // <declarator> ::= name ( '('  ')' )?
     fn parse_declarator(&mut self) -> Result<Vec<Type>, ()> {
         let mut result = Vec::<Type>::new();
         let name = expect!(

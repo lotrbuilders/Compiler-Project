@@ -1,6 +1,9 @@
 use crate::backend::ir::*;
 use crate::parser::ast::*;
 
+// This module is used to evaluate the AST into an IR
+
+// The public function used to evaluate the ast
 pub fn evaluate(ast: &TranslationUnit) -> Vec<IRFunction> {
     let mut result = Vec::<IRFunction>::new();
     for global in &ast.global_declarations {
@@ -19,7 +22,7 @@ impl ExternalDeclaration {
                 let mut instructions = Vec::<IRInstruction>::new();
                 let mut vreg = 0;
                 for statement in statements {
-                    vreg = statement.eval(&mut instructions, &mut vreg);
+                    statement.eval(&mut instructions, &mut vreg);
                 }
                 Some(IRFunction {
                     name: self.name.clone(),
@@ -35,6 +38,9 @@ impl ExternalDeclaration {
     }
 }
 
+// The trait Evaluate is used by statements and expressions
+// The vreg counter should be updated every use
+// The function returns the virtual register representing its result
 pub trait Evaluate {
     fn eval(&self, result: &mut Vec<IRInstruction>, vreg_counter: &mut u32) -> u32;
 }

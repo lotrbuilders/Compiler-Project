@@ -4,6 +4,9 @@ use crate::expect;
 use crate::token::{Token, TokenType};
 
 impl Parser {
+    // The public parser function used by the compiler
+    // Parses global declarations until the end of the file
+    // <translation-unit> ::= <external-declaration>*
     pub fn parse(&mut self, tokens: Vec<Token>) -> (TranslationUnit, Result<(), Vec<String>>) {
         self.tokens = tokens;
         let mut global_declarations = Vec::<ExternalDeclaration>::new();
@@ -25,6 +28,8 @@ impl Parser {
         )
     }
 
+    // Parses a single extarnal declaration, which is either a function or a token
+    // <external-declaration> ::= <declaration> (';'| <compound-statement>)
     pub fn parse_external_declaration(&mut self) -> Result<ExternalDeclaration, ()> {
         let begin = self.peek_span();
         let declaration = self.parse_declaration()?;

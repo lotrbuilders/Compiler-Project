@@ -4,6 +4,9 @@ mod type_checking;
 use self::analysis::Analysis;
 use crate::parser::ast::*;
 
+// The semantic analyzer checks the entire syntax tree for problems
+// The semantic analyzer is passed as a member and modified using traits
+
 #[derive(Clone, Debug)]
 pub struct SemanticAnalyzer {
     errors: Vec<String>,

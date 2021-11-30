@@ -2,8 +2,8 @@ use super::SemanticAnalyzer;
 use crate::parser::ast::*;
 
 pub(super) trait Analysis {
-    fn analyze(&mut self, analyzer: &mut SemanticAnalyzer) -> () {
-        analyzer.errors.push("Unimplemented".to_string()); //Use official error reporting
+    fn analyze(&mut self, _analyzer: &mut SemanticAnalyzer) -> () {
+        log::error!("analyze called on unanalyzable structure");
     }
 }
 

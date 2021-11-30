@@ -10,6 +10,7 @@ use crate::lexer::Lexer;
 use crate::parser::Parser;
 use crate::semantic_analysis::SemanticAnalyzer;
 
+// Helper function which opens and reads a file
 fn open(filename: String) -> Result<String, String> {
     let contents = read_to_string(filename.clone());
     match contents {
@@ -22,6 +23,7 @@ fn open(filename: String) -> Result<String, String> {
     }
 }
 
+// Helper function which opens and writes to a file
 fn write(filename: String, content: String) -> Result<(), String> {
     let mut file = match File::create(&filename) {
         Err(reason) => {
@@ -45,6 +47,16 @@ fn write(filename: String, content: String) -> Result<(), String> {
     Ok(())
 }
 
+// The main function used in actual compilation
+// Opens one file and process it in its entirety by
+// - Lexing
+// - Parsing
+// - Semantic Analysis
+// -- (Quits if there are errors here)
+// - Generating an intermediate representation
+// - (Unimplemented optimizations)
+// - Generating assembly from the IR
+// - Writing the result back to another file
 pub fn compile(filename: String, output: String) -> Result<(), String> {
     let mut lexer = Lexer::new(&filename);
     let file = open(filename)?;

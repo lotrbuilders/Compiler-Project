@@ -8,10 +8,7 @@ mod parse_statement;
 mod recovery;
 pub mod r#type;
 
-//use self::ast::*;
-//use self::parse_global::*;
 pub use self::r#type::Type;
-//use self::recovery::RecoveryStrategy;
 use crate::span::Span;
 use crate::token::{Token, TokenType};
 
@@ -74,6 +71,9 @@ impl Parser {
     }
 }
 
+// This macro looks at the incoming token
+// Returns Ok(token) if it matches the $expected pattenn
+// Allows specifying a recovery strategy too allow for further parsing
 #[allow(unused_macros)]
 #[macro_export]
 macro_rules! expect {

@@ -3,6 +3,10 @@ use super::r#type::Type;
 use std::fmt;
 use std::fmt::Display;
 
+// This module implements the Display trait for the AST
+// The print-out should be valid c code to allow for relexing and reparsing
+
+// Allows the conversion of a type into a String representing the type as used in C
 fn type2string(typ: &[Type]) -> String {
     let mut result = String::new();
     if typ.is_empty() {

@@ -1,3 +1,5 @@
+// This file contains a static filetable that is created by the lexer
+// Used by the parser+analyzer to get access to the source location
 static mut GLOBAL_FILE_TABLE: Vec<String> = Vec::new();
 
 pub fn add_sourcefile(s: &String) {

@@ -1,9 +1,11 @@
+use crate::error;
 use crate::file_table;
 use crate::span::Span;
 use crate::token;
 use crate::token::Token;
 use crate::token::TokenType;
 
+// The Lexer is a mutuable structure keeping track of the current location in the source
 pub struct Lexer {
     file_index: u32,
     line: u32,
@@ -29,6 +31,7 @@ impl Lexer {
 }
 
 impl Lexer {
+    // Returns the current location of the lexer
     fn here(&mut self) -> Span {
         Span::new(self.file_index, self.line, self.column, self.offset, 1)
     }
@@ -52,6 +55,9 @@ impl Lexer {
         result
     }
 
+    // General lexing function
+    // More complex analysis like identifiers and numbers are split out
+    // The lexer can work on any arbitrary iterator that returns characters
     pub fn lex<T: Iterator<Item = char>>(
         &mut self,
         input: &mut T,
@@ -87,6 +93,7 @@ impl Lexer {
         }
     }
 
+    // Lex an identifier or keyword
     pub fn lex_identifier<T: Iterator<Item = char>>(&mut self, input: &mut T) -> Token {
         let start = self.here();
         let mut identifier = String::new();
@@ -110,6 +117,8 @@ impl Lexer {
         }
     }
 
+    // Lex a number
+    // Currently only decimal numbers are implemented
     pub fn lex_number<T: Iterator<Item = char>>(
         &mut self,
         input: &mut T,
@@ -132,8 +141,11 @@ impl Lexer {
         match number.parse::<u64>() {
             Ok(number) => (Token::new(TokenType::ConstI(number), span), Ok(())),
             Err(_) => (
-                Token::new(TokenType::ConstI(0), start.to(&self.here())),
-                Err(format!("Todo")),
+                Token::new(TokenType::ConstI(0), span.clone()),
+                Err(error!(
+                    span,
+                    "number {} to big too fit in any integer", number
+                )),
             ),
         }
     }

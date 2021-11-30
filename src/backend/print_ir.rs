@@ -2,6 +2,8 @@ use super::ir::*;
 use std::fmt;
 use std::fmt::Display;
 
+// This prints the IR in an LLVM like format using the Display trait
+
 impl Display for IRFunction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "define {} @{}() {{", self.return_size, self.name)?;

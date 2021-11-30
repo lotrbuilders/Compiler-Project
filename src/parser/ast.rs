@@ -1,11 +1,15 @@
 use super::Type;
 use crate::span::Span;
 
+// This module declares all the AST members that are used
+
+// Represents the entire TranslationUnit
 #[derive(Debug, Clone)]
 pub struct TranslationUnit {
     pub global_declarations: Vec<ExternalDeclaration>,
 }
 
+// Represent a function or global variable declaration
 #[derive(Debug, Clone)]
 pub struct ExternalDeclaration {
     pub span: Span,
@@ -14,11 +18,14 @@ pub struct ExternalDeclaration {
     pub function_body: Option<Vec<Statement>>,
 }
 
+// Represents all possible statements
 #[derive(Debug, Clone)]
 pub enum Statement {
     Return { span: Span, expression: Expression },
 }
 
+// Expression has a seperate expression variant
+// This is used to seperate the shared components
 #[derive(Debug, Clone)]
 pub struct Expression {
     pub span: Span,

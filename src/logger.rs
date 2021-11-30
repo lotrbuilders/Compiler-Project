@@ -1,5 +1,9 @@
 use log::{Level, LevelFilter, Metadata, Record, SetLoggerError};
 
+// Uses 'log' to allow for logging
+// Used for debugging the compiler more quickly
+// The error level for specific modules and custom codes can be specified
+// Logging is done by logging the level, target and the given arguments
 struct SimpleLogger;
 
 impl log::Log for SimpleLogger {
@@ -27,8 +31,8 @@ impl log::Log for SimpleLogger {
     fn flush(&self) {}
 }
 
-static LOGGER: SimpleLogger = SimpleLogger;
-
+// Initializes 'log' with the custom logger
 pub fn init() -> Result<(), SetLoggerError> {
     log::set_logger(&LOGGER).map(|()| log::set_max_level(LevelFilter::Trace))
 }
+static LOGGER: SimpleLogger = SimpleLogger;

@@ -2,6 +2,7 @@ use super::ast::*;
 use std::fs::File;
 use std::io::Write;
 
+// This function prints the entire ast into graphviz format
 pub fn print_graph(file: &str, ast: &dyn Graph) -> std::io::Result<()> {
     let mut buffer = File::create(file)?;
     let mut node_number = 0;
@@ -11,6 +12,10 @@ pub fn print_graph(file: &str, ast: &dyn Graph) -> std::io::Result<()> {
     Ok(())
 }
 
+// The graph trait is used to print the AST
+// It is implemented for all AST types
+// The node number is modified to give unique numbers to each printed node
+// The parent is used to allow the children to add a connection
 pub trait Graph {
     fn graph(
         &self,

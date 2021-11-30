@@ -1,3 +1,4 @@
+// Returns a string representing an error and prints it using the standardized format
 #[macro_export]
 macro_rules! error {
     ($span:expr,$( $exp:expr ),*) => {
@@ -10,6 +11,7 @@ macro_rules! error {
     };
 }
 
+// Returns a string representing an error and prints it using the standardized format
 #[macro_export]
 macro_rules! warning {
     ($span:expr,$( $exp:expr ),*) => {

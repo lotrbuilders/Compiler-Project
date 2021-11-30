@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use crate::span::Span;
-
+// Stores the specific type of a token and any associated values
 #[allow(dead_code)]
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum TokenType {
@@ -23,6 +23,7 @@ pub enum TokenType {
     Ident(String),
 }
 
+// Stores the location and type of a lexed token
 #[allow(dead_code)]
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct Token {
@@ -30,6 +31,7 @@ pub struct Token {
     token: TokenType,
 }
 
+// Convert a punctuation character or string into the assocated tokentype for readability
 #[allow(dead_code)]
 pub fn punct<T: Into<TokenType>>(input: T) -> TokenType {
     input.into()
@@ -48,6 +50,7 @@ impl Token {
     }
 }
 
+// Conversion of a characacter into the tokentype for punctuation characters
 impl From<char> for TokenType {
     fn from(c: char) -> TokenType {
         use TokenType::*;
@@ -68,6 +71,7 @@ impl From<char> for TokenType {
     }
 }
 
+// Conversion of a string into the tokentype for multicharacter punctuation characters
 impl From<&str> for TokenType {
     fn from(s: &str) -> TokenType {
         use TokenType::*;
@@ -83,6 +87,7 @@ impl From<&str> for TokenType {
     }
 }
 
+// Display a token using std::fmt
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use TokenType::*;
