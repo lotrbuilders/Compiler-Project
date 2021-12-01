@@ -9,6 +9,13 @@ impl Analysis for Expression {
         use ExpressionVariant::*;
         match &mut self.variant {
             ConstI(_) => {}
+            Add(left, right)
+            | Subtract(left, right)
+            | Multiply(left, right)
+            | Divide(left, right) => {
+                left.analyze(analyzer);
+                right.analyze(analyzer);
+            }
         }
     }
 }

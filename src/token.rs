@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display};
 
 use crate::span::Span;
 // Stores the specific type of a token and any associated values
@@ -17,6 +17,12 @@ pub enum TokenType {
     LParenthesis,
     RParenthesis,
     Semicolon,
+
+    //Operators symbols
+    Plus,
+    Minus,
+    Asterisk,
+    Divide,
 
     //Types with a value
     ConstI(u64),
@@ -60,6 +66,10 @@ impl From<char> for TokenType {
             '(' => LParenthesis,
             ')' => RParenthesis,
             ';' => Semicolon,
+            '+' => Plus,
+            '-' => Minus,
+            '*' => Asterisk,
+            '/' => Divide,
             _ => {
                 log::warn!(
                     "char to TokenType conversion with unimplemented character {}",
@@ -101,6 +111,11 @@ impl Display for Token {
             LParenthesis => write!(f, "'('"),
             RParenthesis => write!(f, "')'"),
             Semicolon => write!(f, "';'"),
+
+            Plus => write!(f, "'+'"),
+            Minus => write!(f, "'-'"),
+            Asterisk => write!(f, "'*'"),
+            Divide => write!(f, "'/'"),
 
             Ident(val) => write!(f, "'{}'", val),
             ConstI(val) => write!(f, "'{}'", val),

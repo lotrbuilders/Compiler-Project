@@ -69,8 +69,26 @@ impl Display for Statement {
 impl Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use ExpressionVariant::*;
-        match self.variant {
+        match &self.variant {
             ConstI(value) => write!(f, "{}", value)?,
+            Add(left, right)
+            | Subtract(left, right)
+            | Multiply(left, right)
+            | Divide(left, right) => {
+                writeln!(
+                    f,
+                    "({} {} {})",
+                    left,
+                    match self.variant {
+                        Add(..) => '+',
+                        Subtract(..) => '-',
+                        Multiply(..) => '*',
+                        Divide(..) => '/',
+                        _ => unreachable!(),
+                    },
+                    right
+                )?;
+            }
         }
         Ok(())
     }

@@ -92,10 +92,30 @@ impl Graph for Expression {
         *node_number += 1;
         let number = *node_number;
         use ExpressionVariant::*;
-        match self.variant {
+        match &self.variant {
             ConstI(value) => {
                 writeln!(buffer, "n{} [label=\"int {}\"]", number, value)?;
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
+            }
+            Add(left, right)
+            | Subtract(left, right)
+            | Multiply(left, right)
+            | Divide(left, right) => {
+                writeln!(
+                    buffer,
+                    "n{} [label=\"{}\"]",
+                    number,
+                    match self.variant {
+                        Add(..) => '+',
+                        Subtract(..) => '-',
+                        Multiply(..) => '*',
+                        Divide(..) => '/',
+                        _ => unreachable!(),
+                    }
+                )?;
+                writeln!(buffer, "n{} -- n{}", parent, number)?;
+                left.graph(buffer, node_number, number)?;
+                right.graph(buffer, node_number, number)?;
             }
         }
         Ok(())

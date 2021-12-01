@@ -35,5 +35,9 @@ pub struct Expression {
 
 #[derive(Debug, Clone)]
 pub enum ExpressionVariant {
+    Add(Box<Expression>, Box<Expression>),
+    Subtract(Box<Expression>, Box<Expression>),
+    Multiply(Box<Expression>, Box<Expression>),
+    Divide(Box<Expression>, Box<Expression>),
     ConstI(i128),
 }

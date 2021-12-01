@@ -10,6 +10,12 @@ pub struct IRFunction {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum IRInstruction {
     Imm(IRSize, IRReg, i128),
+
+    Add(IRSize, IRReg, IRReg, IRReg),
+    Sub(IRSize, IRReg, IRReg, IRReg),
+    Mul(IRSize, IRReg, IRReg, IRReg),
+    Div(IRSize, IRReg, IRReg, IRReg),
+
     Ret(IRSize, IRReg),
 }
 
@@ -18,6 +24,12 @@ pub enum IRInstruction {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum IRType {
     Imm,
+
+    Add,
+    Sub,
+    Mul,
+    Div,
+
     Ret,
 }
 
@@ -35,29 +47,44 @@ impl IRInstruction {
         match self {
             &Self::Imm(..) => IRType::Imm,
             &Self::Ret(..) => IRType::Ret,
+            &Self::Add(..) => IRType::Add,
+            &Self::Sub(..) => IRType::Sub,
+            &Self::Mul(..) => IRType::Mul,
+            &Self::Div(..) => IRType::Div,
         }
     }
 
     // Returns the left or only operand vregister if it exists
     pub fn get_left(&self) -> Option<IRReg> {
         match self {
-            &Self::Imm(..) => None,
-            &Self::Ret(_, left) => Some(left),
+            &Self::Ret(_, left)
+            | &Self::Add(_, _, left, _)
+            | &Self::Sub(_, _, left, _)
+            | &Self::Mul(_, _, left, _)
+            | &Self::Div(_, _, left, _) => Some(left),
+            _ => None,
         }
     }
 
     // Returns the right vregister if it exists
     pub fn get_right(&self) -> Option<IRReg> {
         match self {
-            &Self::Imm(..) => None,
-            &Self::Ret(..) => None,
+            &Self::Add(_, _, _, right)
+            | &Self::Sub(_, _, _, right)
+            | &Self::Mul(_, _, _, right)
+            | &Self::Div(_, _, _, right) => Some(right),
+            _ => None,
         }
     }
 
     // Returns the result vregister if it exists
     pub fn get_result(&self) -> Option<IRReg> {
         match self {
-            &Self::Imm(_, result, _) => Some(result),
+            &Self::Imm(_, result, _)
+            | &Self::Add(_, result, _, _)
+            | &Self::Sub(_, result, _, _)
+            | &Self::Mul(_, result, _, _)
+            | &Self::Div(_, result, _, _) => Some(result),
             _ => None,
         }
     }
@@ -65,9 +92,7 @@ impl IRInstruction {
     // Get the value of immediate instructions in string form
     pub fn get_value(&self) -> String {
         match self {
-            &Self::Imm(_, _, value) => {
-                format!("{}", value)
-            }
+            &Self::Imm(_, _, value) => format!("{}", value),
             _ => {
                 log::error!("get value called without value");
                 format!("")

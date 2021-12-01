@@ -64,11 +64,29 @@ impl Evaluate for Statement {
 impl Evaluate for Expression {
     fn eval(&self, result: &mut Vec<IRInstruction>, vreg_counter: &mut u32) -> u32 {
         use ExpressionVariant::*;
-        match self.variant {
-            ConstI(value) => {
+        match &self.variant {
+            &ConstI(value) => {
                 let vreg = *vreg_counter;
                 *vreg_counter += 1;
                 result.push(IRInstruction::Imm(IRSize::I32, vreg, value));
+                vreg
+            }
+            Add(left, right)
+            | Subtract(left, right)
+            | Multiply(left, right)
+            | Divide(left, right) => {
+                let _left = left.eval(result, vreg_counter);
+                let _right = right.eval(result, vreg_counter);
+                let vreg = *vreg_counter;
+                *vreg_counter += 1;
+                log::info!("Unimplemented evaluate");
+                result.push(match self.variant {
+                    Add(..) => IRInstruction::Imm(IRSize::I32, vreg, 0),
+                    Subtract(..) => IRInstruction::Imm(IRSize::I32, vreg, 0),
+                    Multiply(..) => IRInstruction::Imm(IRSize::I32, vreg, 0),
+                    Divide(..) => IRInstruction::Imm(IRSize::I32, vreg, 0),
+                    _ => unreachable!(),
+                });
                 vreg
             }
         }

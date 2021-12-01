@@ -18,9 +18,31 @@ impl Display for IRFunction {
 impl Display for IRInstruction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use IRInstruction::*;
+        let ins = self.to_type();
         match self {
-            Imm(size, reg, value) => write!(f, "\t%{}=loadi {} #{}", reg, size, value),
-            Ret(size, reg) => write!(f, "\tret {} %{}", size, reg),
+            Imm(size, reg, value) => write!(f, "\t%{} = {} {} #{}", reg, ins, size, value),
+            Add(size, result, left, right)
+            | Sub(size, result, left, right)
+            | Mul(size, result, left, right)
+            | Div(size, result, left, right) => {
+                write!(f, "\t%{} = {} {} %{}, %{}", result, ins, size, left, right)
+            }
+
+            Ret(size, reg) => write!(f, "\t{} {} %{}", ins, size, reg),
+        }
+    }
+}
+
+impl Display for IRType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use IRType::*;
+        match self {
+            Imm => write!(f, "loadi"),
+            Add => write!(f, "add"),
+            Sub => write!(f, "sub"),
+            Mul => write!(f, "mul"),
+            Div => write!(f, "div"),
+            Ret => write!(f, "ret"),
         }
     }
 }
