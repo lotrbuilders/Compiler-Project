@@ -85,7 +85,7 @@ impl BackendAMD64 {
         self.vreg2reg = assignments
             .vreg2reg_original
             .iter()
-            .map(|reg| reg.unwrap())
+            .map(|reg| reg.unwrap_or(Register::Rax))
             .collect();
         self.reg_relocations = assignments.reg_relocations;
 
@@ -242,7 +242,7 @@ impl BackendAMD64 {
 
         // If something has gone out of scope: remove it
         for i in 0..length {
-            if index == register_use.last_use[i] {
+            if index == register_use.last_use[i] && register_use.creation[i] != u32::MAX {
                 let reg = assignments.vreg2reg[i].unwrap();
 
                 // Check if the register has not been reassigned this instruction

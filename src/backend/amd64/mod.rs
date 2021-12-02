@@ -17,12 +17,21 @@ rburg::rburg_main! {
     BackendAMD64,
 :       Ret(_a %eax)               "#\n"
 %ireg:  Imm(#i)                    "mov {res}, {i}\n"   {1}
+
 %ireg:  Add(a %ireg , b %ireg)    ?"add {res}, {b} ; {res} = {a} + {b}\n"   {1}
+%ireg:  Add(a %ireg, Imm(#i))     ?"add {res}, {i} ; {res} = {a} + {i}\n"   {1}
+
 %ireg:  Sub(a %ireg , b %ireg)    ?"sub {res}, {b} ; {res} = {a} - {b}\n"   {1}
+%ireg:  Sub(Imm(#_i), b %ireg)    ?"neg {res} ; {res} = -{b}\n"             {self.range(self.get_left_index(index),0,0)+1}
+
 %ireg:  Mul(a %ireg , b %ireg)    ?"imul {res}, {b} ; {res} = {a} * {b}\n"   {1}
 %eax:   Div(a %eax  , b %ireg)    ?"sub edx,edx\n\tidiv {b} ; {res} = {a} / {b}\n"    {1}
+
 %ireg:  Xor(a %ireg , b %ireg)    ?"xor {res}, {b} ; {res} = {a} ^ {b}\n"   {1}
+%ireg:  Xor(a %ireg , Imm(#_i))   ?"not {res} ; {res} = ~{a}\n"             {self.range(self.get_right_index(index),-1,-1)+1}
+
 %ireg:  Eq (a %ireg , b %ireg)     "cmp {a}, {b}\n\tsete {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n " {1}
+%ireg:  Eq (a %ireg , Imm(#i))     "test {a}, {a}\n\tsetz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n " {self.range(self.get_right_index(index),0,0)+1}
 }
 
 impl Backend for BackendAMD64 {
@@ -67,6 +76,25 @@ impl Backend for BackendAMD64 {
 }
 
 impl BackendAMD64 {
+    fn range(&self, index: u32, from: i128, to: i128) -> u16 {
+        let ins: &IRInstruction = &self.instructions[index as usize];
+        match ins {
+            &IRInstruction::Imm(_, _, value) => {
+                if value >= from && value <= to {
+                    0
+                } else {
+                    0xfff
+                }
+            }
+            _ => {
+                log::error!("range called on unsupported instruction");
+                0xfff
+            }
+        }
+    }
+}
+
+impl BackendAMD64 {
     // Should be automatically generated
     // Gets the rule that is assocatiated with the specific non_terminal used
     fn get_rule(&self, index: u32, non_terminal: usize) -> u16 {
@@ -87,10 +115,12 @@ impl BackendAMD64 {
     // This also not supported in the labelizer due to the lack of a condition
     fn reduce_instruction(&mut self, instruction: u32, non_terminal: usize) -> () {
         if self.rules[instruction as usize] != 0xffff {
+            log::trace!("{} already reduced correctly", instruction);
             return ();
         }
 
         let rule_number = self.get_rule(instruction, non_terminal);
+        self.reduce_terminals(instruction, rule_number);
         let child_non_terminals: Vec<usize> = self.get_child_non_terminals(rule_number);
         let kids: Vec<u32> = self.get_kids(instruction, rule_number);
         for i in 0..kids.len() {
@@ -102,8 +132,11 @@ impl BackendAMD64 {
     // Gives wether the current node is actually an instruction.
     // Currently everything should be an instruction
     fn is_instruction(&self, rule: u16) -> bool {
-        let _ = rule;
-        true
+        match rule {
+            0xffff => false,
+            0xfffe => false,
+            _ => true,
+        }
     }
 
     fn clobber(&self, index: usize) -> Vec<Register> {
