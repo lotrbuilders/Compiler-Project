@@ -1,4 +1,4 @@
-use std::{fmt::Display};
+use std::fmt::Display;
 
 use crate::span::Span;
 // Stores the specific type of a token and any associated values
@@ -23,6 +23,8 @@ pub enum TokenType {
     Minus,
     Asterisk,
     Divide,
+    Tilde,
+    Exclamation,
 
     //Types with a value
     ConstI(u64),
@@ -70,6 +72,8 @@ impl From<char> for TokenType {
             '-' => Minus,
             '*' => Asterisk,
             '/' => Divide,
+            '~' => Tilde,
+            '!' => Exclamation,
             _ => {
                 log::warn!(
                     "char to TokenType conversion with unimplemented character {}",
@@ -116,6 +120,8 @@ impl Display for Token {
             Minus => write!(f, "'-'"),
             Asterisk => write!(f, "'*'"),
             Divide => write!(f, "'/'"),
+            Tilde => write!(f, "'~'"),
+            Exclamation => write!(f, "'!'"),
 
             Ident(val) => write!(f, "'{}'", val),
             ConstI(val) => write!(f, "'{}'", val),
