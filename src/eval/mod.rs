@@ -88,6 +88,31 @@ impl Evaluate for Expression {
                 });
                 vreg
             }
+
+            Identity(exp) => {
+                let exp = exp.eval(result, vreg_counter);
+                exp
+            }
+
+            Negate(exp) | BinNot(exp) | LogNot(exp) => {
+                let left = exp.eval(result, vreg_counter);
+                let right = *vreg_counter;
+                let vreg = *vreg_counter + 1;
+                *vreg_counter += 2;
+
+                result.push(match self.variant {
+                    Negate(..) | LogNot(..) => IRInstruction::Imm(IRSize::I32, right, 0),
+                    BinNot(..) => IRInstruction::Imm(IRSize::I32, right, -1),
+                    _ => unreachable!(),
+                });
+                result.push(match self.variant {
+                    Negate(..) => IRInstruction::Sub(IRSize::I32, vreg, right, left),
+                    BinNot(..) => IRInstruction::Xor(IRSize::I32, vreg, left, right),
+                    LogNot(..) => IRInstruction::Eq(IRSize::I32, vreg, left, right),
+                    _ => unreachable!(),
+                });
+                vreg
+            }
         }
     }
 }

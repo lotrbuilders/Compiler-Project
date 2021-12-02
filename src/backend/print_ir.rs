@@ -24,7 +24,9 @@ impl Display for IRInstruction {
             Add(size, result, left, right)
             | Sub(size, result, left, right)
             | Mul(size, result, left, right)
-            | Div(size, result, left, right) => {
+            | Div(size, result, left, right)
+            | Xor(size, result, left, right)
+            | Eq(size, result, left, right) => {
                 write!(f, "\t%{} = {} {} %{}, %{}", result, ins, size, left, right)
             }
 
@@ -42,6 +44,8 @@ impl Display for IRType {
             Sub => write!(f, "sub"),
             Mul => write!(f, "mul"),
             Div => write!(f, "div"),
+            Xor => write!(f, "xor"),
+            Eq => write!(f, "eq"),
             Ret => write!(f, "ret"),
         }
     }

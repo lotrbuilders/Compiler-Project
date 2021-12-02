@@ -39,5 +39,9 @@ pub enum ExpressionVariant {
     Subtract(Box<Expression>, Box<Expression>),
     Multiply(Box<Expression>, Box<Expression>),
     Divide(Box<Expression>, Box<Expression>),
+    Identity(Box<Expression>),
+    Negate(Box<Expression>),
+    BinNot(Box<Expression>),
+    LogNot(Box<Expression>),
     ConstI(i128),
 }

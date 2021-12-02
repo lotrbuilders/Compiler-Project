@@ -71,6 +71,22 @@ impl Display for Expression {
         use ExpressionVariant::*;
         match &self.variant {
             ConstI(value) => write!(f, "{}", value)?,
+
+            Identity(exp) | Negate(exp) | BinNot(exp) | LogNot(exp) => {
+                writeln!(
+                    f,
+                    "({} {})",
+                    match &self.variant {
+                        Identity(_) => '+',
+                        Negate(_) => '-',
+                        BinNot(_) => '~',
+                        LogNot(_) => '!',
+                        _ => unreachable!(),
+                    },
+                    exp
+                )?;
+            }
+
             Add(left, right)
             | Subtract(left, right)
             | Multiply(left, right)

@@ -97,6 +97,24 @@ impl Graph for Expression {
                 writeln!(buffer, "n{} [label=\"int {}\"]", number, value)?;
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
             }
+
+            Identity(exp) | Negate(exp) | BinNot(exp) | LogNot(exp) => {
+                writeln!(
+                    buffer,
+                    "n{} [label=\"{}\"]",
+                    number,
+                    match self.variant {
+                        Identity(_) => '+',
+                        Negate(_) => '-',
+                        BinNot(_) => '~',
+                        LogNot(_) => '!',
+                        _ => unreachable!(),
+                    }
+                )?;
+                writeln!(buffer, "n{} -- n{}", parent, number)?;
+                exp.graph(buffer, node_number, number)?;
+            }
+
             Add(left, right)
             | Subtract(left, right)
             | Multiply(left, right)

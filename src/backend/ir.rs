@@ -16,6 +16,10 @@ pub enum IRInstruction {
     Mul(IRSize, IRReg, IRReg, IRReg),
     Div(IRSize, IRReg, IRReg, IRReg),
 
+    Xor(IRSize, IRReg, IRReg, IRReg),
+
+    Eq(IRSize, IRReg, IRReg, IRReg),
+
     Ret(IRSize, IRReg),
 }
 
@@ -29,6 +33,10 @@ pub enum IRType {
     Sub,
     Mul,
     Div,
+
+    Xor,
+
+    Eq,
 
     Ret,
 }
@@ -46,11 +54,17 @@ impl IRInstruction {
     pub fn to_type(&self) -> IRType {
         match self {
             &Self::Imm(..) => IRType::Imm,
-            &Self::Ret(..) => IRType::Ret,
+
             &Self::Add(..) => IRType::Add,
             &Self::Sub(..) => IRType::Sub,
             &Self::Mul(..) => IRType::Mul,
             &Self::Div(..) => IRType::Div,
+
+            &Self::Xor(..) => IRType::Xor,
+
+            &Self::Eq(..) => IRType::Eq,
+
+            &Self::Ret(..) => IRType::Ret,
         }
     }
 
@@ -61,7 +75,9 @@ impl IRInstruction {
             | &Self::Add(_, _, left, _)
             | &Self::Sub(_, _, left, _)
             | &Self::Mul(_, _, left, _)
-            | &Self::Div(_, _, left, _) => Some(left),
+            | &Self::Div(_, _, left, _)
+            | &Self::Xor(_, _, left, _)
+            | &Self::Eq(_, _, left, _) => Some(left),
             _ => None,
         }
     }
@@ -72,7 +88,9 @@ impl IRInstruction {
             &Self::Add(_, _, _, right)
             | &Self::Sub(_, _, _, right)
             | &Self::Mul(_, _, _, right)
-            | &Self::Div(_, _, _, right) => Some(right),
+            | &Self::Div(_, _, _, right)
+            | &Self::Xor(_, _, _, right)
+            | &Self::Eq(_, _, _, right) => Some(right),
             _ => None,
         }
     }
@@ -84,7 +102,9 @@ impl IRInstruction {
             | &Self::Add(_, result, _, _)
             | &Self::Sub(_, result, _, _)
             | &Self::Mul(_, result, _, _)
-            | &Self::Div(_, result, _, _) => Some(result),
+            | &Self::Div(_, result, _, _)
+            | &Self::Xor(_, result, _, _)
+            | &Self::Eq(_, result, _, _) => Some(result),
             _ => None,
         }
     }
