@@ -118,8 +118,9 @@ macro_rules! expect {
                     Ok(token)
                 }
                 _ => {
-                    $self.recover(&$recover);
+                    log::debug!("Error from line {}",line!());
                     let loc = $self.peek_span();
+                    $self.recover(&$recover);
                     $self
                         .errors
                         .push(crate::error!(loc, $($exp,)* token));

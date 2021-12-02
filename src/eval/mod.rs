@@ -75,16 +75,15 @@ impl Evaluate for Expression {
             | Subtract(left, right)
             | Multiply(left, right)
             | Divide(left, right) => {
-                let _left = left.eval(result, vreg_counter);
-                let _right = right.eval(result, vreg_counter);
+                let left = left.eval(result, vreg_counter);
+                let right = right.eval(result, vreg_counter);
                 let vreg = *vreg_counter;
                 *vreg_counter += 1;
-                log::info!("Unimplemented evaluate");
                 result.push(match self.variant {
-                    Add(..) => IRInstruction::Imm(IRSize::I32, vreg, 0),
-                    Subtract(..) => IRInstruction::Imm(IRSize::I32, vreg, 0),
-                    Multiply(..) => IRInstruction::Imm(IRSize::I32, vreg, 0),
-                    Divide(..) => IRInstruction::Imm(IRSize::I32, vreg, 0),
+                    Add(..) => IRInstruction::Add(IRSize::I32, vreg, left, right),
+                    Subtract(..) => IRInstruction::Sub(IRSize::I32, vreg, left, right),
+                    Multiply(..) => IRInstruction::Mul(IRSize::I32, vreg, left, right),
+                    Divide(..) => IRInstruction::Div(IRSize::I32, vreg, left, right),
                     _ => unreachable!(),
                 });
                 vreg

@@ -29,17 +29,36 @@ impl Parser {
 
     fn parse_primary(&mut self) -> Result<Expression, ()> {
         let begin = self.peek_span();
-        let constant = expect!(self, TokenType::ConstI(_), RecoveryStrategy::UpTo(';'))?;
-        let value = match constant.token() {
-            TokenType::ConstI(value) => value,
-            _ => unreachable!(),
-        };
-        let span = begin.to(&constant.span());
-        Ok(Expression {
-            span,
-            ast_type: vec![Type::Int],
-            variant: ExpressionVariant::ConstI(value as i128),
-        })
+        match self.peek().map(|t| t.token()) {
+            Some(TokenType::LParenthesis) => {
+                self.next();
+                let expr = self.parse_expression();
+                let _ = expect!(
+                    self,
+                    TokenType::RParenthesis,
+                    RecoveryStrategy::or(RecoveryStrategy::Until(')'), RecoveryStrategy::UpTo(';'))
+                );
+                //let span=begin.to(self.peek_span());
+                expr
+            }
+            Some(TokenType::ConstI(value)) => {
+                self.next();
+                Ok(Expression {
+                    span: begin,
+                    ast_type: vec![Type::Int],
+                    variant: ExpressionVariant::ConstI(value as i128),
+                })
+            }
+            Some(t) => {
+                log::info!("Unexpected token {:?}", t);
+                Err(())
+            }
+            None => {
+                self.errors
+                    .push(crate::error!(begin, "Unexpected end of file"));
+                Err(())
+            }
+        }
     }
 }
 

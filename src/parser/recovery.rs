@@ -53,9 +53,12 @@ impl Parser {
                 result
             }
             &RecoveryStrategy::UntilBraced(c) => {
-                let result = is_closing_brace(c) || (token.token() == punct(c));
+                let result =
+                    (token.token() == punct(c)) || (token.token() == punct(to_open_brace(c)));
                 if result {
-                    self.next();
+                    if !is_closed_brace(c) {
+                        self.next();
+                    }
                     self.recover_braced(c);
                 }
                 result
@@ -99,10 +102,19 @@ fn get_braces(c: char) -> (TokenType, TokenType) {
     }
 }
 
-fn is_closing_brace(c: char) -> bool {
+fn is_closed_brace(c: char) -> bool {
     match c {
         '}' | ']' | ')' => true,
         _ => false,
+    }
+}
+
+fn to_open_brace(c: char) -> char {
+    match c {
+        '}' => '{',
+        ']' => '[',
+        ')' => '(',
+        _ => c,
     }
 }
 

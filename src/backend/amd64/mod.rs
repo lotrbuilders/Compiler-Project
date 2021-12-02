@@ -1,5 +1,11 @@
+use std::vec;
+
 use super::ir::*;
 use super::Backend;
+mod ralloc;
+mod registers;
+use self::ralloc::*;
+use self::registers::*;
 
 //#[allow(dead_code)]
 /*pub struct BackendAMD64 {
@@ -9,52 +15,12 @@ use super::Backend;
 
 rburg::rburg_main! {
     BackendAMD64,
-:       Ret(_a %eax) "#\n"
-%ireg:  Imm(#i) "mov {res},{i}\n" {1}
-}
-
-//Currently only caller safed registers
-// Registers classes that are used. Should be automatically generated
-const REG_COUNT: usize = 6;
-const REG_CLASS_EAX: [bool; REG_COUNT] = [true, false, false, false, false, false];
-const REG_CLASS_IREG: [bool; REG_COUNT] = [true; REG_COUNT];
-const REG_CLASS_EMPTY: [bool; REG_COUNT] = [false; REG_COUNT];
-const REG_LOOKUP: [Register; REG_COUNT] = {
-    use Register::*;
-    [Rax, Rcx, Rdx, R8, R9, R10]
-};
-
-// An enum for all available registers to show effects
-#[derive(Clone, Debug, Copy)]
-enum Register {
-    Rax = 0,
-    Rcx = 1,
-    Rdx = 2,
-    R8 = 3,
-    R9 = 4,
-    R10 = 5,
-}
-impl Register {
-    pub fn to_string(&self) -> &'static str {
-        match self {
-            Self::Rax => "eax",
-            Self::Rcx => "ecx",
-            Self::Rdx => "edx",
-            Self::R8 => "r8d",
-            Self::R9 => "r9d",
-            Self::R10 => "r10d",
-        }
-    }
-}
-
-// A vector of this is added to the instruction
-// Shows operation that need to happen to make modifications to the register file
-#[allow(dead_code)]
-#[derive(Clone, Debug)]
-enum RegisterRelocation {
-    Move(u32, Register), //from to
-    Spill(Register),
-    Reload(Register),
+:       Ret(_a %eax)               "#\n"
+%ireg:  Imm(#i)                    "mov  {res}, {i}\n"   {1}
+%ireg:  Add(a %ireg , b %ireg)    ?"add  {res}, {b} ; {res} = {a} + {b}\n"   {1}
+%ireg:  Sub(a %ireg , b %ireg)    ?"sub  {res}, {b} ; {res} = {a} - {b}\n"   {1}
+%ireg:  Mul(a %ireg , b %ireg)    ?"imul {res}, {b} ; {res} = {a} * {b}\n"   {1}
+%ireg:  Div(a %ireg , b %ireg)    ?"sub edx,edx\n\tidiv {b}        ; {res} = {a} / {b}\n"   {1}
 }
 
 impl Backend for BackendAMD64 {
@@ -138,11 +104,23 @@ impl BackendAMD64 {
         true
     }
 
+    fn clobber(&self, index: usize) -> Vec<Register> {
+        let instruction = &self.instructions[index];
+        use IRInstruction::*;
+        match instruction {
+            Div(..) => vec![Register::Rdx],
+            _ => Vec::new(),
+        }
+    }
+
     // Should be automatically generated
     // Emits handwritten assembly if necessary, otherwise uses the automatic generated function
-    fn emit_asm(&self) -> String {
+    fn emit_asm(&mut self) -> String {
         let mut result = self.emit_prologue();
         for instruction in 0..self.instructions.len() {
+            for modification in &self.reg_relocations[instruction] {
+                self.emit_move(modification);
+            }
             let handwritten = self.emit_asm2(instruction);
             if let Some(assembly) = handwritten {
                 result.push_str(&assembly);
@@ -176,99 +154,11 @@ impl BackendAMD64 {
         )
     }
 
-    // Should be generated in a seperate file preferably
-    // Allocates registers for an entire function
-    fn allocate_registers(&mut self) -> () {
-        let length = self.definition_index.len();
-        let mut last_use = vec![0u32; length];
-        let mut first_use = vec![u32::MAX; length];
-        let mut preferred_class: Vec<[bool; REG_COUNT]> = vec![REG_CLASS_IREG; length];
-        for i in (0..self.instructions.len()).rev() {
-            let rule = self.rules[i];
-            if self.is_instruction(rule) {
-                let (used_vreg, result_vreg) = self.get_vregisters(i as u32, rule);
-
-                if let Some(vreg) = result_vreg {
-                    first_use[vreg as usize] = i as u32;
-                }
-                for (vreg, class) in used_vreg {
-                    last_use[vreg as usize] = i as u32;
-                    if class != &REG_CLASS_IREG {
-                        preferred_class[vreg as usize] = *class;
-                    }
-                }
-            }
+    fn emit_move(&self, modification: &RegisterRelocation) -> String {
+        use RegisterRelocation::*;
+        match modification {
+            &TwoAddressMove(from, to) => format!("\tmov {},{}\n", to, from),
+            _ => unimplemented!(),
         }
-        log::debug!("Initialization of vregisters:\n{:?}", first_use);
-        log::debug!("First use of vregisters:\n{:?}", last_use);
-
-        let mut reg_occupied_by: [Option<u32>; REG_COUNT] = [None; REG_COUNT];
-        let mut vreg2reg: Vec<Option<Register>> = vec![None; length];
-        let mut vreg2reg_original = vreg2reg.clone();
-
-        for instruction in 0..self.instructions.len() {
-            let rule = self.rules[instruction];
-            if self.is_instruction(self.rules[instruction]) {
-                // Implement clobber
-                // Implement two address solving
-
-                let (used_vreg, result_vreg) = self.get_vregisters(instruction as u32, rule);
-
-                // perform register allocation if necessary
-                let _result_reg = if let Some(vreg) = result_vreg {
-                    let mut assigned_reg = None;
-                    for i in 0..REG_COUNT {
-                        let reg = REG_LOOKUP[i];
-                        // Will also need to be dependent on the used register class eventually
-                        // Skip unavailable registers
-                        if !REG_CLASS_IREG[i] {
-                            continue;
-                        }
-                        // Skip occupied registers
-                        if reg_occupied_by[reg as usize] != None {
-                            continue;
-                        } else {
-                            log::trace!("Using register {} for vreg {}", reg.to_string(), vreg);
-                            reg_occupied_by[reg as usize] = Some(vreg);
-                            vreg2reg[vreg as usize] = Some(reg);
-                            vreg2reg_original[vreg as usize] = Some(reg);
-                            assigned_reg = Some(reg);
-                            break;
-                        }
-                    }
-                    if let None = assigned_reg {
-                        // Should do a relocation or spill
-                        log::error!("No register available and no solution currently implemented")
-                    }
-
-                    assigned_reg
-                } else {
-                    None
-                };
-
-                // perform register relocation if necessary
-                for (_vreg, _class) in used_vreg {}
-
-                // If something has gone out of scope: remove it
-                for i in 0..length {
-                    if instruction == last_use[i] as usize {
-                        let reg = vreg2reg[i].unwrap();
-                        reg_occupied_by[reg as usize] = None;
-                        vreg2reg[i] = None;
-                    }
-                }
-            }
-        }
-
-        self.vreg2reg = vreg2reg_original.iter().map(|reg| reg.unwrap()).collect();
-        self.reg_relocations = vec![Vec::new(); self.instructions.len()];
-
-        log::debug!(
-            "vreg2reg at start {:?}",
-            self.vreg2reg
-                .iter()
-                .map(|reg| reg.to_string())
-                .collect::<Vec<&str>>()
-        );
     }
 }
