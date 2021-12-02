@@ -63,6 +63,7 @@ fn test_valid(dir: &Path, failures: &mut Vec<String>) -> io::Result<i32> {
         let file = file?;
         let path = file.path();
         if is_c_file(&path) {
+            eprintln!("Testing {}", path.to_str().unwrap());
             let options = get_options(&path);
             match utcc::driver::drive(options.clone()) {
                 Err(()) => {
@@ -120,6 +121,7 @@ fn test_invalid(dir: &Path, failures: &mut Vec<String>) -> io::Result<i32> {
         let file = file?;
         let path = file.path();
         if is_c_file(&path) {
+            eprintln!("Testing {}", path.to_str().unwrap());
             let options = get_options(&path);
             match utcc::driver::drive(options.clone()) {
                 Err(()) => (),

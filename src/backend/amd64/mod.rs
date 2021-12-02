@@ -16,11 +16,13 @@ use self::registers::*;
 rburg::rburg_main! {
     BackendAMD64,
 :       Ret(_a %eax)               "#\n"
-%ireg:  Imm(#i)                    "mov  {res}, {i}\n"   {1}
-%ireg:  Add(a %ireg , b %ireg)    ?"add  {res}, {b} ; {res} = {a} + {b}\n"   {1}
-%ireg:  Sub(a %ireg , b %ireg)    ?"sub  {res}, {b} ; {res} = {a} - {b}\n"   {1}
+%ireg:  Imm(#i)                    "mov {res}, {i}\n"   {1}
+%ireg:  Add(a %ireg , b %ireg)    ?"add {res}, {b} ; {res} = {a} + {b}\n"   {1}
+%ireg:  Sub(a %ireg , b %ireg)    ?"sub {res}, {b} ; {res} = {a} - {b}\n"   {1}
 %ireg:  Mul(a %ireg , b %ireg)    ?"imul {res}, {b} ; {res} = {a} * {b}\n"   {1}
-%ireg:  Div(a %ireg , b %ireg)    ?"sub edx,edx\n\tidiv {b}        ; {res} = {a} / {b}\n"   {1}
+%eax:   Div(a %eax  , b %ireg)    ?"sub edx,edx\n\tidiv {b} ; {res} = {a} / {b}\n"    {1}
+%ireg:  Xor(a %ireg , b %ireg)    ?"xor {res}, {b} ; {res} = {a} ^ {b}\n"   {1}
+%ireg:  Eq (a %ireg , b %ireg)     "cmp {a}, {b}\n\tsete {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n " {1}
 }
 
 impl Backend for BackendAMD64 {
@@ -119,7 +121,13 @@ impl BackendAMD64 {
         let mut result = self.emit_prologue();
         for instruction in 0..self.instructions.len() {
             for modification in &self.reg_relocations[instruction] {
-                self.emit_move(modification);
+                result.push_str(&self.emit_move(modification));
+                use RegisterRelocation::*;
+                match modification {
+                    &Move(vreg, to) => self.vreg2reg[vreg as usize] = to,
+                    TwoAddressMove(..) => continue,
+                    _ => unimplemented!(),
+                }
             }
             let handwritten = self.emit_asm2(instruction);
             if let Some(assembly) = handwritten {
@@ -158,6 +166,10 @@ impl BackendAMD64 {
         use RegisterRelocation::*;
         match modification {
             &TwoAddressMove(from, to) => format!("\tmov {},{}\n", to, from),
+            &Move(vreg, to) => {
+                let from = self.vreg2reg[vreg as usize];
+                format!("\tmov {},{}\n", to, from)
+            }
             _ => unimplemented!(),
         }
     }

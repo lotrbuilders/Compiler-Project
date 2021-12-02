@@ -34,6 +34,10 @@ pub enum Register {
 }
 impl Register {
     pub fn to_string(&self) -> &'static str {
+        self.to_string_i32()
+    }
+
+    pub fn to_string_i32(&self) -> &'static str {
         match self {
             Self::Rax => "eax",
             Self::Rcx => "ecx",
@@ -43,11 +47,28 @@ impl Register {
             Self::R10 => "r10d",
         }
     }
+
+    pub fn to_string_i8(&self) -> &'static str {
+        match self {
+            Self::Rax => "al",
+            Self::Rcx => "cl",
+            Self::Rdx => "dl",
+            Self::R8 => "r8l",
+            Self::R9 => "r9l",
+            Self::R10 => "r10l",
+        }
+    }
 }
 
 impl Display for Register {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        match f.precision() {
+            Some(8) => write!(f, "{}", self.to_string_i8())?,
+            Some(32) => write!(f, "{}", self.to_string_i32())?,
+            Some(s) => log::error!("Unsupported precision {}", s),
+            None => write!(f, "{}", self.to_string())?,
+        }
+        Ok(())
     }
 }
 

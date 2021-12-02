@@ -13,7 +13,7 @@ impl Parser {
     // <expression> ::= <primary-expression> | <expression> <bin-op> <expression>
     // <bin-op> ::= '+' | '-' | '*' | '/'
     fn pratt_parse(&mut self, min_bp: u8) -> Result<Expression, ()> {
-        let mut left = self.parse_primary()?;
+        let mut left = self.parse_unary()?;
         while let Some(token) = is_binary_operator(self.peek()) {
             let (l_bp, r_bp) = binding_power(&token);
             if l_bp < min_bp {
@@ -27,6 +27,20 @@ impl Parser {
         Ok(left)
     }
 
+    fn parse_unary(&mut self) -> Result<Expression, ()> {
+        use TokenType::*;
+        let token = self.peek();
+        let exp = match token.clone().map(|t| t.token()) {
+            Some(Plus) | Some(Minus) | Some(Tilde) | Some(Exclamation) => {
+                self.next();
+                let exp = self.parse_unary()?;
+                new_unary_expression(&token.unwrap(), exp)
+            }
+            _ => self.parse_primary()?,
+        };
+        Ok(exp)
+    }
+
     fn parse_primary(&mut self) -> Result<Expression, ()> {
         let begin = self.peek_span();
         match self.peek().map(|t| t.token()) {
@@ -38,7 +52,6 @@ impl Parser {
                     TokenType::RParenthesis,
                     RecoveryStrategy::or(RecoveryStrategy::Until(')'), RecoveryStrategy::UpTo(';'))
                 );
-                //let span=begin.to(self.peek_span());
                 expr
             }
             Some(TokenType::ConstI(value)) => {
@@ -49,8 +62,16 @@ impl Parser {
                     variant: ExpressionVariant::ConstI(value as i128),
                 })
             }
-            Some(t) => {
-                log::info!("Unexpected token {:?}", t);
+            Some(_) => {
+                self.errors.push(crate::error!(
+                    begin,
+                    "Expected expression. Found {}",
+                    self.peek().unwrap()
+                ));
+                self.recover(&RecoveryStrategy::or(
+                    RecoveryStrategy::UpTo(')'),
+                    RecoveryStrategy::UpTo(';'),
+                ));
                 Err(())
             }
             None => {
@@ -99,6 +120,24 @@ fn new_binary_expression(token: &Token, left: Expression, right: Expression) -> 
         TokenType::Minus => Subtract(left, right),
         TokenType::Asterisk => Multiply(left, right),
         TokenType::Divide => Divide(left, right),
+        _ => unreachable!(),
+    };
+    Expression {
+        span,
+        ast_type: Vec::new(),
+        variant,
+    }
+}
+
+fn new_unary_expression(token: &Token, exp: Expression) -> Expression {
+    let span = token.span().clone();
+    let exp = Box::new(exp);
+    use ExpressionVariant::*;
+    let variant = match token.token() {
+        TokenType::Plus => Identity(exp),
+        TokenType::Minus => Negate(exp),
+        TokenType::Tilde => BinNot(exp),
+        TokenType::Exclamation => LogNot(exp),
         _ => unreachable!(),
     };
     Expression {

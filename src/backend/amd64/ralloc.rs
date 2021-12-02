@@ -115,10 +115,27 @@ impl BackendAMD64 {
 
         let (used_vregs, result_vreg) = self.get_vregisters(index, rule);
 
+        let used_regs: RegisterClass = assignments
+            .reg_occupied_by
+            .iter()
+            .filter_map(|&vreg| vreg)
+            .map(|vreg| assignments.vreg2reg[vreg as usize].unwrap())
+            .collect();
+
         for (vreg, class) in &used_vregs {
-            let reg = assignments.vreg2reg[*vreg as usize].unwrap();
+            let vreg = *vreg;
+            let reg = assignments.vreg2reg[vreg as usize].unwrap();
             if !class[reg] {
-                unimplemented!();
+                if let Some(reg) = try_allocate(&((*class).clone() - used_regs.clone())) {
+                    assignments.reg_relocations[index as usize]
+                        .push(RegisterRelocation::Move(vreg, reg));
+                    assignments.reg_occupied_by
+                        [assignments.vreg2reg[vreg as usize].unwrap() as usize] = None;
+                    assignments.reg_occupied_by[reg as usize] = Some(vreg);
+                    assignments.vreg2reg[vreg as usize] = Some(reg);
+                } else {
+                    unimplemented!();
+                }
             }
         }
 
