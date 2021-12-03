@@ -57,6 +57,23 @@ impl Display for Statement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use Statement::*;
         match self {
+            Declaration {
+                span: _,
+                ident,
+                decl_type,
+                init,
+            } => {
+                write!(f, "{} {}", type2string(decl_type), ident)?;
+                if let Some(exp) = init {
+                    writeln!(f, "= {};", exp)?;
+                } else {
+                    writeln!(f, ";")?;
+                }
+            }
+            Expression {
+                span: _,
+                expression,
+            } => writeln!(f, "{}", expression)?,
             Return {
                 span: _,
                 expression,
@@ -71,6 +88,7 @@ impl Display for Expression {
         use ExpressionVariant::*;
         match &self.variant {
             ConstI(value) => write!(f, "{}", value)?,
+            Ident(name) => write!(f, "{}", name)?,
 
             Identity(exp) | Negate(exp) | BinNot(exp) | LogNot(exp) => {
                 writeln!(
@@ -87,7 +105,8 @@ impl Display for Expression {
                 )?;
             }
 
-            Add(left, right)
+            Assign(left, right)
+            | Add(left, right)
             | Subtract(left, right)
             | Multiply(left, right)
             | Divide(left, right) => {
@@ -96,6 +115,7 @@ impl Display for Expression {
                     "({} {} {})",
                     left,
                     match self.variant {
+                        Assign(..) => '=',
                         Add(..) => '+',
                         Subtract(..) => '-',
                         Multiply(..) => '*',

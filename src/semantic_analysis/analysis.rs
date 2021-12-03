@@ -36,6 +36,23 @@ impl Analysis for Statement {
                 span: _,
                 expression,
             } => expression.analyze(analyzer),
+            Declaration {
+                span: _,
+                ident: _,
+                decl_type: _,
+                init,
+            } => {
+                if let Some(init) = init {
+                    init.analyze(analyzer);
+                }
+                todo!()
+            }
+            Expression {
+                span: _,
+                expression,
+            } => {
+                expression.analyze(analyzer);
+            }
         }
     }
 }

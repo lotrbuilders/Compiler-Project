@@ -19,6 +19,7 @@ pub enum TokenType {
     Semicolon,
 
     //Operators symbols
+    Assign,
     Plus,
     Minus,
     Asterisk,
@@ -68,6 +69,7 @@ impl From<char> for TokenType {
             '(' => LParenthesis,
             ')' => RParenthesis,
             ';' => Semicolon,
+            '=' => Assign,
             '+' => Plus,
             '-' => Minus,
             '*' => Asterisk,
@@ -116,6 +118,7 @@ impl Display for Token {
             RParenthesis => write!(f, "')'"),
             Semicolon => write!(f, "';'"),
 
+            Assign => write!(f, "'='"),
             Plus => write!(f, "'+'"),
             Minus => write!(f, "'-'"),
             Asterisk => write!(f, "'*'"),

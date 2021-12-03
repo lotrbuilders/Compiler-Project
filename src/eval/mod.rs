@@ -49,6 +49,23 @@ impl Evaluate for Statement {
     fn eval(&self, result: &mut Vec<IRInstruction>, vreg_counter: &mut u32) -> u32 {
         use Statement::*;
         match self {
+            Declaration {
+                span: _,
+                ident,
+                decl_type: _,
+                init,
+            } => {
+                let _ = (ident, init);
+                todo!()
+            }
+
+            Expression {
+                span: _,
+                expression,
+            } => {
+                expression.eval(result, vreg_counter);
+            }
+
             Return {
                 span: _,
                 expression,
@@ -71,6 +88,14 @@ impl Evaluate for Expression {
                 result.push(IRInstruction::Imm(IRSize::I32, vreg, value));
                 vreg
             }
+
+            Ident(_name) => todo!(),
+
+            Assign(_left, right) => {
+                let _right = right.eval(result, vreg_counter);
+                todo!();
+            }
+
             Add(left, right)
             | Subtract(left, right)
             | Multiply(left, right)

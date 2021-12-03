@@ -69,6 +69,23 @@ impl Graph for Statement {
         let number = *node_number;
         use Statement::*;
         match self {
+            Declaration {
+                span: _,
+                ident,
+                decl_type: _,
+                init,
+            } => {
+                writeln!(buffer, "n{} [label=\"declaration {}\"]", number, ident)?;
+                if let Some(init) = init {
+                    init.graph(buffer, node_number, number)?;
+                }
+            }
+            Expression {
+                span: _,
+                expression,
+            } => {
+                expression.graph(buffer, node_number, parent)?;
+            }
             Return {
                 span: _,
                 expression,
@@ -97,6 +114,10 @@ impl Graph for Expression {
                 writeln!(buffer, "n{} [label=\"int {}\"]", number, value)?;
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
             }
+            Ident(name) => {
+                writeln!(buffer, "n{} [label=\"identifier {}\"]", number, name)?;
+                writeln!(buffer, "n{} -- n{}", parent, number)?;
+            }
 
             Identity(exp) | Negate(exp) | BinNot(exp) | LogNot(exp) => {
                 writeln!(
@@ -115,7 +136,8 @@ impl Graph for Expression {
                 exp.graph(buffer, node_number, number)?;
             }
 
-            Add(left, right)
+            Assign(left, right)
+            | Add(left, right)
             | Subtract(left, right)
             | Multiply(left, right)
             | Divide(left, right) => {
@@ -124,6 +146,7 @@ impl Graph for Expression {
                     "n{} [label=\"{}\"]",
                     number,
                     match self.variant {
+                        Assign(..) => '=',
                         Add(..) => '+',
                         Subtract(..) => '-',
                         Multiply(..) => '*',

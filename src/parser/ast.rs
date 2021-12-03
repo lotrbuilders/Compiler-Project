@@ -21,7 +21,20 @@ pub struct ExternalDeclaration {
 // Represents all possible statements
 #[derive(Debug, Clone)]
 pub enum Statement {
-    Return { span: Span, expression: Expression },
+    Return {
+        span: Span,
+        expression: Expression,
+    },
+    Expression {
+        span: Span,
+        expression: Expression,
+    },
+    Declaration {
+        span: Span,
+        ident: String,
+        decl_type: Vec<Type>,
+        init: Option<Expression>,
+    },
 }
 
 // Expression has a seperate expression variant
@@ -35,6 +48,7 @@ pub struct Expression {
 
 #[derive(Debug, Clone)]
 pub enum ExpressionVariant {
+    Assign(Box<Expression>, Box<Expression>),
     Add(Box<Expression>, Box<Expression>),
     Subtract(Box<Expression>, Box<Expression>),
     Multiply(Box<Expression>, Box<Expression>),
@@ -44,4 +58,5 @@ pub enum ExpressionVariant {
     BinNot(Box<Expression>),
     LogNot(Box<Expression>),
     ConstI(i128),
+    Ident(String),
 }
