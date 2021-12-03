@@ -25,7 +25,7 @@ rburg::rburg_main! {
 %ireg:  Sub(Imm(#_i), b %ireg)    ?"neg {res} ; {res} = -{b}\n"             {self.range(self.get_left_index(index),0,0)+1}
 
 %ireg:  Mul(a %ireg , b %ireg)    ?"imul {res}, {b} ; {res} = {a} * {b}\n"   {1}
-%eax:   Div(a %eax  , b %ireg)    ?"sub edx,edx\n\tidiv {b} ; {res} = {a} / {b}\n"    {1}
+%eax:   Div(a %eax  , b %ireg)    ?"cdq\n\tidiv {b} ; {res} = {a} / {b}\n"    {1}
 
 %ireg:  Xor(a %ireg , b %ireg)    ?"xor {res}, {b} ; {res} = {a} ^ {b}\n"   {1}
 %ireg:  Xor(a %ireg , Imm(#_i))   ?"not {res} ; {res} = ~{a}\n"             {self.range(self.get_right_index(index),-1,-1)+1}
