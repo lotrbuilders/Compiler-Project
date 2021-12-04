@@ -30,7 +30,7 @@ impl Parser {
     fn parse_unary(&mut self) -> Result<Expression, ()> {
         use TokenType::*;
         let token = self.peek();
-        let exp = match token.clone().map(|t| t.token()) {
+        let exp = match self.peek_type() {
             Some(Plus) | Some(Minus) | Some(Tilde) | Some(Exclamation) => {
                 self.next();
                 let exp = self.parse_unary()?;
@@ -43,7 +43,7 @@ impl Parser {
 
     fn parse_primary(&mut self) -> Result<Expression, ()> {
         let begin = self.peek_span();
-        match self.peek().map(|t| t.token()) {
+        match self.peek_type() {
             Some(TokenType::LParenthesis) => {
                 self.next();
                 let expr = self.parse_expression();
@@ -60,6 +60,14 @@ impl Parser {
                     span: begin,
                     ast_type: vec![Type::Int],
                     variant: ExpressionVariant::ConstI(value as i128),
+                })
+            }
+            Some(TokenType::Ident(name)) => {
+                self.next();
+                Ok(Expression {
+                    span: begin,
+                    ast_type: Vec::new(),
+                    variant: ExpressionVariant::Ident(name),
                 })
             }
             Some(_) => {
@@ -88,9 +96,15 @@ fn left_associative(bp: u8) -> (u8, u8) {
     (bp, bp + 1)
 }
 
+fn right_associative(bp: u8) -> (u8, u8) {
+    let bp = bp * 2 + 1;
+    (bp + 1, bp)
+}
+
 fn binding_power(token: &Token) -> (u8, u8) {
     use TokenType::*;
     match token.token() {
+        Assign => right_associative(1),
         Plus | Minus => left_associative(9),
         Asterisk | Divide => left_associative(10),
         _ => {
@@ -104,7 +118,7 @@ fn is_binary_operator(token: Option<Token>) -> Option<Token> {
     token.filter(|t| {
         use TokenType::*;
         match t.token() {
-            Plus | Minus | Asterisk | Divide => true,
+            Plus | Minus | Asterisk | Divide | Assign => true,
             _ => false,
         }
     })
@@ -116,6 +130,7 @@ fn new_binary_expression(token: &Token, left: Expression, right: Expression) -> 
     let right = Box::new(right);
     use ExpressionVariant::*;
     let variant = match token.token() {
+        TokenType::Assign => Assign(left, right),
         TokenType::Plus => Add(left, right),
         TokenType::Minus => Subtract(left, right),
         TokenType::Asterisk => Multiply(left, right),

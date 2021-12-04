@@ -43,3 +43,23 @@ impl From<Token> for Type {
         }
     }
 }
+
+pub fn type2string(typ: &[Type]) -> String {
+    let mut result = String::new();
+    if typ.is_empty() {
+        return result;
+    }
+    for i in (0..=(typ.len() - 1)).rev() {
+        use Type::*;
+        match &typ[i] {
+            Int => result.push_str("int "),
+            Name(name) => result.push_str(&name),
+            Function(_) => {
+                //Extend later when functions are fully implemented
+                result.push_str(&format!("{}()", type2string(&typ[0..i])));
+                break;
+            }
+        };
+    }
+    result
+}

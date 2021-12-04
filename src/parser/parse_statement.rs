@@ -1,4 +1,5 @@
 use super::ast::*;
+use super::r#type::*;
 use super::recovery::RecoveryStrategy;
 use super::Parser;
 use crate::error;
@@ -36,13 +37,66 @@ impl Parser {
     // <statement> ::= return <expression> ';'
     fn parse_statement(&mut self) -> Result<Statement, ()> {
         let begin = self.peek_span();
-        expect!(self, TokenType::Return, RecoveryStrategy::Until(';'))?;
-        let expression = self.parse_expression();
-        let _ = expect!(self, TokenType::Semicolon, RecoveryStrategy::Nothing);
+        use TokenType::*;
+        match self.peek_type() {
+            Some(_) if Parser::is_type_qualifier(&self.peek().unwrap()) => {
+                self.parse_local_declaration()
+            }
 
-        //Expression is unwrapped here to first parse semicolon first
-        let expression = expression?;
-        let span = begin.to(&self.peek_span());
-        Ok(Statement::Return { span, expression })
+            Some(Return) => {
+                self.next();
+                let expression = self.parse_expression();
+                let _ = expect!(self, TokenType::Semicolon, RecoveryStrategy::Nothing);
+
+                //Expression is unwrapped here to first parse semicolon first
+                let expression = expression?;
+                let span = begin.to(&self.peek_span());
+                Ok(Statement::Return { span, expression })
+            }
+
+            Some(_) => {
+                let expression = self.parse_expression();
+                let _ = expect!(self, TokenType::Semicolon, RecoveryStrategy::Nothing);
+
+                //Expression is unwrapped here to first parse semicolon first
+                let expression = expression?;
+                let span = begin.to(&self.peek_span());
+                Ok(Statement::Expression { span, expression })
+            }
+
+            None => Err(()),
+        }
+
+        //expect!(self, TokenType::Return, RecoveryStrategy::Until(';'))?;
+    }
+
+    fn parse_local_declaration(&mut self) -> Result<Statement, ()> {
+        let begin = self.peek_span();
+        let decl_type = self.parse_declaration()?;
+        let ident = Type::get_name(&decl_type).unwrap_or_else(|| {
+            let span = begin.to(&self.peek_span());
+            self.errors
+                .push(error!(span, "Missing identifier in declaration"));
+            "name".to_string()
+        });
+
+        let init = if let Some(TokenType::Assign) = self.peek_type() {
+            self.next();
+            if let Ok(init) = self.parse_expression() {
+                Some(init)
+            } else {
+                None
+            }
+        } else {
+            let _ = expect!(self, TokenType::Semicolon, RecoveryStrategy::Nothing);
+            None
+        };
+
+        Ok(Statement::Declaration {
+            span: begin.to(&self.peek_span()),
+            ident,
+            decl_type,
+            init,
+        })
     }
 }

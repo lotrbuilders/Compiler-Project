@@ -1,7 +1,9 @@
 mod analysis;
 mod expression_analysis;
+mod symbol_table;
 mod type_checking;
 use self::analysis::Analysis;
+use self::symbol_table::SymbolTable;
 use crate::parser::ast::*;
 
 // The semantic analyzer checks the entire syntax tree for problems
@@ -10,11 +12,15 @@ use crate::parser::ast::*;
 #[derive(Clone, Debug)]
 pub struct SemanticAnalyzer {
     errors: Vec<String>,
+    symbol_table: SymbolTable,
 }
 
 impl SemanticAnalyzer {
     pub fn new() -> SemanticAnalyzer {
-        SemanticAnalyzer { errors: Vec::new() }
+        SemanticAnalyzer {
+            errors: Vec::new(),
+            symbol_table: SymbolTable::new(),
+        }
     }
 
     pub fn analyze(&mut self, translation_unit: &mut TranslationUnit) -> Result<(), Vec<String>> {

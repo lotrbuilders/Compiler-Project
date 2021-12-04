@@ -1,5 +1,5 @@
 use super::ast::*;
-use super::r#type::Type;
+use super::r#type::type2string;
 use std::fmt;
 use std::fmt::Display;
 
@@ -7,25 +7,6 @@ use std::fmt::Display;
 // The print-out should be valid c code to allow for relexing and reparsing
 
 // Allows the conversion of a type into a String representing the type as used in C
-fn type2string(typ: &[Type]) -> String {
-    let mut result = String::new();
-    if typ.is_empty() {
-        return result;
-    }
-    for i in (0..=(typ.len() - 1)).rev() {
-        use Type::*;
-        match &typ[i] {
-            Int => result.push_str("int "),
-            Name(name) => result.push_str(&name),
-            Function(_) => {
-                //Extend later when functions are fully implemented
-                result.push_str(&format!("{}()", type2string(&typ[0..i])));
-                break;
-            }
-        };
-    }
-    result
-}
 
 impl Display for TranslationUnit {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
