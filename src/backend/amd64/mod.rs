@@ -276,6 +276,7 @@ impl BackendAMD64 {
                 use_count[right as usize] += 1;
             }
         }
+        log::debug!("Use count: {:?}", use_count);
         use_count
     }
 }

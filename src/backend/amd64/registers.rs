@@ -196,6 +196,16 @@ impl Sub for RegisterClass {
     }
 }
 
+impl Display for RegisterClass {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[")?;
+        for reg in self.iter() {
+            write!(f, "{},", reg)?;
+        }
+        write!(f, "]")
+    }
+}
+
 #[derive(Clone)]
 pub struct RegisterClassIterRef<'a> {
     class: &'a RegisterClass,

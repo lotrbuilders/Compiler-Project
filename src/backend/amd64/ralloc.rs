@@ -45,7 +45,9 @@ impl BackendAMD64 {
                 }
                 for (vreg, class) in used_vreg {
                     uses[vreg as usize].push(i as u32);
-                    last_use[vreg as usize] = i as u32;
+                    if last_use[vreg as usize] == 0 {
+                        last_use[vreg as usize] = i as u32;
+                    }
                     if class != &REG_CLASS_IREG {
                         preferred_class[vreg as usize] = &class;
                     }
@@ -124,7 +126,16 @@ impl BackendAMD64 {
 
         for (vreg, class) in &used_vregs {
             let vreg = *vreg;
-            let reg = assignments.vreg2reg[vreg as usize].unwrap();
+            let reg = assignments.vreg2reg[vreg as usize];
+            if let None = reg {
+                log::error!(
+                    "vreg {} does not have a correctly assigned register in vreg2reg {}",
+                    vreg,
+                    class
+                );
+                unreachable!()
+            }
+            let reg = reg.unwrap();
             if !class[reg] {
                 if let Some(reg) = try_allocate(&((*class).clone() - used_regs.clone())) {
                     assignments.reg_relocations[index as usize]
