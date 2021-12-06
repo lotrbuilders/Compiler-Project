@@ -15,7 +15,7 @@ use self::registers::*;
 
 rburg::rburg_main! {
     BackendAMD64,
-:       Ret(_a %eax)               "#\n"
+:       Ret i32(_a %eax)               "#\n"
 :       Store(r %ireg, AddrL(#a))  "mov [ebp{a}],{r}\n"     {1}
 
 %ireg:  Imm(#i)                    "mov {res}, {i}\n"       {1}
@@ -50,6 +50,7 @@ impl Backend for BackendAMD64 {
         self.function_name = function.name.clone();
         self.instructions = function.instructions.clone();
         self.definition_index = get_definition_indices(&function.instructions);
+        self.use_count = BackendAMD64::get_use_count(&self.instructions, &self.definition_index);
         self.instruction_states = vec![State::new(); self.instructions.len()];
         self.rules = vec![0xffff; self.instructions.len()];
 
@@ -252,7 +253,7 @@ impl BackendAMD64 {
         let result = variable_types
             .iter()
             .map(|typ| match typ {
-                IRSize::I32 => {
+                IRSize::S32 | IRSize::I32 => {
                     offset += -4;
                     offset
                 }
@@ -263,5 +264,18 @@ impl BackendAMD64 {
             })
             .collect();
         (result, -offset + 4)
+    }
+
+    fn get_use_count(instructions: &Vec<IRInstruction>, definitions: &Vec<u32>) -> Vec<u32> {
+        let mut use_count = vec![0u32; definitions.len()];
+        for instruction in instructions {
+            if let Some(left) = instruction.get_left() {
+                use_count[left as usize] += 1;
+            }
+            if let Some(right) = instruction.get_right() {
+                use_count[right as usize] += 1;
+            }
+        }
+        use_count
     }
 }

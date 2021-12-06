@@ -1,5 +1,5 @@
 /// Stores a function and all the associated information
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct IRFunction {
     pub name: String,
     pub return_size: IRSize,
@@ -8,7 +8,7 @@ pub struct IRFunction {
 }
 
 /// All instructions that are available in the Immediate representation
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum IRInstruction {
     Imm(IRSize, IRReg, i128),
     AddrL(IRSize, IRReg, usize),
@@ -30,7 +30,7 @@ pub enum IRInstruction {
 
 // This is a copy of IRInstruction without the inputs used to simplify generation
 #[allow(dead_code)]
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum IRType {
     Imm,
     AddrL,
@@ -53,9 +53,10 @@ pub enum IRType {
 type IRReg = u32;
 
 // Stores the size of a particular operation
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub enum IRSize {
     I32,
+    S32,
     P,
 }
 
@@ -128,7 +129,33 @@ impl IRInstruction {
         }
     }
 
-    // Get the value of immediate instructions in string form
+    pub fn get_size(&self) -> IRSize {
+        match self {
+            Self::Imm(size, ..)
+            | Self::AddrL(size, ..)
+            | Self::Load(size, ..)
+            | Self::Store(size, ..)
+            | Self::Add(size, ..)
+            | Self::Sub(size, ..)
+            | Self::Mul(size, ..)
+            | Self::Div(size, ..)
+            | Self::Xor(size, ..)
+            | Self::Eq(size, ..)
+            | Self::Ret(size, ..) => size.clone(),
+        }
+    }
+}
+
+impl PartialEq for IRSize {
+    fn eq(&self, other: &Self) -> bool {
+        use IRSize::*;
+        match (self, other) {
+            (I32, I32) => true,
+            (S32, S32) | (S32, I32) | (I32, S32) => true,
+            (P, P) => true,
+            _ => false,
+        }
+    }
 }
 
 // Get the indices at which virtual registers are defined
