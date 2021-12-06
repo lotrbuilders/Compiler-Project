@@ -67,7 +67,7 @@ impl Parser {
                 Ok(Expression {
                     span: begin,
                     ast_type: Vec::new(),
-                    variant: ExpressionVariant::Ident(name),
+                    variant: ExpressionVariant::Ident(name, 0),
                 })
             }
             Some(_) => {

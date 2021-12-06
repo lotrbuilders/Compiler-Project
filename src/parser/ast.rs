@@ -58,5 +58,5 @@ pub enum ExpressionVariant {
     BinNot(Box<Expression>),
     LogNot(Box<Expression>),
     ConstI(i128),
-    Ident(String),
+    Ident(String, u32),
 }

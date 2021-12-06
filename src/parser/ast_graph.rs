@@ -114,7 +114,7 @@ impl Graph for Expression {
                 writeln!(buffer, "n{} [label=\"int {}\"]", number, value)?;
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
             }
-            Ident(name) => {
+            Ident(name, _) => {
                 writeln!(buffer, "n{} [label=\"identifier {}\"]", number, name)?;
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
             }

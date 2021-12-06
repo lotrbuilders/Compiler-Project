@@ -88,9 +88,10 @@ impl Parser {
                 None
             }
         } else {
-            let _ = expect!(self, TokenType::Semicolon, RecoveryStrategy::Nothing);
             None
         };
+
+        let _ = expect!(self, TokenType::Semicolon, RecoveryStrategy::Nothing);
 
         Ok(Statement::Declaration {
             span: begin.to(&self.peek_span()),

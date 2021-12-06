@@ -4,12 +4,17 @@ pub struct IRFunction {
     pub name: String,
     pub return_size: IRSize,
     pub instructions: Vec<IRInstruction>,
+    pub variables: Vec<IRSize>,
 }
 
 /// All instructions that are available in the Immediate representation
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum IRInstruction {
     Imm(IRSize, IRReg, i128),
+    AddrL(IRSize, IRReg, usize),
+
+    Load(IRSize, IRReg, IRReg),  // Result address
+    Store(IRSize, IRReg, IRReg), // From address
 
     Add(IRSize, IRReg, IRReg, IRReg),
     Sub(IRSize, IRReg, IRReg, IRReg),
@@ -28,6 +33,10 @@ pub enum IRInstruction {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum IRType {
     Imm,
+    AddrL,
+
+    Load,
+    Store,
 
     Add,
     Sub,
@@ -47,6 +56,7 @@ type IRReg = u32;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum IRSize {
     I32,
+    P,
 }
 
 impl IRInstruction {
@@ -54,6 +64,10 @@ impl IRInstruction {
     pub fn to_type(&self) -> IRType {
         match self {
             &Self::Imm(..) => IRType::Imm,
+            &Self::AddrL(..) => IRType::AddrL,
+
+            &Self::Load(..) => IRType::Load,
+            &Self::Store(..) => IRType::Store,
 
             &Self::Add(..) => IRType::Add,
             &Self::Sub(..) => IRType::Sub,
@@ -72,6 +86,8 @@ impl IRInstruction {
     pub fn get_left(&self) -> Option<IRReg> {
         match self {
             &Self::Ret(_, left)
+            | &Self::Load(_, _, left)
+            | &Self::Store(_, left, _)
             | &Self::Add(_, _, left, _)
             | &Self::Sub(_, _, left, _)
             | &Self::Mul(_, _, left, _)
@@ -85,12 +101,13 @@ impl IRInstruction {
     // Returns the right vregister if it exists
     pub fn get_right(&self) -> Option<IRReg> {
         match self {
-            &Self::Add(_, _, _, right)
-            | &Self::Sub(_, _, _, right)
-            | &Self::Mul(_, _, _, right)
-            | &Self::Div(_, _, _, right)
-            | &Self::Xor(_, _, _, right)
-            | &Self::Eq(_, _, _, right) => Some(right),
+            &Self::Store(.., right)
+            | &Self::Add(.., right)
+            | &Self::Sub(.., right)
+            | &Self::Mul(.., right)
+            | &Self::Div(.., right)
+            | &Self::Xor(.., right)
+            | &Self::Eq(.., right) => Some(right),
             _ => None,
         }
     }
@@ -98,27 +115,20 @@ impl IRInstruction {
     // Returns the result vregister if it exists
     pub fn get_result(&self) -> Option<IRReg> {
         match self {
-            &Self::Imm(_, result, _)
-            | &Self::Add(_, result, _, _)
-            | &Self::Sub(_, result, _, _)
-            | &Self::Mul(_, result, _, _)
-            | &Self::Div(_, result, _, _)
-            | &Self::Xor(_, result, _, _)
-            | &Self::Eq(_, result, _, _) => Some(result),
+            &Self::Imm(_, result, ..)
+            | &Self::AddrL(_, result, ..)
+            | &Self::Load(_, result, ..)
+            | &Self::Add(_, result, ..)
+            | &Self::Sub(_, result, ..)
+            | &Self::Mul(_, result, ..)
+            | &Self::Div(_, result, ..)
+            | &Self::Xor(_, result, ..)
+            | &Self::Eq(_, result, ..) => Some(result),
             _ => None,
         }
     }
 
     // Get the value of immediate instructions in string form
-    pub fn get_value(&self) -> String {
-        match self {
-            &Self::Imm(_, _, value) => format!("{}", value),
-            _ => {
-                log::error!("get value called without value");
-                format!("")
-            }
-        }
-    }
 }
 
 // Get the indices at which virtual registers are defined

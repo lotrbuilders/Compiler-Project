@@ -16,21 +16,26 @@ use self::registers::*;
 rburg::rburg_main! {
     BackendAMD64,
 :       Ret(_a %eax)               "#\n"
-%ireg:  Imm(#i)                    "mov {res}, {i}\n"   {1}
+:       Store(r %ireg, AddrL(#a))  "mov [ebp{a}],{r}\n"     {1}
+
+%ireg:  Imm(#i)                    "mov {res}, {i}\n"       {1}
+%ireg:  AddrL(#a)                  "lea {res},[ebp{a}]\n"   {1}
+
+%ireg:  Load(AddrL(#a))             "mov {res},[ebp{a}]\n"  {1}
 
 %ireg:  Add(a %ireg , b %ireg)    ?"add {res}, {b} ; {res} = {a} + {b}\n"   {1}
-%ireg:  Add(a %ireg, Imm(#i))     ?"add {res}, {i} ; {res} = {a} + {i}\n"   {1}
+%ireg:  Add(a %ireg , Imm(#i))     ?"add {res}, {i} ; {res} = {a} + {i}\n"  {1}
 
 %ireg:  Sub(a %ireg , b %ireg)    ?"sub {res}, {b} ; {res} = {a} - {b}\n"   {1}
 %ireg:  Sub(Imm(#_i), b %ireg)    ?"neg {res} ; {res} = -{b}\n"             {self.range(self.get_left_index(index),0,0)+1}
 
-%ireg:  Mul(a %ireg , b %ireg)    ?"imul {res}, {b} ; {res} = {a} * {b}\n"   {1}
-%eax:   Div(a %eax  , b %ireg)    ?"cdq\n\tidiv {b} ; {res} = {a} / {b}\n"    {1}
+%ireg:  Mul(a %ireg , b %ireg)    ?"imul {res}, {b} ; {res} = {a} * {b}\n"  {1}
+%eax:   Div(a %eax  , b %ireg)    ?"cdq\n\tidiv {b} ; {res} = {a} / {b}\n"  {1}
 
 %ireg:  Xor(a %ireg , b %ireg)    ?"xor {res}, {b} ; {res} = {a} ^ {b}\n"   {1}
 %ireg:  Xor(a %ireg , Imm(#_i))   ?"not {res} ; {res} = ~{a}\n"             {self.range(self.get_right_index(index),-1,-1)+1}
 
-%ireg:  Eq (a %ireg , b %ireg)     "cmp {a}, {b}\n\tsete {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n " {1}
+%ireg:  Eq (a %ireg , b %ireg)     "cmp {a}, {b}\n\tsete {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
 %ireg:  Eq (a %ireg , Imm(#i))     "test {a}, {a}\n\tsetz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n " {self.range(self.get_right_index(index),0,0)+1}
 }
 
@@ -47,17 +52,22 @@ impl Backend for BackendAMD64 {
         self.definition_index = get_definition_indices(&function.instructions);
         self.instruction_states = vec![State::new(); self.instructions.len()];
         self.rules = vec![0xffff; self.instructions.len()];
+
+        let (local_offsets, stack_size) = BackendAMD64::find_local_offsets(&function.variables);
+        self.local_offsets = local_offsets;
+        self.stack_size = stack_size;
+
         log::trace!(
             "State at construction:\n{}\n{:?}\n{:?}\n",
             self.to_string(),
             self.instructions,
             self.definition_index
         );
+
         for instruction in (0..function.instructions.len()).rev() {
             log::trace!("Labeling instruction tree starting at {}", instruction);
             self.label(instruction as u32);
         }
-
         log::info!("Labeled function {}:\n{}", function.name, self.to_string(),);
 
         for i in (0..self.instructions.len()).rev() {
@@ -139,15 +149,6 @@ impl BackendAMD64 {
         }
     }
 
-    fn clobber(&self, index: usize) -> Vec<Register> {
-        let instruction = &self.instructions[index];
-        use IRInstruction::*;
-        match instruction {
-            Div(..) => vec![Register::Rdx],
-            _ => Vec::new(),
-        }
-    }
-
     // Should be automatically generated
     // Emits handwritten assembly if necessary, otherwise uses the automatic generated function
     fn emit_asm(&mut self) -> String {
@@ -169,7 +170,15 @@ impl BackendAMD64 {
                 result.push_str(&self.gen_asm(instruction));
             }
         }
+        result.push_str(&self.emit_epilogue());
         result
+    }
+
+    // Automatically generated
+    // Checks if the instruction at index is the last instruction of the function for return optimization
+    #[allow(dead_code)]
+    fn is_last_instruction(&self, index: usize) -> bool {
+        self.instructions.len() - 1 == index
     }
 
     // Should be handwritten for any backend
@@ -180,7 +189,11 @@ impl BackendAMD64 {
         let _rule = self.rules[index];
         use IRInstruction::*;
         match instruction {
-            Ret(_size, _vreg) => Some(format!("\tret\n")),
+            Ret(_size, _vreg) => Some(if !self.is_last_instruction(index) {
+                format!("\tjmp .end\n")
+            } else {
+                String::new()
+            }),
             _ => None,
         }
     }
@@ -189,10 +202,26 @@ impl BackendAMD64 {
     // Might use a macro to generate parts
     // Emits the prologue for a function, such that it will be correct for the compiler
     fn emit_prologue(&self) -> String {
-        format!(
+        let mut prologue = format!(
             "global {}\nsection .text\n{}:\n",
             self.function_name, self.function_name
-        )
+        );
+        if self.stack_size != 0 {
+            prologue.push_str(&format!("\tpush rbp\n\tmov rbp,rsp\n"))
+        }
+        prologue
+    }
+
+    // Should be handwritten for any backend
+    // Might use a macro to generate parts
+    // Emits the epilogue for a function, such that it will be correct for the compiler
+    fn emit_epilogue(&self) -> String {
+        let mut epilogue = ".end:\n".to_string();
+        if self.stack_size != 0 {
+            epilogue.push_str(&format!("\tpop rbp\n"));
+        }
+        epilogue.push_str(&format!("\tret\n"));
+        epilogue
     }
 
     fn emit_move(&self, modification: &RegisterRelocation) -> String {
@@ -205,5 +234,34 @@ impl BackendAMD64 {
             }
             _ => unimplemented!(),
         }
+    }
+
+    fn clobber(&self, index: usize) -> Vec<Register> {
+        let instruction = &self.instructions[index];
+        use IRInstruction::*;
+        match instruction {
+            Div(..) => vec![Register::Rdx],
+            _ => Vec::new(),
+        }
+    }
+
+    // Should depend on sizes and allignment as given by the backend
+    // Is currently handwritten for x86-64
+    fn find_local_offsets(variable_types: &Vec<IRSize>) -> (Vec<i32>, i32) {
+        let mut offset = -4;
+        let result = variable_types
+            .iter()
+            .map(|typ| match typ {
+                IRSize::I32 => {
+                    offset += -4;
+                    offset
+                }
+                IRSize::P => {
+                    offset += -8;
+                    offset
+                }
+            })
+            .collect();
+        (result, -offset + 4)
     }
 }

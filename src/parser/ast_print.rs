@@ -40,13 +40,13 @@ impl Display for Statement {
         match self {
             Declaration {
                 span: _,
-                ident,
+                ident: _,
                 decl_type,
                 init,
             } => {
-                write!(f, "{} {}", type2string(decl_type), ident)?;
+                write!(f, "{}", type2string(decl_type))?;
                 if let Some(exp) = init {
-                    writeln!(f, "= {};", exp)?;
+                    writeln!(f, " = {};", exp)?;
                 } else {
                     writeln!(f, ";")?;
                 }
@@ -69,10 +69,10 @@ impl Display for Expression {
         use ExpressionVariant::*;
         match &self.variant {
             ConstI(value) => write!(f, "{}", value)?,
-            Ident(name) => write!(f, "{}", name)?,
+            Ident(name, _) => write!(f, "{}", name)?,
 
             Identity(exp) | Negate(exp) | BinNot(exp) | LogNot(exp) => {
-                writeln!(
+                write!(
                     f,
                     "({} {})",
                     match &self.variant {
@@ -91,7 +91,7 @@ impl Display for Expression {
             | Subtract(left, right)
             | Multiply(left, right)
             | Divide(left, right) => {
-                writeln!(
+                write!(
                     f,
                     "({} {} {})",
                     left,

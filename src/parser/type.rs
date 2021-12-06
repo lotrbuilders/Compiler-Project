@@ -3,7 +3,7 @@ use crate::token::{Token, TokenType};
 // Type contains a component C Type used by something
 // The Name if any should be the highes
 // This is followed in order of dereferencing/calling
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
     Int,
     Name(String),

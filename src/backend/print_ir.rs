@@ -6,7 +6,12 @@ use std::fmt::Display;
 
 impl Display for IRFunction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "define {} @{}() {{", self.return_size, self.name)?;
+        writeln!(f, "define {} @{}() [", self.return_size, self.name)?;
+        for (local, i) in self.variables.iter().zip(0usize..) {
+            writeln!(f, "\t${}: {}", i, local)?;
+        }
+        writeln!(f, "] {{")?;
+
         for instruction in &self.instructions {
             writeln!(f, "{}", instruction)?;
         }
@@ -21,6 +26,11 @@ impl Display for IRInstruction {
         let ins = self.to_type();
         match self {
             Imm(size, reg, value) => write!(f, "\t%{} = {} {} #{}", reg, ins, size, value),
+            AddrL(size, reg, value) => write!(f, "\t%{} = {} {} ${}", reg, ins, size, value),
+
+            Load(size, reg, addr) => write!(f, "\t%{} = {} {} [%{}]", reg, ins, size, addr),
+            Store(size, reg, addr) => write!(f, "\t{} {} %{}, [%{}]\n", ins, size, reg, addr),
+
             Add(size, result, left, right)
             | Sub(size, result, left, right)
             | Mul(size, result, left, right)
@@ -40,6 +50,9 @@ impl Display for IRType {
         use IRType::*;
         match self {
             Imm => write!(f, "loadi"),
+            AddrL => write!(f, "addrl"),
+            Load => write!(f, "load"),
+            Store => write!(f, "store"),
             Add => write!(f, "add"),
             Sub => write!(f, "sub"),
             Mul => write!(f, "mul"),
@@ -53,6 +66,11 @@ impl Display for IRType {
 
 impl Display for IRSize {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "i32")
+        match self {
+            Self::I32 => write!(f, "i32"),
+            Self::P => write!(f,"p"),
+            _ => unreachable!()
+        }
+        
     }
 }
