@@ -142,13 +142,13 @@ impl BackendAMD64 {
 
     // Gives wether the current node is actually an instruction.
     // Currently everything should be an instruction
-    fn is_instruction(&self, rule: u16) -> bool {
+    /*fn is_instruction(&self, rule: u16) -> bool {
         match rule {
             0xffff => false,
             0xfffe => false,
             _ => true,
         }
-    }
+    }*/
 
     // Should be automatically generated
     // Emits handwritten assembly if necessary, otherwise uses the automatic generated function

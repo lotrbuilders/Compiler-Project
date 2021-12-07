@@ -13,9 +13,10 @@ pub const REG_CLASS_EAX: RegisterClass = RegisterClass {
 pub const REG_CLASS_IREG: RegisterClass = RegisterClass {
     registers: [true; REG_COUNT],
 };
-pub const REG_CLASS_EMPTY: RegisterClass = RegisterClass {
+/*pub const REG_CLASS_EMPTY: RegisterClass = RegisterClass {
     registers: [false; REG_COUNT],
-};
+};*/
+
 pub const REG_LOOKUP: [Register; REG_COUNT] = {
     use Register::*;
     [Rax, Rcx, Rdx, R8, R9, R10]
