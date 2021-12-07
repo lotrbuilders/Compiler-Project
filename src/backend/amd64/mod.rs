@@ -15,27 +15,31 @@ use self::registers::*;
 
 rburg::rburg_main! {
     BackendAMD64,
-:       Ret i32(_a %eax)               "#\n"
-:       Store(r %ireg, AddrL(#a))  "mov [ebp{a}],{r}\n"     {1}
+:       Ret i32(_a %eax)            "#\n"
+:       Store(r %ireg, a adr)       "mov {a},{r}\n"     {1}
 
-%ireg:  Imm(#i)                    "mov {res}, {i}\n"       {1}
-%ireg:  AddrL(#a)                  "lea {res},[ebp{a}]\n"   {1}
+con:    Imm(#i)                     "{i}"
+rc:     i con                       "{i}"
+//rc:     r %ireg                     "{r}" {1}
+adr:    AddrL(#a)                   "[ebp{a}]"
 
-%ireg:  Load(AddrL(#a))             "mov {res},[ebp{a}]\n"  {1}
+%ireg:  i rc                        "mov {res}, {i}\n"      {1}
+%ireg:  a adr                       "lea {res}, {a},\n"     {1}
 
-%ireg:  Add(a %ireg , b %ireg)    ?"add {res}, {b} ; {res} = {a} + {b}\n"   {1}
-%ireg:  Add(a %ireg , Imm(#i))     ?"add {res}, {i} ; {res} = {a} + {i}\n"  {1}
+%ireg:  Load(a adr)                 "mov {res},{a}\n"       {1}
 
-%ireg:  Sub(a %ireg , b %ireg)    ?"sub {res}, {b} ; {res} = {a} - {b}\n"   {1}
-%ireg:  Sub(Imm(#_i), b %ireg)    ?"neg {res} ; {res} = -{b}\n"             {self.range(self.get_left_index(index),0,0)+1}
+%ireg:  Add(a %ireg , b %ireg)      ?"add {res}, {b} ; {res} = {a} + {b}\n"   {1}
 
-%ireg:  Mul(a %ireg , b %ireg)    ?"imul {res}, {b} ; {res} = {a} * {b}\n"  {1}
-%eax:   Div(a %eax  , b %ireg)    ?"cdq\n\tidiv {b} ; {res} = {a} / {b}\n"  {1}
+%ireg:  Sub(a %ireg , b %ireg)      ?"sub {res}, {b} ; {res} = {a} - {b}\n"   {1}
+%ireg:  Sub(Imm(#_i), b %ireg)      ?"neg {res} ; {res} = -{b}\n"             {self.range(self.get_left_index(index),0,0)+1}
 
-%ireg:  Xor(a %ireg , b %ireg)    ?"xor {res}, {b} ; {res} = {a} ^ {b}\n"   {1}
-%ireg:  Xor(a %ireg , Imm(#_i))   ?"not {res} ; {res} = ~{a}\n"             {self.range(self.get_right_index(index),-1,-1)+1}
+%ireg:  Mul(a %ireg , b %ireg)      ?"imul {res}, {b} ; {res} = {a} * {b}\n"  {1}
+%eax:   Div(a %eax  , b %ireg)      ?"cdq\n\tidiv {b} ; {res} = {a} / {b}\n"  {1}
 
-%ireg:  Eq (a %ireg , b %ireg)     "cmp {a}, {b}\n\tsete {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
+%ireg:  Xor(a %ireg , b %ireg)      ?"xor {res}, {b} ; {res} = {a} ^ {b}\n"   {1}
+%ireg:  Xor(a %ireg , Imm(#_i))     ?"not {res} ; {res} = ~{a}\n"             {self.range(self.get_right_index(index),-1,-1)+1}
+
+%ireg:  Eq (a %ireg , b %ireg)      "cmp {a}, {b}\n\tsete {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
 %ireg:  Eq (a %ireg , Imm(#i))     "test {a}, {a}\n\tsetz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n " {self.range(self.get_right_index(index),0,0)+1}
 }
 
@@ -132,12 +136,16 @@ impl BackendAMD64 {
 
         let rule_number = self.get_rule(instruction, non_terminal);
         self.reduce_terminals(instruction, rule_number);
+
         let child_non_terminals: Vec<usize> = self.get_child_non_terminals(rule_number);
         let kids: Vec<u32> = self.get_kids(instruction, rule_number);
         for i in 0..kids.len() {
             self.reduce_instruction(kids[i], child_non_terminals[i]);
         }
         self.rules[instruction as usize] = rule_number;
+        //The recursion is either broken by the thing up top or
+        //The actual result is later overwritten because this is recursive over the same data
+        //Maybe assign rule_number first and keep track of first?
     }
 
     // Gives wether the current node is actually an instruction.
@@ -167,7 +175,7 @@ impl BackendAMD64 {
             let handwritten = self.emit_asm2(instruction);
             if let Some(assembly) = handwritten {
                 result.push_str(&assembly);
-            } else {
+            } else if self.is_instruction(self.rules[instruction]) {
                 result.push_str(&self.gen_asm(instruction));
             }
         }
