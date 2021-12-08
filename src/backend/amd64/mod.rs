@@ -33,8 +33,8 @@ adr:    AddrL(#a)                   "[ebp{a}]"
 %ireg:  Sub(a %ireg , b %ireg)      ?"sub {res}, {b} ; {res} = {a} - {b}\n"   {1}
 %ireg:  Sub(Imm(#_i), b %ireg)      ?"neg {res} ; {res} = -{b}\n"             {self.range(self.get_left_index(index),0,0)+1}
 
-%ireg:  Mul(a %ireg , b %ireg)      ?"imul {res}, {b} ; {res} = {a} * {b}\n"  {1}
-%eax:   Div(a %eax  , b %ireg)      ?"cdq\n\tidiv {b} ; {res} = {a} / {b}\n"  {1}
+%ireg:  Mul s32(a %ireg , b %ireg)      ?"imul {res}, {b} ; {res} = {a} * {b}\n"  {1}
+%eax:   Div s32(a %eax  , b %ireg)      ?"cdq\n\tidiv {b} ; {res} = {a} / {b}\n"  {1}
 
 %ireg:  Xor(a %ireg , b %ireg)      ?"xor {res}, {b} ; {res} = {a} ^ {b}\n"   {1}
 %ireg:  Xor(a %ireg , Imm(#_i))     ?"not {res} ; {res} = ~{a}\n"             {self.range(self.get_right_index(index),-1,-1)+1}
@@ -44,9 +44,9 @@ adr:    AddrL(#a)                   "[ebp{a}]"
 %ireg:  Eq (a %ireg , Imm(#i))      "test {a}, {a}\n\tsetz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n " {self.range(self.get_right_index(index),0,0)+1}
 %ireg:  Ne (a %ireg , Imm(#i))      "test {a}, {a}\n\tsetnz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n " {self.range(self.get_right_index(index),0,0)+1}
 
-%ireg:  Lt s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetlt {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
+%ireg:  Lt s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetl {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
 %ireg:  Le s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetle {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
-%ireg:  Gt s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetgt {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
+%ireg:  Gt s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetg {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
 %ireg:  Ge s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetge {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
 }
 
