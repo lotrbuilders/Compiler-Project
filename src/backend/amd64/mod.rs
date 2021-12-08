@@ -40,7 +40,14 @@ adr:    AddrL(#a)                   "[ebp{a}]"
 %ireg:  Xor(a %ireg , Imm(#_i))     ?"not {res} ; {res} = ~{a}\n"             {self.range(self.get_right_index(index),-1,-1)+1}
 
 %ireg:  Eq (a %ireg , b %ireg)      "cmp {a}, {b}\n\tsete {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
-%ireg:  Eq (a %ireg , Imm(#i))     "test {a}, {a}\n\tsetz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n " {self.range(self.get_right_index(index),0,0)+1}
+%ireg:  Ne (a %ireg , b %ireg)      "cmp {a}, {b}\n\tsetne {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
+%ireg:  Eq (a %ireg , Imm(#i))      "test {a}, {a}\n\tsetz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n " {self.range(self.get_right_index(index),0,0)+1}
+%ireg:  Ne (a %ireg , Imm(#i))      "test {a}, {a}\n\tsetnz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n " {self.range(self.get_right_index(index),0,0)+1}
+
+%ireg:  Lt s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetlt {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
+%ireg:  Le s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetle {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
+%ireg:  Gt s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetgt {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
+%ireg:  Ge s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetge {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
 }
 
 impl Backend for BackendAMD64 {
