@@ -149,9 +149,23 @@ impl Index<Register> for RegisterClass {
     }
 }
 
-/// Or represents the union
+impl BitOr<&Self> for RegisterClass {
+    type Output = RegisterClass;
+    fn bitor(self, rhs: &Self) -> Self::Output {
+        &self | rhs
+    }
+}
+
 impl BitOr for RegisterClass {
-    type Output = Self;
+    type Output = RegisterClass;
+    fn bitor(self, rhs: Self) -> Self::Output {
+        &self | &rhs
+    }
+}
+
+/// Or represents the union
+impl BitOr for &RegisterClass {
+    type Output = RegisterClass;
     fn bitor(self, rhs: Self) -> Self::Output {
         (0..REG_COUNT)
             .filter_map(|i| {
@@ -165,9 +179,23 @@ impl BitOr for RegisterClass {
     }
 }
 
-/// And represents the intersection
+impl BitAnd<&Self> for RegisterClass {
+    type Output = RegisterClass;
+    fn bitand(self, rhs: &Self) -> Self::Output {
+        &self & rhs
+    }
+}
+
 impl BitAnd for RegisterClass {
-    type Output = Self;
+    type Output = RegisterClass;
+    fn bitand(self, rhs: Self) -> Self::Output {
+        &self & &rhs
+    }
+}
+
+/// And represents the intersection
+impl BitAnd for &RegisterClass {
+    type Output = RegisterClass;
     fn bitand(self, rhs: Self) -> Self::Output {
         (0..REG_COUNT)
             .filter_map(|i| {
@@ -181,9 +209,23 @@ impl BitAnd for RegisterClass {
     }
 }
 
-/// Subtract represents the complement
+impl Sub<&Self> for RegisterClass {
+    type Output = RegisterClass;
+    fn sub(self, rhs: &Self) -> Self::Output {
+        &self - rhs
+    }
+}
+
 impl Sub for RegisterClass {
-    type Output = Self;
+    type Output = RegisterClass;
+    fn sub(self, rhs: Self) -> Self::Output {
+        &self - &rhs
+    }
+}
+
+/// Subtract represents the complement
+impl Sub for &RegisterClass {
+    type Output = RegisterClass;
     fn sub(self, rhs: Self) -> Self::Output {
         (0..REG_COUNT)
             .filter_map(|i| {

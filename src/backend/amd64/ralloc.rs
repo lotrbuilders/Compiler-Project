@@ -9,8 +9,9 @@ use super::BackendAMD64;
 pub enum RegisterRelocation {
     Move(u32, Register),                // from to
     TwoAddressMove(Register, Register), // from to
-    Spill(Register),
-    Reload(Register),
+    Spill(Register, u32),
+    Reload(Register, u32),
+    ReloadTemp(Register, u32), // Reload temp is currently still the same as reload: Should be removed again after reloading
 }
 
 struct RegisterUse {
@@ -40,7 +41,7 @@ impl BackendAMD64 {
             if self.is_instruction(rule) {
                 let (used_vreg, result_vreg) = self.get_vregisters(i as u32, rule);
 
-                if let Some(vreg) = result_vreg {
+                if let Some((vreg, _)) = result_vreg {
                     creation[vreg as usize] = i as u32;
                 }
                 for (vreg, class) in used_vreg {
@@ -109,9 +110,16 @@ impl BackendAMD64 {
     ) {
         let length = self.definition_index.len();
 
-        for reg in self.clobber(index as usize) {
-            if let Some(_vreg) = assignments.reg_occupied_by[reg as usize] {
-                unimplemented!();
+        // Clobber registers if necessary
+        let clobbered_registers = self
+            .clobber(index as usize)
+            .iter()
+            .collect::<RegisterClass>();
+
+        for reg in &clobbered_registers {
+            if let Some(vreg) = assignments.reg_occupied_by[reg as usize] {
+                assignments.spill(index, reg, vreg);
+                //unimplemented!();
             }
         }
 
@@ -128,20 +136,31 @@ impl BackendAMD64 {
             let vreg = *vreg;
             let reg = assignments.vreg2reg[vreg as usize];
             if let None = reg {
-                log::error!(
-                    "vreg {} does not have a correctly assigned register in vreg2reg {}",
-                    vreg,
-                    class
-                );
-                unreachable!()
+                if !assignments.try_reload(index, vreg, &(*class - &clobbered_registers))
+                    && !assignments.try_reload(
+                        index,
+                        vreg,
+                        &(&REG_CLASS_IREG - &clobbered_registers),
+                    )
+                {
+                    assignments.force_reload(
+                        register_use,
+                        index,
+                        vreg,
+                        &(&REG_CLASS_IREG - &clobbered_registers),
+                    )
+                }
             }
+
             let reg = reg.unwrap();
             if !class[reg] {
-                if let Some(reg) = try_allocate(&((*class).clone() - used_regs.clone())) {
+                if let Some(reg) = try_allocate2(&((*class).clone() - used_regs.clone())) {
                     assignments.reg_relocations[index as usize]
                         .push(RegisterRelocation::Move(vreg, reg));
+
                     assignments.reg_occupied_by
                         [assignments.vreg2reg[vreg as usize].unwrap() as usize] = None;
+
                     assignments.reg_occupied_by[reg as usize] = Some(vreg);
                     assignments.vreg2reg[vreg as usize] = Some(reg);
                 } else {
@@ -151,9 +170,10 @@ impl BackendAMD64 {
         }
 
         // perform register allocation if necessary
-        if let Some(vreg) = result_vreg {
+        if let Some((vreg, result_class)) = result_vreg {
             //let mut assigned_reg = None;
 
+            //Registers that are in use at the start of the instruction
             let used_regs: RegisterClass = assignments
                 .reg_occupied_by
                 .iter()
@@ -161,6 +181,7 @@ impl BackendAMD64 {
                 .map(|vreg| assignments.vreg2reg[vreg as usize].unwrap())
                 .collect();
 
+            //Registers that are in use at the start, but not at the end of the instruction
             let last_used_regs: RegisterClass = assignments
                 .vreg2reg
                 .iter()
@@ -170,88 +191,68 @@ impl BackendAMD64 {
                 .map(|(reg, _last_use)| reg)
                 .collect();
 
-            let used_after_regs = used_regs.clone() - last_used_regs.clone();
+            //Registers that will still be in use after the instruction
+            let used_after_regs = &used_regs - &last_used_regs;
 
-            let first_used_reg: Option<Register> = used_vregs
+            //The two operand target register
+            let first_used_reg = used_vregs
                 .get(0)
                 .map(|(vreg, _)| assignments.vreg2reg[*vreg as usize])
-                .flatten();
-
-            let first_used_reg = [first_used_reg]
+                .flatten()
                 .iter()
-                .filter_map(|&r| r)
                 .collect::<RegisterClass>();
 
+            //First register is only an option if it's used later
             let first_used_reg = first_used_reg - used_after_regs.clone();
 
+            //Registers that are in the preferred register class for this instruction
             let preferred_regs = register_use.preferred_class[vreg as usize].clone();
 
+            //Wether this instruction is a two address instruction
             let two_address = is_two_address(rule);
 
-            if let Some(reg) = try_allocate(&(preferred_regs.clone() & first_used_reg.clone())) {
+            if let Some(_reg) =
+                assignments.try_allocate(&(&preferred_regs & &first_used_reg & result_class), vreg)
+            {
+            }
+            /*else if let (Some(reg), true) = (
+                try_allocate2(&(first_used_reg.clone() & result_class.clone())),
+                two_address,
+            ) {
                 assign_register(reg, vreg, assignments);
-            } else if let (Some(reg), true) = (try_allocate(&first_used_reg), two_address) {
-                // Really only for two address architectures/instruction. Should be checked
-                assign_register(reg, vreg, assignments);
-            } else if !two_address {
-                if let Some(reg) = try_allocate(&(preferred_regs.clone() - used_after_regs.clone()))
+            }*/
+            else if !two_address {
+                if let Some(_reg) = assignments.try_allocate(
+                    &(result_class.clone() & (&preferred_regs - &used_after_regs)),
+                    vreg,
+                ) {
+                } else if let Some(_reg) =
+                    assignments.try_allocate(&(result_class - &used_after_regs), vreg)
                 {
-                    assign_register(reg, vreg, assignments);
-                } else if let Some(reg) =
-                    try_allocate(&(REG_CLASS_IREG.clone() - used_after_regs.clone()))
-                {
-                    assign_register(reg, vreg, assignments);
                 } else {
                     log::error!("No register available and no solution currently implemented");
                     unimplemented!();
                 }
-            } else {
+            } else if two_address {
                 let left = assignments.vreg2reg[self.get_left_vreg(index) as usize].unwrap();
-                if let Some(reg) = try_allocate(&(preferred_regs.clone() - used_regs.clone())) {
-                    assignments.reg_relocations[index as usize]
-                        .push(RegisterRelocation::TwoAddressMove(reg, left));
-                    assign_register(reg, vreg, assignments);
-                } else if let Some(reg) =
-                    try_allocate(&(REG_CLASS_IREG.clone() - used_regs.clone()))
+                if let Some(_reg) =
+                    assignments.try_allocate(&(&first_used_reg & result_class), vreg)
                 {
-                    assignments.reg_relocations[index as usize]
-                        .push(RegisterRelocation::TwoAddressMove(reg, left));
-                    assign_register(reg, vreg, assignments);
+                } else if let Some(reg) = assignments.try_allocate(
+                    &(result_class.clone() & (&preferred_regs - &used_regs)),
+                    vreg,
+                ) {
+                    assignments.two_address_move(index, left, reg);
+                } else if let Some(reg) =
+                    assignments.try_allocate(&(result_class - &used_regs), vreg)
+                {
+                    assignments.two_address_move(index, left, reg);
                 } else {
                     log::error!("No register available and no solution currently implemented");
                     unimplemented!();
                 }
             }
-
-            /*for i in 0..REG_COUNT {
-                let reg = REG_LOOKUP[i];
-                // Will also need to be dependent on the used register class eventually
-                // Skip unavailable registers
-                if !REG_CLASS_IREG[i] {
-                    continue;
-                }
-                // Skip occupied registers
-                if assignments.reg_occupied_by[reg as usize] != None {
-                    continue;
-                } else {
-                    log::trace!("Using register {} for vreg {}", reg.to_string(), vreg);
-                    assignments.reg_occupied_by[reg as usize] = Some(vreg);
-                    assignments.vreg2reg[vreg as usize] = Some(reg);
-                    assignments.vreg2reg_original[vreg as usize] = Some(reg);
-                    assigned_reg = Some(reg);
-                    break;
-                }
-            }
-            if let None = assigned_reg {
-                // Should do a relocation or spill
-            }
-
-            assigned_reg*/
         }
-
-        // perform register relocation if necessary
-
-        // If something has gone out of scope: remove it
         for i in 0..length {
             if index == register_use.last_use[i] && register_use.creation[i] != u32::MAX {
                 let reg = assignments.vreg2reg[i].unwrap();
@@ -268,7 +269,94 @@ impl BackendAMD64 {
     }
 }
 
-fn try_allocate(class: &RegisterClass) -> Option<Register> {
+impl RegisterAssignment {
+    fn try_allocate(&mut self, class: &RegisterClass, vreg: u32) -> Option<Register> {
+        match try_allocate2(class) {
+            Some(reg) => {
+                assign_register(reg, vreg, self);
+                Some(reg)
+            }
+            _ => None,
+        }
+    }
+
+    fn _force_allocate(
+        &mut self,
+        _register_use: &RegisterUse,
+        _vreg: u32,
+        _class: &RegisterClass,
+    ) -> Register {
+        Register::Rax
+    }
+
+    fn try_reload(
+        &mut self,
+        //register_use: RegisterUse,
+        index: u32,
+        vreg: u32,
+        class: &RegisterClass,
+    ) -> bool {
+        if let Some(reg) = try_allocate2(class) {
+            log::debug!("Reloading {} to {} at {}", vreg, reg, index);
+            self.reg_relocations[index as usize].push(RegisterRelocation::ReloadTemp(reg, vreg));
+            self.reg_occupied_by[reg as usize] = Some(vreg);
+            self.vreg2reg[vreg as usize] = Some(reg);
+            true
+        } else {
+            log::debug!("No register available for reload of {} at {}", vreg, index);
+            false
+        }
+    }
+
+    fn force_reload(
+        &mut self,
+        register_use: &RegisterUse,
+        index: u32,
+        vreg: u32,
+        class: &RegisterClass,
+    ) {
+        let _reg = self.spill_last(register_use, index, vreg, class);
+        self.try_reload(index, vreg, class);
+    }
+
+    fn spill_last(
+        &mut self,
+        register_use: &RegisterUse,
+        index: u32,
+        vreg: u32,
+        class: &RegisterClass,
+    ) -> Register {
+        let mut furthest_use = 0u32;
+        let mut furthest_vreg = u32::MAX;
+        for vreg in self.reg_occupied_by.iter().filter_map(|reg| *reg) {
+            if class[self.vreg2reg[vreg as usize].unwrap()] {
+                let next_use = register_use.uses[index as usize]
+                    .iter()
+                    .find(|&&i| i > index)
+                    .expect("No registers available to spill");
+                if *next_use > furthest_use {
+                    furthest_use = *next_use;
+                    furthest_vreg = vreg;
+                }
+            }
+        }
+        let reg = self.vreg2reg[vreg as usize].unwrap();
+        self.spill(index, reg, furthest_vreg);
+        reg
+    }
+
+    fn spill(&mut self, index: u32, reg: Register, vreg: u32) {
+        self.reg_relocations[index as usize].push(RegisterRelocation::Spill(reg, vreg));
+        self.vreg2reg[vreg as usize] = None;
+        self.reg_occupied_by[reg as usize] = None;
+    }
+
+    fn two_address_move(&mut self, index: u32, from: Register, to: Register) {
+        self.reg_relocations[index as usize].push(RegisterRelocation::TwoAddressMove(from, to));
+    }
+}
+
+fn try_allocate2(class: &RegisterClass) -> Option<Register> {
     class.iter().next()
 }
 
