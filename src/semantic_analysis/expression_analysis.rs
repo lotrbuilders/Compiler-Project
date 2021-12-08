@@ -28,14 +28,11 @@ impl Analysis for Expression {
                 }
             }
 
-            Identity(exp) | Negate(exp) | BinNot(exp) | LogNot(exp) => {
+            Unary(_op, exp) => {
                 exp.analyze(analyzer);
             }
 
-            Add(left, right)
-            | Subtract(left, right)
-            | Multiply(left, right)
-            | Divide(left, right) => {
+            Binary(_op, left, right) => {
                 left.analyze(analyzer);
                 right.analyze(analyzer);
             }

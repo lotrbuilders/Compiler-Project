@@ -7,6 +7,7 @@ mod parse_global;
 mod parse_statement;
 mod recovery;
 pub mod r#type;
+mod visit;
 
 pub use self::r#type::Type;
 use crate::span::Span;

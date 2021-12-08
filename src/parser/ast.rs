@@ -49,14 +49,33 @@ pub struct Expression {
 #[derive(Debug, Clone)]
 pub enum ExpressionVariant {
     Assign(Box<Expression>, Box<Expression>),
-    Add(Box<Expression>, Box<Expression>),
-    Subtract(Box<Expression>, Box<Expression>),
-    Multiply(Box<Expression>, Box<Expression>),
-    Divide(Box<Expression>, Box<Expression>),
-    Identity(Box<Expression>),
-    Negate(Box<Expression>),
-    BinNot(Box<Expression>),
-    LogNot(Box<Expression>),
+
+    Binary(BinaryExpressionType, Box<Expression>, Box<Expression>),
+
+    Unary(UnaryExpressionType, Box<Expression>),
+
     ConstI(i128),
     Ident(String, u32),
+}
+
+#[derive(Debug, Clone)]
+pub enum BinaryExpressionType {
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+    Equal,
+    Inequal,
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual,
+}
+
+#[derive(Debug, Clone)]
+pub enum UnaryExpressionType {
+    Identity,
+    Negate,
+    BinNot,
+    LogNot,
 }

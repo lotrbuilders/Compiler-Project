@@ -104,7 +104,9 @@ impl Evaluate for Expression {
         vreg_counter: &mut u32,
         variables: &mut Vec<IRSize>,
     ) -> u32 {
+        use BinaryExpressionType::*;
         use ExpressionVariant::*;
+        use UnaryExpressionType::*;
         match &self.variant {
             &ConstI(value) => {
                 let vreg = *vreg_counter;
@@ -135,44 +137,41 @@ impl Evaluate for Expression {
                 vreg
             }
 
-            Add(left, right)
-            | Subtract(left, right)
-            | Multiply(left, right)
-            | Divide(left, right) => {
+            Binary(op, left, right) => {
                 let left = left.eval(result, vreg_counter, variables);
                 let right = right.eval(result, vreg_counter, variables);
                 let vreg = *vreg_counter;
                 *vreg_counter += 1;
-                result.push(match self.variant {
-                    Add(..) => IRInstruction::Add(IRSize::I32, vreg, left, right),
-                    Subtract(..) => IRInstruction::Sub(IRSize::I32, vreg, left, right),
-                    Multiply(..) => IRInstruction::Mul(IRSize::I32, vreg, left, right),
-                    Divide(..) => IRInstruction::Div(IRSize::I32, vreg, left, right),
-                    _ => unreachable!(),
+                result.push(match op {
+                    Add => IRInstruction::Add(IRSize::I32, vreg, left, right),
+                    Subtract => IRInstruction::Sub(IRSize::I32, vreg, left, right),
+                    Multiply => IRInstruction::Mul(IRSize::I32, vreg, left, right),
+                    Divide => IRInstruction::Div(IRSize::I32, vreg, left, right),
+                    _ => unimplemented!(),
                 });
                 vreg
             }
 
-            Identity(exp) => {
+            Unary(Identity, exp) => {
                 let exp = exp.eval(result, vreg_counter, variables);
                 exp
             }
 
-            Negate(exp) | BinNot(exp) | LogNot(exp) => {
+            Unary(op, exp) => {
                 let left = exp.eval(result, vreg_counter, variables);
                 let right = *vreg_counter;
                 let vreg = *vreg_counter + 1;
                 *vreg_counter += 2;
 
-                result.push(match self.variant {
-                    Negate(..) | LogNot(..) => IRInstruction::Imm(IRSize::I32, right, 0),
-                    BinNot(..) => IRInstruction::Imm(IRSize::I32, right, -1),
+                result.push(match op {
+                    Negate | LogNot => IRInstruction::Imm(IRSize::I32, right, 0),
+                    BinNot => IRInstruction::Imm(IRSize::I32, right, -1),
                     _ => unreachable!(),
                 });
-                result.push(match self.variant {
-                    Negate(..) => IRInstruction::Sub(IRSize::I32, vreg, right, left),
-                    BinNot(..) => IRInstruction::Xor(IRSize::I32, vreg, left, right),
-                    LogNot(..) => IRInstruction::Eq(IRSize::I32, vreg, left, right),
+                result.push(match op {
+                    Negate => IRInstruction::Sub(IRSize::I32, vreg, right, left),
+                    BinNot => IRInstruction::Xor(IRSize::I32, vreg, left, right),
+                    LogNot => IRInstruction::Eq(IRSize::I32, vreg, left, right),
                     _ => unreachable!(),
                 });
                 vreg

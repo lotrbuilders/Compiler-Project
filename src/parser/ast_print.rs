@@ -71,42 +71,56 @@ impl Display for Expression {
             ConstI(value) => write!(f, "{}", value)?,
             Ident(name, _) => write!(f, "{}", name)?,
 
-            Identity(exp) | Negate(exp) | BinNot(exp) | LogNot(exp) => {
-                write!(
-                    f,
-                    "({} {})",
-                    match &self.variant {
-                        Identity(_) => '+',
-                        Negate(_) => '-',
-                        BinNot(_) => '~',
-                        LogNot(_) => '!',
-                        _ => unreachable!(),
-                    },
-                    exp
-                )?;
+            Unary(op, exp) => {
+                write!(f, "({} {})", op, exp)?;
             }
 
-            Assign(left, right)
-            | Add(left, right)
-            | Subtract(left, right)
-            | Multiply(left, right)
-            | Divide(left, right) => {
-                write!(
-                    f,
-                    "({} {} {})",
-                    left,
-                    match self.variant {
-                        Assign(..) => '=',
-                        Add(..) => '+',
-                        Subtract(..) => '-',
-                        Multiply(..) => '*',
-                        Divide(..) => '/',
-                        _ => unreachable!(),
-                    },
-                    right
-                )?;
+            Assign(left, right) => {
+                write!(f, "({} = {})", left, right)?;
+            }
+
+            Binary(op, left, right) => {
+                write!(f, "({} {} {})", left, op, right)?;
             }
         }
         Ok(())
+    }
+}
+
+impl Display for BinaryExpressionType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use BinaryExpressionType::*;
+        write!(
+            f,
+            "{}",
+            match self {
+                Add => "+",
+                Subtract => "-",
+                Multiply => "*",
+                Divide => "/",
+                Equal => "==",
+                Inequal => "!=",
+                Less => "<",
+                LessEqual => "<=",
+                Greater => ">",
+                GreaterEqual => ">=",
+            }
+        )
+    }
+}
+
+impl Display for UnaryExpressionType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use UnaryExpressionType::*;
+        write!(
+            f,
+            "{}",
+            match self {
+                Identity => '+',
+                Negate => '-',
+                BinNot => '~',
+                LogNot => '!',
+            }
+        )
     }
 }

@@ -119,41 +119,21 @@ impl Graph for Expression {
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
             }
 
-            Identity(exp) | Negate(exp) | BinNot(exp) | LogNot(exp) => {
-                writeln!(
-                    buffer,
-                    "n{} [label=\"{}\"]",
-                    number,
-                    match self.variant {
-                        Identity(_) => '+',
-                        Negate(_) => '-',
-                        BinNot(_) => '~',
-                        LogNot(_) => '!',
-                        _ => unreachable!(),
-                    }
-                )?;
+            Unary(op, exp) => {
+                writeln!(buffer, "n{} [label=\"{}\"]", number, op)?;
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
                 exp.graph(buffer, node_number, number)?;
             }
 
-            Assign(left, right)
-            | Add(left, right)
-            | Subtract(left, right)
-            | Multiply(left, right)
-            | Divide(left, right) => {
-                writeln!(
-                    buffer,
-                    "n{} [label=\"{}\"]",
-                    number,
-                    match self.variant {
-                        Assign(..) => '=',
-                        Add(..) => '+',
-                        Subtract(..) => '-',
-                        Multiply(..) => '*',
-                        Divide(..) => '/',
-                        _ => unreachable!(),
-                    }
-                )?;
+            Assign(left, right) => {
+                writeln!(buffer, "n{} [label=\"=\"]", number)?;
+                writeln!(buffer, "n{} -- n{}", parent, number)?;
+                left.graph(buffer, node_number, number)?;
+                right.graph(buffer, node_number, number)?;
+            }
+
+            Binary(op, left, right) => {
+                writeln!(buffer, "n{} [label=\"{}\"]", number, op)?;
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
                 left.graph(buffer, node_number, number)?;
                 right.graph(buffer, node_number, number)?;

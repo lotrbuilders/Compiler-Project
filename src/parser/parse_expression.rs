@@ -129,35 +129,49 @@ fn new_binary_expression(token: &Token, left: Expression, right: Expression) -> 
     let left = Box::new(left);
     let right = Box::new(right);
     use ExpressionVariant::*;
-    let variant = match token.token() {
-        TokenType::Assign => Assign(left, right),
-        TokenType::Plus => Add(left, right),
-        TokenType::Minus => Subtract(left, right),
-        TokenType::Asterisk => Multiply(left, right),
-        TokenType::Divide => Divide(left, right),
+    if let TokenType::Assign = token.token() {
+        return Expression {
+            span,
+            ast_type: Vec::new(),
+            variant: Assign(left, right),
+        };
+    }
+
+    use BinaryExpressionType::*;
+    let op = match token.token() {
+        TokenType::Plus => Add,
+        TokenType::Minus => Subtract,
+        TokenType::Asterisk => Multiply,
+        TokenType::Divide => Divide,
+        TokenType::Equal => Equal,
+        TokenType::Inequal => Inequal,
+        TokenType::Less => Less,
+        TokenType::LessEqual => LessEqual,
+        TokenType::Greater => Greater,
+        TokenType::GreaterEqual => GreaterEqual,
         _ => unreachable!(),
     };
     Expression {
         span,
         ast_type: Vec::new(),
-        variant,
+        variant: Binary(op, left, right),
     }
 }
 
 fn new_unary_expression(token: &Token, exp: Expression) -> Expression {
     let span = token.span().clone();
     let exp = Box::new(exp);
-    use ExpressionVariant::*;
+    use UnaryExpressionType::*;
     let variant = match token.token() {
-        TokenType::Plus => Identity(exp),
-        TokenType::Minus => Negate(exp),
-        TokenType::Tilde => BinNot(exp),
-        TokenType::Exclamation => LogNot(exp),
+        TokenType::Plus => Identity,
+        TokenType::Minus => Negate,
+        TokenType::Tilde => BinNot,
+        TokenType::Exclamation => LogNot,
         _ => unreachable!(),
     };
     Expression {
         span,
         ast_type: Vec::new(),
-        variant,
+        variant: ExpressionVariant::Unary(variant, exp),
     }
 }
