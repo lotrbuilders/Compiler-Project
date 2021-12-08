@@ -36,7 +36,12 @@ impl Display for IRInstruction {
             | Mul(size, result, left, right)
             | Div(size, result, left, right)
             | Xor(size, result, left, right)
-            | Eq(size, result, left, right) => {
+            | Eq(size, result, left, right)
+            | Ne(size, result, left, right)
+            | Lt(size, result, left, right)
+            | Le(size, result, left, right)
+            | Gt(size, result, left, right)
+            | Ge(size, result, left, right) => {
                 write!(f, "\t%{} = {} {} %{}, %{}", result, ins, size, left, right)
             }
 
@@ -59,6 +64,11 @@ impl Display for IRType {
             Div => write!(f, "div"),
             Xor => write!(f, "xor"),
             Eq => write!(f, "eq"),
+            Ne => write!(f, "ne"),
+            Lt => write!(f, "lt"),
+            Le => write!(f, "le"),
+            Gt => write!(f, "gt"),
+            Ge => write!(f, "ge"),
             Ret => write!(f, "ret"),
         }
     }
@@ -67,10 +77,10 @@ impl Display for IRType {
 impl Display for IRSize {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            Self::S32 => write!(f, "s32"),
             Self::I32 => write!(f, "i32"),
-            Self::P => write!(f,"p"),
-            _ => unreachable!()
+            Self::P => write!(f, "p"),
+            //_ => unreachable!(),
         }
-        
     }
 }

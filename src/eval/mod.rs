@@ -27,7 +27,7 @@ impl ExternalDeclaration {
                 }
                 Some(IRFunction {
                     name: self.name.clone(),
-                    return_size: IRSize::I32,
+                    return_size: IRSize::S32,
                     instructions,
                     variables,
                 })
@@ -68,13 +68,13 @@ impl Evaluate for Statement {
                 init,
             } => {
                 let index = variables.len();
-                variables.push(IRSize::I32); //Should be determined by type of declaration later
+                variables.push(IRSize::S32); //Should be determined by type of declaration later
                 if let Some(exp) = init {
                     let vreg = exp.eval(result, vreg_counter, variables);
                     let addr = *vreg_counter;
                     *vreg_counter += 1;
                     result.push(IRInstruction::AddrL(IRSize::P, addr, index));
-                    result.push(IRInstruction::Store(IRSize::I32, vreg, addr));
+                    result.push(IRInstruction::Store(IRSize::S32, vreg, addr));
                 }
             }
 
@@ -90,7 +90,7 @@ impl Evaluate for Statement {
                 expression,
             } => {
                 let vreg = expression.eval(result, vreg_counter, variables);
-                result.push(IRInstruction::Ret(IRSize::I32, vreg))
+                result.push(IRInstruction::Ret(IRSize::S32, vreg))
             }
         }
         0
@@ -111,7 +111,7 @@ impl Evaluate for Expression {
             &ConstI(value) => {
                 let vreg = *vreg_counter;
                 *vreg_counter += 1;
-                result.push(IRInstruction::Imm(IRSize::I32, vreg, value));
+                result.push(IRInstruction::Imm(IRSize::S32, vreg, value));
                 vreg
             }
 
@@ -125,7 +125,7 @@ impl Evaluate for Expression {
                     addr,
                     *symbol_number as usize,
                 ));
-                result.push(IRInstruction::Load(IRSize::I32, vreg, addr));
+                result.push(IRInstruction::Load(IRSize::S32, vreg, addr));
                 vreg
             }
 
@@ -133,7 +133,7 @@ impl Evaluate for Expression {
                 let vreg = right.eval(result, vreg_counter, variables);
                 let addr = left.eval_lvalue(result, vreg_counter, variables);
 
-                result.push(IRInstruction::Store(IRSize::I32, vreg, addr));
+                result.push(IRInstruction::Store(IRSize::S32, vreg, addr));
                 vreg
             }
 
@@ -143,11 +143,16 @@ impl Evaluate for Expression {
                 let vreg = *vreg_counter;
                 *vreg_counter += 1;
                 result.push(match op {
-                    Add => IRInstruction::Add(IRSize::I32, vreg, left, right),
-                    Subtract => IRInstruction::Sub(IRSize::I32, vreg, left, right),
-                    Multiply => IRInstruction::Mul(IRSize::I32, vreg, left, right),
-                    Divide => IRInstruction::Div(IRSize::I32, vreg, left, right),
-                    _ => unimplemented!(),
+                    Add => IRInstruction::Add(IRSize::S32, vreg, left, right),
+                    Subtract => IRInstruction::Sub(IRSize::S32, vreg, left, right),
+                    Multiply => IRInstruction::Mul(IRSize::S32, vreg, left, right),
+                    Divide => IRInstruction::Div(IRSize::S32, vreg, left, right),
+                    Equal => IRInstruction::Eq(IRSize::S32, vreg, left, right),
+                    Inequal => IRInstruction::Ne(IRSize::S32, vreg, left, right),
+                    Less => IRInstruction::Lt(IRSize::S32, vreg, left, right),
+                    LessEqual => IRInstruction::Le(IRSize::S32, vreg, left, right),
+                    Greater => IRInstruction::Gt(IRSize::S32, vreg, left, right),
+                    GreaterEqual => IRInstruction::Ge(IRSize::S32, vreg, left, right),
                 });
                 vreg
             }
@@ -164,14 +169,14 @@ impl Evaluate for Expression {
                 *vreg_counter += 2;
 
                 result.push(match op {
-                    Negate | LogNot => IRInstruction::Imm(IRSize::I32, right, 0),
-                    BinNot => IRInstruction::Imm(IRSize::I32, right, -1),
+                    Negate | LogNot => IRInstruction::Imm(IRSize::S32, right, 0),
+                    BinNot => IRInstruction::Imm(IRSize::S32, right, -1),
                     _ => unreachable!(),
                 });
                 result.push(match op {
-                    Negate => IRInstruction::Sub(IRSize::I32, vreg, right, left),
-                    BinNot => IRInstruction::Xor(IRSize::I32, vreg, left, right),
-                    LogNot => IRInstruction::Eq(IRSize::I32, vreg, left, right),
+                    Negate => IRInstruction::Sub(IRSize::S32, vreg, right, left),
+                    BinNot => IRInstruction::Xor(IRSize::S32, vreg, left, right),
+                    LogNot => IRInstruction::Eq(IRSize::S32, vreg, left, right),
                     _ => unreachable!(),
                 });
                 vreg

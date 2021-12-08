@@ -24,6 +24,11 @@ pub enum IRInstruction {
     Xor(IRSize, IRReg, IRReg, IRReg),
 
     Eq(IRSize, IRReg, IRReg, IRReg),
+    Ne(IRSize, IRReg, IRReg, IRReg),
+    Lt(IRSize, IRReg, IRReg, IRReg),
+    Le(IRSize, IRReg, IRReg, IRReg),
+    Gt(IRSize, IRReg, IRReg, IRReg),
+    Ge(IRSize, IRReg, IRReg, IRReg),
 
     Ret(IRSize, IRReg),
 }
@@ -46,6 +51,11 @@ pub enum IRType {
     Xor,
 
     Eq,
+    Ne,
+    Lt,
+    Le,
+    Gt,
+    Ge,
 
     Ret,
 }
@@ -78,6 +88,11 @@ impl IRInstruction {
             &Self::Xor(..) => IRType::Xor,
 
             &Self::Eq(..) => IRType::Eq,
+            &Self::Ne(..) => IRType::Ne,
+            &Self::Lt(..) => IRType::Lt,
+            &Self::Le(..) => IRType::Le,
+            &Self::Gt(..) => IRType::Gt,
+            &Self::Ge(..) => IRType::Ge,
 
             &Self::Ret(..) => IRType::Ret,
         }
@@ -94,7 +109,12 @@ impl IRInstruction {
             | &Self::Mul(_, _, left, _)
             | &Self::Div(_, _, left, _)
             | &Self::Xor(_, _, left, _)
-            | &Self::Eq(_, _, left, _) => Some(left),
+            | &Self::Eq(_, _, left, _)
+            | &Self::Ne(_, _, left, _)
+            | &Self::Lt(_, _, left, _)
+            | &Self::Le(_, _, left, _)
+            | &Self::Gt(_, _, left, _)
+            | &Self::Ge(_, _, left, _) => Some(left),
             _ => None,
         }
     }
@@ -108,7 +128,12 @@ impl IRInstruction {
             | &Self::Mul(.., right)
             | &Self::Div(.., right)
             | &Self::Xor(.., right)
-            | &Self::Eq(.., right) => Some(right),
+            | &Self::Eq(.., right)
+            | &Self::Ne(.., right)
+            | &Self::Lt(.., right)
+            | &Self::Le(.., right)
+            | &Self::Gt(.., right)
+            | &Self::Ge(.., right) => Some(right),
             _ => None,
         }
     }
@@ -124,7 +149,12 @@ impl IRInstruction {
             | &Self::Mul(_, result, ..)
             | &Self::Div(_, result, ..)
             | &Self::Xor(_, result, ..)
-            | &Self::Eq(_, result, ..) => Some(result),
+            | &Self::Eq(_, result, ..)
+            | &Self::Ne(_, result, ..)
+            | &Self::Lt(_, result, ..)
+            | &Self::Le(_, result, ..)
+            | &Self::Gt(_, result, ..)
+            | &Self::Ge(_, result, ..) => Some(result),
             _ => None,
         }
     }
@@ -141,6 +171,11 @@ impl IRInstruction {
             | Self::Div(size, ..)
             | Self::Xor(size, ..)
             | Self::Eq(size, ..)
+            | Self::Ne(size, ..)
+            | Self::Lt(size, ..)
+            | Self::Le(size, ..)
+            | Self::Gt(size, ..)
+            | Self::Ge(size, ..)
             | Self::Ret(size, ..) => size.clone(),
         }
     }
