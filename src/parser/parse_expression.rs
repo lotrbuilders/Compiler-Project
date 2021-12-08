@@ -3,7 +3,7 @@ use super::{recovery::RecoveryStrategy, Parser, Type};
 use crate::expect;
 use crate::token::{Token, TokenType};
 
-// Expression parsing is done using Pratt parsing(unimplemented)
+// Expression parsing is done using Pratt parsing
 // Everything that is hard to parse, starting from cast expression is handwritten
 impl Parser {
     pub(super) fn parse_expression(&mut self) -> Result<Expression, ()> {
@@ -105,6 +105,8 @@ fn binding_power(token: &Token) -> (u8, u8) {
     use TokenType::*;
     match token.token() {
         Assign => right_associative(1),
+        Equal | Inequal => left_associative(6),
+        Less | LessEqual | Greater | GreaterEqual => left_associative(7),
         Plus | Minus => left_associative(9),
         Asterisk | Divide => left_associative(10),
         _ => {
@@ -118,7 +120,8 @@ fn is_binary_operator(token: Option<Token>) -> Option<Token> {
     token.filter(|t| {
         use TokenType::*;
         match t.token() {
-            Plus | Minus | Asterisk | Divide | Assign => true,
+            Plus | Minus | Asterisk | Divide | Less | LessEqual | Greater | GreaterEqual
+            | Equal | Inequal | Assign => true,
             _ => false,
         }
     })

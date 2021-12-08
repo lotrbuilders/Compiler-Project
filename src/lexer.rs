@@ -82,6 +82,7 @@ impl Lexer {
                     let begin = self.here();
                     self.next(input);
                     if let Some('=') = self.peek(input) {
+                        self.next(input);
                         output.push(Token::new(
                             match c {
                                 '=' => TokenType::Equal,
