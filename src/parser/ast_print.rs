@@ -54,7 +54,7 @@ impl Display for Statement {
             Expression {
                 span: _,
                 expression,
-            } => writeln!(f, "{}", expression)?,
+            } => writeln!(f, "{};", expression)?,
             Return {
                 span: _,
                 expression,

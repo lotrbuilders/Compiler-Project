@@ -7,3 +7,4 @@ test.*
 *.o
 *.s
 *.exe
+*.out

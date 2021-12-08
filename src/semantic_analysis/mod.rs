@@ -1,7 +1,9 @@
+pub mod symbol_table;
+
 mod analysis;
 mod expression_analysis;
-mod symbol_table;
 mod type_checking;
+
 use self::analysis::Analysis;
 use self::symbol_table::SymbolTable;
 use crate::parser::ast::*;

@@ -1,14 +1,15 @@
+pub mod compiler;
 pub mod driver;
+pub mod file_table;
+pub mod lexer;
 pub mod logger;
 pub mod options;
+pub mod parser;
+pub mod semantic_analysis;
 
 mod backend;
-mod compiler;
 mod error;
 mod eval;
-mod file_table;
-mod lexer;
-mod parser;
-mod semantic_analysis;
+
 mod span;
 mod token;

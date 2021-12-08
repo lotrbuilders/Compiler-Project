@@ -11,7 +11,7 @@ use crate::parser::Parser;
 use crate::semantic_analysis::SemanticAnalyzer;
 
 // Helper function which opens and reads a file
-fn open(filename: String) -> Result<String, String> {
+pub fn open(filename: String) -> Result<String, String> {
     let contents = read_to_string(filename.clone());
     match contents {
         Ok(contents) => Ok(contents),
@@ -24,7 +24,7 @@ fn open(filename: String) -> Result<String, String> {
 }
 
 // Helper function which opens and writes to a file
-fn write(filename: String, content: String) -> Result<(), String> {
+pub fn write(filename: String, content: String) -> Result<(), String> {
     let mut file = match File::create(&filename) {
         Err(reason) => {
             return Err(format!(
