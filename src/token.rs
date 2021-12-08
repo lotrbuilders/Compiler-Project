@@ -26,6 +26,12 @@ pub enum TokenType {
     Divide,
     Tilde,
     Exclamation,
+    Equal,
+    Inequal,
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual,
 
     //Types with a value
     ConstI(u64),
@@ -76,6 +82,8 @@ impl From<char> for TokenType {
             '/' => Divide,
             '~' => Tilde,
             '!' => Exclamation,
+            '<' => Less,
+            '>' => Greater,
             _ => {
                 log::warn!(
                     "char to TokenType conversion with unimplemented character {}",
@@ -92,6 +100,10 @@ impl From<&str> for TokenType {
     fn from(s: &str) -> TokenType {
         use TokenType::*;
         match s {
+            "==" => Equal,
+            "!=" => Inequal,
+            "<=" => LessEqual,
+            ">=" => GreaterEqual,
             _ => {
                 log::warn!(
                     "&str to TokenType conversion with unimplemented string {}",
@@ -125,6 +137,12 @@ impl Display for Token {
             Divide => write!(f, "'/'"),
             Tilde => write!(f, "'~'"),
             Exclamation => write!(f, "'!'"),
+            Equal => write!(f, "'=='"),
+            Inequal => write!(f, "'!='"),
+            Less => write!(f, "'<'"),
+            LessEqual => write!(f, "'<='"),
+            Greater => write!(f, "'>'"),
+            GreaterEqual => write!(f, "'>='"),
 
             Ident(val) => write!(f, "'{}'", val),
             ConstI(val) => write!(f, "'{}'", val),

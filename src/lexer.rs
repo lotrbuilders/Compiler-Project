@@ -74,9 +74,27 @@ impl Lexer {
                         errors.push(err);
                     }
                 },
-                ';' | '{' | '}' | '(' | ')' | '+' | '-' | '*' | '/' | '!' | '~' | '=' => {
+                ';' | '{' | '}' | '(' | ')' | '+' | '-' | '*' | '/' | '~' => {
                     self.next(input);
                     output.push(Token::new(token::punct(c), self.here()));
+                }
+                '=' | '!' | '<' | '>' => {
+                    let begin = self.here();
+                    self.next(input);
+                    if let Some('=') = self.peek(input) {
+                        output.push(Token::new(
+                            match c {
+                                '=' => TokenType::Equal,
+                                '!' => TokenType::Inequal,
+                                '<' => TokenType::LessEqual,
+                                '>' => TokenType::GreaterEqual,
+                                _ => unreachable!(),
+                            },
+                            begin.to(&self.here()),
+                        ));
+                    } else {
+                        output.push(Token::new(token::punct(c), begin));
+                    }
                 }
                 ' ' | '\t' | '\n' | '\r' => {
                     self.next(input);
