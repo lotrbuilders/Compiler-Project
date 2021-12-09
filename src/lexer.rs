@@ -74,7 +74,7 @@ impl Lexer {
                         errors.push(err);
                     }
                 },
-                ';' | '{' | '}' | '(' | ')' | '+' | '-' | '*' | '/' | '~' => {
+                ';' | '{' | '}' | '(' | ')' | '+' | '-' | '*' | '/' | '~' | '?' | ':' => {
                     self.next(input);
                     output.push(Token::new(token::punct(c), self.here()));
                 }
@@ -131,6 +131,8 @@ impl Lexer {
         use TokenType::*;
         match identifier.as_str() {
             "int" => Token::new(Int, span),
+            "if" => Token::new(If, span),
+            "else" => Token::new(Else, span),
             "return" => Token::new(Return, span),
             _ => Token::new(Ident(identifier), span),
         }

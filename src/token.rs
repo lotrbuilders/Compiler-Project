@@ -8,6 +8,10 @@ pub enum TokenType {
     //Type keywords
     Int,
 
+    //Control flow keywords
+    If,
+    Else,
+
     //Statement keywords
     Return,
 
@@ -32,6 +36,8 @@ pub enum TokenType {
     LessEqual,
     Greater,
     GreaterEqual,
+    Question,
+    Colon,
 
     //Types with a value
     ConstI(u64),
@@ -84,6 +90,8 @@ impl From<char> for TokenType {
             '!' => Exclamation,
             '<' => Less,
             '>' => Greater,
+            '?' => Question,
+            ':' => Colon,
             _ => {
                 log::warn!(
                     "char to TokenType conversion with unimplemented character {}",
@@ -121,6 +129,9 @@ impl Display for TokenType {
         match &self {
             Int => write!(f, "'int'"),
 
+            If => write!(f, "'if'"),
+            Else => write!(f, "'else'"),
+
             Return => write!(f, "'return'"),
 
             LBrace => write!(f, "'{{'"),
@@ -142,6 +153,8 @@ impl Display for TokenType {
             LessEqual => write!(f, "'<='"),
             Greater => write!(f, "'>'"),
             GreaterEqual => write!(f, "'>='"),
+            Question => write!(f, "'?'"),
+            Colon => write!(f, "':'"),
 
             Ident(val) => write!(f, "'{}'", val),
             ConstI(val) => write!(f, "'{}'", val),
