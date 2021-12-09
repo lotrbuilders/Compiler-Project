@@ -30,6 +30,11 @@ pub enum IRInstruction {
     Gt(IRSize, IRReg, IRReg, IRReg),
     Ge(IRSize, IRReg, IRReg, IRReg),
 
+    Jcc(IRSize, IRReg, IRLabel),
+    Jnc(IRSize, IRReg, IRLabel),
+    Jmp(IRLabel),
+    Label(IRLabel),
+
     Ret(IRSize, IRReg),
 }
 
@@ -57,10 +62,16 @@ pub enum IRType {
     Gt,
     Ge,
 
+    Jcc,
+    Jnc,
+    Jmp,
+    Label,
+
     Ret,
 }
 
 type IRReg = u32;
+type IRLabel = u32;
 
 // Stores the size of a particular operation
 #[derive(Clone, Debug)]
@@ -94,6 +105,11 @@ impl IRInstruction {
             &Self::Gt(..) => IRType::Gt,
             &Self::Ge(..) => IRType::Ge,
 
+            &Self::Jcc(..) => IRType::Jcc,
+            &Self::Jnc(..) => IRType::Jnc,
+            &Self::Jmp(..) => IRType::Jmp,
+            &Self::Label(..) => IRType::Label,
+
             &Self::Ret(..) => IRType::Ret,
         }
     }
@@ -114,7 +130,9 @@ impl IRInstruction {
             | &Self::Lt(_, _, left, _)
             | &Self::Le(_, _, left, _)
             | &Self::Gt(_, _, left, _)
-            | &Self::Ge(_, _, left, _) => Some(left),
+            | &Self::Ge(_, _, left, _)
+            | &Self::Jcc(_, left, _)
+            | &Self::Jnc(_, left, _) => Some(left),
             _ => None,
         }
     }
@@ -176,7 +194,11 @@ impl IRInstruction {
             | Self::Le(size, ..)
             | Self::Gt(size, ..)
             | Self::Ge(size, ..)
+            | Self::Jnc(size, ..)
+            | Self::Jcc(size, ..)
             | Self::Ret(size, ..) => size.clone(),
+
+            Self::Jmp(_) | Self::Label(_) => IRSize::P,
         }
     }
 }

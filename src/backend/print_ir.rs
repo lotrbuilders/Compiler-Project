@@ -1,6 +1,6 @@
 use super::ir::*;
-use std::fmt;
 use std::fmt::Display;
+use std::fmt::{self};
 
 // This prints the IR in an LLVM like format using the Display trait
 
@@ -45,6 +45,11 @@ impl Display for IRInstruction {
                 write!(f, "\t%{} = {} {} %{}, %{}", result, ins, size, left, right)
             }
 
+            Jcc(size, left, label) => write!(f, "\tjcc {} {} {}", size, left, label),
+            Jnc(size, left, label) => write!(f, "\tjnc {} {} {}", size, left, label),
+            Jmp(label) => write!(f, "\tjmp L{}", label),
+            Label(label) => write!(f, "L{}:", label),
+
             Ret(size, reg) => write!(f, "\t{} {} %{}", ins, size, reg),
         }
     }
@@ -70,6 +75,7 @@ impl Display for IRType {
             Gt => write!(f, "gt"),
             Ge => write!(f, "ge"),
             Ret => write!(f, "ret"),
+            _ => unreachable!(),
         }
     }
 }
