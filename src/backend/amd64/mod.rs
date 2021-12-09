@@ -17,7 +17,11 @@ rburg::rburg_main! {
     BackendAMD64,
 
 :       Ret i32(_a %eax)            "#\n"
-:       Store(r %ireg, a adr)       "mov {a},{r}\n"     {1}
+:       Store(r %ireg, a adr)       "mov {a},{r}\n"
+:       Label(#i)                   ".L{i}\n"
+:       Jmp(#i)                     "jmp .L{i}\n"
+:       Jcc(r %ireg,#l)             "test {r},{r}\n\tjnz {l}\n" {2}
+:       Jnc(r %ireg,#l)             "test {r},{r}\n\tjz {l}\n"  {2}
 
 con:    Imm(#i)                     "{i}"
 rc:     i con                       "{i}"
