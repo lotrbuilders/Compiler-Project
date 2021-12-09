@@ -25,6 +25,12 @@ pub enum Statement {
         span: Span,
         expression: Expression,
     },
+    If {
+        span: Span,
+        expression: Expression,
+        statement: Box<Statement>,
+        else_statement: Option<Box<Statement>>,
+    },
     Expression {
         span: Span,
         expression: Expression,
@@ -50,8 +56,8 @@ pub struct Expression {
 pub enum ExpressionVariant {
     Assign(Box<Expression>, Box<Expression>),
 
+    Ternary(Box<Expression>, Box<Expression>, Box<Expression>),
     Binary(BinaryExpressionType, Box<Expression>, Box<Expression>),
-
     Unary(UnaryExpressionType, Box<Expression>),
 
     ConstI(i128),

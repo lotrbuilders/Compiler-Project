@@ -84,6 +84,14 @@ impl Evaluate for Statement {
             } => {
                 expression.eval(result, vreg_counter, variables);
             }
+            If {
+                span: _,
+                expression,
+                statement,
+                else_statement,
+            } => {
+                todo!();
+            }
 
             Return {
                 span: _,
@@ -135,6 +143,13 @@ impl Evaluate for Expression {
 
                 result.push(IRInstruction::Store(IRSize::S32, vreg, addr));
                 vreg
+            }
+
+            Ternary(cond, left, right) => {
+                let cond = cond.eval(result, vreg_counter, variables);
+                let vreg = *vreg_counter;
+                *vreg_counter += 2;
+                todo!();
             }
 
             Binary(op, left, right) => {

@@ -1,7 +1,7 @@
 use super::SemanticAnalyzer;
-use crate::error;
 use crate::parser::ast::*;
 use crate::parser::r#type::type2string;
+use crate::{error, warning};
 
 pub(super) trait Analysis {
     fn analyze(&mut self, _analyzer: &mut SemanticAnalyzer) -> () {
@@ -40,6 +40,32 @@ impl Analysis for Statement {
                 span: _,
                 expression,
             } => expression.analyze(analyzer),
+
+            If {
+                span,
+                expression,
+                statement,
+                else_statement,
+            } => {
+                expression.analyze(analyzer);
+                statement.analyze(analyzer);
+                if let Declaration { .. } = **statement {
+                    analyzer.errors.push(warning!(
+                        span,
+                        "A declaration can not be used as the body of a control flow statement"
+                    ))
+                }
+                if let Some(statement) = else_statement {
+                    statement.analyze(analyzer);
+                    if let Declaration { .. } = **statement {
+                        analyzer.errors.push(warning!(
+                            span,
+                            "A declaration can not be used as the body of a control flow statement"
+                        ))
+                    }
+                }
+            }
+
             Declaration {
                 span,
                 ident,
@@ -59,6 +85,7 @@ impl Analysis for Statement {
                     ));
                 }
             }
+
             Expression {
                 span: _,
                 expression,

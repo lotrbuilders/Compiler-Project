@@ -37,6 +37,12 @@ impl Analysis for Expression {
                 right.analyze(analyzer);
             }
 
+            Ternary(cond, left, right) => {
+                cond.analyze(analyzer);
+                left.analyze(analyzer);
+                right.analyze(analyzer);
+            }
+
             Assign(left, right) => {
                 left.analyze(analyzer);
                 right.analyze(analyzer);

@@ -80,11 +80,32 @@ impl Graph for Statement {
                     init.graph(buffer, node_number, number)?;
                 }
             }
+
             Expression {
                 span: _,
                 expression,
             } => {
                 expression.graph(buffer, node_number, parent)?;
+            }
+
+            If {
+                span: _,
+                expression,
+                statement,
+                else_statement,
+            } => {
+                if let Some(else_state) = else_statement {
+                    writeln!(buffer, "n{} [label=\"if-else\"]", number)?;
+                    writeln!(buffer, "n{} -- n{}", parent, number)?;
+                    expression.graph(buffer, node_number, number)?;
+                    statement.graph(buffer, node_number, number)?;
+                    else_state.graph(buffer, node_number, number)?;
+                } else {
+                    writeln!(buffer, "n{} [label=\"if\"]", number)?;
+                    writeln!(buffer, "n{} -- n{}", parent, number)?;
+                    expression.graph(buffer, node_number, number)?;
+                    statement.graph(buffer, node_number, number)?;
+                }
             }
             Return {
                 span: _,
@@ -125,15 +146,23 @@ impl Graph for Expression {
                 exp.graph(buffer, node_number, number)?;
             }
 
-            Assign(left, right) => {
-                writeln!(buffer, "n{} [label=\"=\"]", number)?;
+            Binary(op, left, right) => {
+                writeln!(buffer, "n{} [label=\"{}\"]", number, op)?;
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
                 left.graph(buffer, node_number, number)?;
                 right.graph(buffer, node_number, number)?;
             }
 
-            Binary(op, left, right) => {
-                writeln!(buffer, "n{} [label=\"{}\"]", number, op)?;
+            Ternary(cond, left, right) => {
+                writeln!(buffer, "n{} [label=\"?:\"]", number)?;
+                writeln!(buffer, "n{} -- n{}", parent, number)?;
+                cond.graph(buffer, node_number, number)?;
+                left.graph(buffer, node_number, number)?;
+                right.graph(buffer, node_number, number)?;
+            }
+
+            Assign(left, right) => {
+                writeln!(buffer, "n{} [label=\"=\"]", number)?;
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
                 left.graph(buffer, node_number, number)?;
                 right.graph(buffer, node_number, number)?;

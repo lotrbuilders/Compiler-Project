@@ -55,6 +55,18 @@ impl Display for Statement {
                 span: _,
                 expression,
             } => writeln!(f, "{};", expression)?,
+            If {
+                span: _,
+                expression,
+                statement,
+                else_statement,
+            } => {
+                writeln!(f, "if ({})", expression)?;
+                writeln!(f, "{}", statement)?;
+                if let Some(statement) = else_statement {
+                    writeln!(f, "else \n{}", statement)?;
+                }
+            }
             Return {
                 span: _,
                 expression,
@@ -75,12 +87,16 @@ impl Display for Expression {
                 write!(f, "({} {})", op, exp)?;
             }
 
-            Assign(left, right) => {
-                write!(f, "({} = {})", left, right)?;
-            }
-
             Binary(op, left, right) => {
                 write!(f, "({} {} {})", left, op, right)?;
+            }
+
+            Ternary(cond, left, right) => {
+                write!(f, "({} ? {} : {})", cond, left, right)?;
+            }
+
+            Assign(left, right) => {
+                write!(f, "({} = {})", left, right)?;
             }
         }
         Ok(())
