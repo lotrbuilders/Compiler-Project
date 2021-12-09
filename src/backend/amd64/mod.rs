@@ -18,10 +18,10 @@ rburg::rburg_main! {
 
 :       Ret i32(_a %eax)            "#\n"
 :       Store(r %ireg, a adr)       "mov {a},{r}\n"
-:       Label(#i)                   ".L{i}\n"
+:       Label(#i)                   ".L{i}:\n"
 :       Jmp(#i)                     "jmp .L{i}\n"
-:       Jcc(r %ireg,#l)             "test {r},{r}\n\tjnz {l}\n" {2}
-:       Jnc(r %ireg,#l)             "test {r},{r}\n\tjz {l}\n"  {2}
+:       Jcc(r %ireg,#l)             "test {r},{r}\n\tjnz .L{l}\n" {2}
+:       Jnc(r %ireg,#l)             "test {r},{r}\n\tjz .L{l}\n"  {2}
 
 con:    Imm(#i)                     "{i}"
 rc:     i con                       "{i}"

@@ -21,9 +21,10 @@ impl ExternalDeclaration {
             Some(statements) => {
                 let mut instructions = Vec::<IRInstruction>::new();
                 let mut vreg = 0;
+                let mut label = 0;
                 let mut variables = Vec::<IRSize>::new();
                 for statement in statements {
-                    statement.eval(&mut instructions, &mut vreg, &mut variables);
+                    statement.eval(&mut instructions, &mut vreg, &mut label, &mut variables);
                 }
                 Some(IRFunction {
                     name: self.name.clone(),
@@ -48,6 +49,7 @@ pub trait Evaluate {
         &self,
         result: &mut Vec<IRInstruction>,
         vreg_counter: &mut u32,
+        label_counter: &mut u32,
         variables: &mut Vec<IRSize>,
     ) -> u32;
 }
@@ -57,6 +59,7 @@ impl Evaluate for Statement {
         &self,
         result: &mut Vec<IRInstruction>,
         vreg_counter: &mut u32,
+        label_counter: &mut u32,
         variables: &mut Vec<IRSize>,
     ) -> u32 {
         use Statement::*;
@@ -70,7 +73,7 @@ impl Evaluate for Statement {
                 let index = variables.len();
                 variables.push(IRSize::S32); //Should be determined by type of declaration later
                 if let Some(exp) = init {
-                    let vreg = exp.eval(result, vreg_counter, variables);
+                    let vreg = exp.eval(result, vreg_counter, label_counter, variables);
                     let addr = *vreg_counter;
                     *vreg_counter += 1;
                     result.push(IRInstruction::AddrL(IRSize::P, addr, index));
@@ -82,22 +85,48 @@ impl Evaluate for Statement {
                 span: _,
                 expression,
             } => {
-                expression.eval(result, vreg_counter, variables);
+                expression.eval(result, vreg_counter, label_counter, variables);
             }
+
             If {
                 span: _,
                 expression,
                 statement,
                 else_statement,
             } => {
-                todo!();
+                let cond = expression.eval(result, vreg_counter, label_counter, variables);
+                let index = result.len();
+                result.push(IRInstruction::Jnc(IRSize::S32, cond, 0));
+                statement.eval(result, vreg_counter, label_counter, variables);
+
+                if let Some(statement) = else_statement {
+                    let else_index = result.len();
+                    result.push(IRInstruction::Jmp(0));
+
+                    let label = *label_counter;
+                    *label_counter += 1;
+                    result.push(IRInstruction::Label(label));
+                    result[index] = IRInstruction::Jnc(IRSize::S32, cond, label);
+
+                    statement.eval(result, vreg_counter, label_counter, variables);
+
+                    let label = *label_counter;
+                    *label_counter += 1;
+                    result.push(IRInstruction::Label(label));
+                    result[else_index] = IRInstruction::Jmp(label);
+                } else {
+                    let label = *label_counter;
+                    *label_counter += 1;
+                    result.push(IRInstruction::Label(label));
+                    result[index] = IRInstruction::Jnc(IRSize::S32, cond, label);
+                }
             }
 
             Return {
                 span: _,
                 expression,
             } => {
-                let vreg = expression.eval(result, vreg_counter, variables);
+                let vreg = expression.eval(result, vreg_counter, label_counter, variables);
                 result.push(IRInstruction::Ret(IRSize::S32, vreg))
             }
         }
@@ -110,6 +139,7 @@ impl Evaluate for Expression {
         &self,
         result: &mut Vec<IRInstruction>,
         vreg_counter: &mut u32,
+        label_counter: &mut u32,
         variables: &mut Vec<IRSize>,
     ) -> u32 {
         use BinaryExpressionType::*;
@@ -138,7 +168,7 @@ impl Evaluate for Expression {
             }
 
             Assign(left, right) => {
-                let vreg = right.eval(result, vreg_counter, variables);
+                let vreg = right.eval(result, vreg_counter, label_counter, variables);
                 let addr = left.eval_lvalue(result, vreg_counter, variables);
 
                 result.push(IRInstruction::Store(IRSize::S32, vreg, addr));
@@ -146,15 +176,15 @@ impl Evaluate for Expression {
             }
 
             Ternary(cond, left, right) => {
-                let cond = cond.eval(result, vreg_counter, variables);
+                let cond = cond.eval(result, vreg_counter, label_counter, variables);
                 let vreg = *vreg_counter;
                 *vreg_counter += 2;
                 todo!();
             }
 
             Binary(op, left, right) => {
-                let left = left.eval(result, vreg_counter, variables);
-                let right = right.eval(result, vreg_counter, variables);
+                let left = left.eval(result, vreg_counter, label_counter, variables);
+                let right = right.eval(result, vreg_counter, label_counter, variables);
                 let vreg = *vreg_counter;
                 *vreg_counter += 1;
                 result.push(match op {
@@ -173,12 +203,12 @@ impl Evaluate for Expression {
             }
 
             Unary(Identity, exp) => {
-                let exp = exp.eval(result, vreg_counter, variables);
+                let exp = exp.eval(result, vreg_counter, label_counter, variables);
                 exp
             }
 
             Unary(op, exp) => {
-                let left = exp.eval(result, vreg_counter, variables);
+                let left = exp.eval(result, vreg_counter, label_counter, variables);
                 let right = *vreg_counter;
                 let vreg = *vreg_counter + 1;
                 *vreg_counter += 2;

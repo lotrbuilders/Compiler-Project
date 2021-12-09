@@ -45,8 +45,8 @@ impl Display for IRInstruction {
                 write!(f, "\t%{} = {} {} %{}, %{}", result, ins, size, left, right)
             }
 
-            Jcc(size, left, label) => write!(f, "\tjcc {} {} {}", size, left, label),
-            Jnc(size, left, label) => write!(f, "\tjnc {} {} {}", size, left, label),
+            Jcc(size, left, label) => write!(f, "\tjcc {} %{} L{}", size, left, label),
+            Jnc(size, left, label) => write!(f, "\tjnc {} %{} L{}", size, left, label),
             Jmp(label) => write!(f, "\tjmp L{}", label),
             Label(label) => write!(f, "L{}:", label),
 
