@@ -1,3 +1,6 @@
+use std::fmt::Display;
+
+use self::RegisterLocation::*;
 use super::registers::*;
 use super::BackendAMD64;
 
@@ -20,10 +23,60 @@ pub struct RegisterUse {
     pub preferred_class: Vec<&'static RegisterClass>,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum RegisterLocation {
+    Reg(Register),
+    Vreg(u32),
+    NotAllocated,
+}
+
+impl RegisterLocation {
+    pub fn reg(&self) -> Option<Register> {
+        match self {
+            Reg(reg) => Some(*reg),
+            _ => None,
+        }
+    }
+}
+
+impl From<RegisterLocation> for Option<Register> {
+    fn from(reg: RegisterLocation) -> Self {
+        match reg {
+            Reg(register) => Some(register),
+            _ => None,
+        }
+    }
+}
+
+impl From<RegisterLocation> for Option<u32> {
+    fn from(reg: RegisterLocation) -> Self {
+        match reg {
+            Vreg(vreg) => Some(vreg),
+            _ => None,
+        }
+    }
+}
+
+impl Display for RegisterLocation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Reg(reg) => {
+                if let Some(precision) = f.precision() {
+                    write!(f, "{:.precision$}", reg, precision = precision)
+                } else {
+                    write!(f, "{}", reg)
+                }
+            }
+            Vreg(vreg) => write!(f, "[{}]", vreg),
+            NotAllocated => write!(f, "-"),
+        }
+    }
+}
+
 pub struct RegisterAssignment {
     pub reg_occupied_by: [Option<u32>; REG_COUNT],
-    pub vreg2reg: Vec<Option<Register>>,
-    pub vreg2reg_original: Vec<Option<Register>>,
+    pub vreg2reg: Vec<RegisterLocation>,
+    pub vreg2reg_original: Vec<RegisterLocation>,
     pub reg_relocations: Vec<Vec<RegisterRelocation>>,
 }
 
@@ -99,7 +152,7 @@ impl RegisterAssignment {
             log::debug!("Reloading {} to {} at {}", vreg, reg, index);
             self.reg_relocations[index as usize].push(RegisterRelocation::ReloadTemp(reg, vreg));
             self.reg_occupied_by[reg as usize] = Some(vreg);
-            self.vreg2reg[vreg as usize] = Some(reg);
+            self.vreg2reg[vreg as usize] = Reg(reg);
             true
         } else {
             log::debug!("No register available for reload of {} at {}", vreg, index);
@@ -128,7 +181,7 @@ impl RegisterAssignment {
         let mut furthest_use = 0u32;
         let mut furthest_vreg = u32::MAX;
         for vreg in self.reg_occupied_by.iter().filter_map(|reg| *reg) {
-            if class[self.vreg2reg[vreg as usize].unwrap()] {
+            if class[self.vreg2reg[vreg as usize].reg().unwrap()] {
                 let next_use = register_use.uses[index as usize]
                     .iter()
                     .find(|&&i| i > index)
@@ -139,14 +192,14 @@ impl RegisterAssignment {
                 }
             }
         }
-        let reg = self.vreg2reg[vreg as usize].unwrap();
+        let reg = self.vreg2reg[vreg as usize].reg().unwrap();
         self.spill(index, reg, furthest_vreg);
         reg
     }
 
     pub fn spill(&mut self, index: u32, reg: Register, vreg: u32) {
         self.reg_relocations[index as usize].push(RegisterRelocation::Spill(reg, vreg));
-        self.vreg2reg[vreg as usize] = None;
+        self.vreg2reg[vreg as usize] = NotAllocated;
         self.reg_occupied_by[reg as usize] = None;
     }
 
@@ -162,6 +215,6 @@ pub fn try_allocate2(class: &RegisterClass) -> Option<Register> {
 pub fn assign_register(reg: Register, vreg: u32, assignments: &mut RegisterAssignment) {
     log::trace!("Using register {} for vreg {}", reg.to_string(), vreg);
     assignments.reg_occupied_by[reg as usize] = Some(vreg);
-    assignments.vreg2reg[vreg as usize] = Some(reg);
-    assignments.vreg2reg_original[vreg as usize] = Some(reg);
+    assignments.vreg2reg[vreg as usize] = Reg(reg);
+    assignments.vreg2reg_original[vreg as usize] = Reg(reg);
 }

@@ -179,9 +179,10 @@ impl BackendAMD64 {
         for instruction in 0..self.instructions.len() {
             for modification in &self.reg_relocations[instruction] {
                 result.push_str(&self.emit_move(modification));
+                use RegisterLocation::*;
                 use RegisterRelocation::*;
                 match modification {
-                    &Move(vreg, to) => self.vreg2reg[vreg as usize] = to,
+                    &Move(vreg, to) => self.vreg2reg[vreg as usize] = Reg(to),
                     TwoAddressMove(..) => continue,
                     _ => unimplemented!(),
                 }
