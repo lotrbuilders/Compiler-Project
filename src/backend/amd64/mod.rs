@@ -15,12 +15,12 @@ use self::registers::*;
 
 rburg::rburg_main! {
     BackendAMD64,
+
 :       Ret i32(_a %eax)            "#\n"
 :       Store(r %ireg, a adr)       "mov {a},{r}\n"     {1}
 
 con:    Imm(#i)                     "{i}"
 rc:     i con                       "{i}"
-//rc:     r %ireg                     "{r}" {1}
 adr:    AddrL(#a)                   "[ebp{a}]"
 
 %ireg:  i rc                        "mov {res}, {i}\n"      {1}
@@ -33,8 +33,8 @@ adr:    AddrL(#a)                   "[ebp{a}]"
 %ireg:  Sub(a %ireg , b %ireg)      ?"sub {res}, {b} ; {res} = {a} - {b}\n"   {1}
 %ireg:  Sub(Imm(#_i), b %ireg)      ?"neg {res} ; {res} = -{b}\n"             {self.range(self.get_left_index(index),0,0)+1}
 
-%ireg:  Mul s32(a %ireg , b %ireg)      ?"imul {res}, {b} ; {res} = {a} * {b}\n"  {1}
-%eax:   Div s32(a %eax  , b %ireg)      ?"cdq\n\tidiv {b} ; {res} = {a} / {b}\n"  {1}
+%ireg:  Mul s32(a %ireg , b %ireg)  ?"imul {res}, {b} ; {res} = {a} * {b}\n"  {1}
+%eax:   Div s32(a %eax  , b %ireg)  ?"cdq\n\tidiv {b} ; {res} = {a} / {b}\n"  {1}
 
 %ireg:  Xor(a %ireg , b %ireg)      ?"xor {res}, {b} ; {res} = {a} ^ {b}\n"   {1}
 %ireg:  Xor(a %ireg , Imm(#_i))     ?"not {res} ; {res} = ~{a}\n"             {self.range(self.get_right_index(index),-1,-1)+1}
