@@ -21,8 +21,15 @@ impl Parser {
             }
             self.next();
 
-            let right = self.pratt_parse(r_bp)?;
-            left = new_binary_expression(&token, left, right);
+            if token.token() == TokenType::Question {
+                let middle = self.parse_expression()?;
+                expect!(self, TokenType::Colon, RecoveryStrategy::UpTo(';'))?;
+                let right = self.pratt_parse(r_bp)?;
+                left = new_ternary_expression(&token, left, middle, right);
+            } else {
+                let right = self.pratt_parse(r_bp)?;
+                left = new_binary_expression(&token, left, right);
+            }
         }
         Ok(left)
     }
@@ -125,6 +132,24 @@ fn is_binary_operator(token: Option<Token>) -> Option<Token> {
             _ => false,
         }
     })
+}
+
+fn new_ternary_expression(
+    token: &Token,
+    left: Expression,
+    middle: Expression,
+    right: Expression,
+) -> Expression {
+    let span = token.span().clone();
+    let cond = Box::new(left);
+    let left = Box::new(middle);
+    let right = Box::new(right);
+
+    Expression {
+        span,
+        ast_type: Vec::new(),
+        variant: ExpressionVariant::Ternary(cond, left, right),
+    }
 }
 
 fn new_binary_expression(token: &Token, left: Expression, right: Expression) -> Expression {

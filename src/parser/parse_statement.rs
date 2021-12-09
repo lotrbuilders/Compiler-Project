@@ -43,6 +43,26 @@ impl Parser {
                 self.parse_local_declaration()
             }
 
+            Some(If) => {
+                self.next();
+                let expression = self.parse_braced('(', Parser::parse_expression)?;
+                let statement = Box::new(self.parse_statement()?);
+                let else_statement = if let Some(Else) = self.peek_type() {
+                    self.next();
+                    Some(Box::new(self.parse_statement()?))
+                } else {
+                    None
+                };
+
+                let span = begin.to(&self.peek_span());
+                Ok(Statement::If {
+                    span,
+                    expression,
+                    statement,
+                    else_statement,
+                })
+            }
+
             Some(Return) => {
                 self.next();
                 let expression = self.parse_expression();
