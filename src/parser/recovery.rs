@@ -89,7 +89,7 @@ impl Parser {
     }
 }
 
-fn get_braces(c: char) -> (TokenType, TokenType) {
+pub fn get_braces(c: char) -> (TokenType, TokenType) {
     use TokenType::*;
     match c {
         '{' | '}' => (LBrace, RBrace),

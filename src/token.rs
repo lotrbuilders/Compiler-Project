@@ -115,11 +115,10 @@ impl From<&str> for TokenType {
     }
 }
 
-// Display a token using std::fmt
-impl Display for Token {
+impl Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use TokenType::*;
-        match &self.token {
+        match &self {
             Int => write!(f, "'int'"),
 
             Return => write!(f, "'return'"),
@@ -147,5 +146,12 @@ impl Display for Token {
             Ident(val) => write!(f, "'{}'", val),
             ConstI(val) => write!(f, "'{}'", val),
         }
+    }
+}
+
+// Display a token using std::fmt
+impl Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.token())
     }
 }

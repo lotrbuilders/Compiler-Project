@@ -10,6 +10,9 @@ pub mod r#type;
 mod visit;
 
 pub use self::r#type::Type;
+use self::recovery::RecoveryStrategy;
+use crate::error;
+use crate::expect;
 use crate::span::Span;
 use crate::token::{Token, TokenType};
 
@@ -70,6 +73,41 @@ impl Parser {
             _ => false,
         }
     }
+
+    fn _expect_some(&mut self) -> Result<Token, ()> {
+        let token = self.peek();
+        match token {
+            Some(token) => Ok(token),
+            None => {
+                let span = self.peek_span();
+                self.errors.push(error!(span, "Unexpected end of file"));
+                Err(())
+            }
+        }
+    }
+
+    fn parse_braced<F, T>(&mut self, c: char, f: F) -> Result<T, ()>
+    where
+        F: Fn(&mut Self) -> Result<T, ()>,
+    {
+        let (left, right) = recovery::get_braces(c);
+        //let token = self.expect_some()?;
+        expect!(
+            self,
+            left,
+            RecoveryStrategy::or(
+                RecoveryStrategy::or(
+                    RecoveryStrategy::UntilBraced(')'),
+                    RecoveryStrategy::UpTo(';')
+                ),
+                RecoveryStrategy::UntilBraced('}')
+            )
+        )?;
+        let result = f(self);
+        expect!(self, right, RecoveryStrategy::Nothing)?;
+
+        result
+    }
 }
 
 // This macro looks at the incoming token
@@ -78,8 +116,15 @@ impl Parser {
 #[allow(unused_macros)]
 #[macro_export]
 macro_rules! expect {
+    ($self:ident, $expected: ident, $recover: expr) => {
+        expect!($self,$expected,$recover,"Expected {} but found {}",$expected)
+    };
     ($self:ident, $expected: pat, $recover: expr) => {
-        /*match $self.peek() {
+        expect!($self,$expected,$recover,"Unexpected token {}")
+    };
+
+    ($self:ident, $expected: ident, $recover: expr, $( $exp:expr ),*) => {
+        match $self.peek() {
             None => {
                 let loc = $self.peek_span();
                 $self
@@ -87,23 +132,24 @@ macro_rules! expect {
                     .push(crate::error!(loc, "Unexpected end of file"));
                 Err(())
             }
-            Some(token) => match token.token() {
-                $expected => {
+            Some(token) =>
+                if token.token()==$expected {
                     $self.next();
                     Ok(token)
                 }
-                _ => {
-                    $self.recover(&$recover);
+                else {
+                    log::debug!("Error from line {}",line!());
                     let loc = $self.peek_span();
+                    $self.recover(&$recover);
                     $self
                         .errors
-                        .push(crate::error!(loc, "Unexpected token {}", token));
+                        .push(crate::error!(loc, $($exp,)* token));
                     Err(())
                 }
-            },
-        }*/
-        expect!($self,$expected,$recover,"Unexpected token {}")
+
+        }
     };
+
     ($self:ident, $expected: pat, $recover: expr, $( $exp:expr ),*) => {
         match $self.peek() {
             None => {
@@ -130,4 +176,6 @@ macro_rules! expect {
             },
         }
     };
+
+
 }
