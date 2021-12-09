@@ -3,6 +3,7 @@ use std::vec;
 use super::ir::*;
 use super::Backend;
 mod ralloc;
+mod ralloc_normal;
 mod registers;
 use self::ralloc::*;
 use self::registers::*;
@@ -94,7 +95,7 @@ impl Backend for BackendAMD64 {
 
         log::info!("definitive rules:\n{:?}", self.rules);
         log::info!("Starting register allocation");
-        self.allocate_registers();
+        RegisterAllocatorNormal::allocate_registers(self);
 
         log::info!("Starting assembly generation");
         let assembly = self.emit_asm();
