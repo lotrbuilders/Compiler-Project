@@ -7,6 +7,29 @@ pub struct IRFunction {
     pub variables: Vec<IRSize>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct IRPhi {
+    pub label: IRLabel,
+    pub targets: Vec<IRReg>,
+    pub size: Vec<IRSize>,
+    pub locations: Vec<IRLabel>,
+    pub sources: Vec<Vec<IRReg>>,
+}
+
+impl IRPhi {
+    pub fn empty(label: u32, locations: Vec<IRLabel>) -> IRInstruction {
+        let len = locations.len();
+        IRInstruction::Phi(Box::new(IRPhi {
+            label,
+            targets: Vec::new(),
+            size: Vec::new(),
+            locations,
+            sources: vec![Vec::new(); len],
+        }))
+    }
+}
+
+#[allow(dead_code)]
 /// All instructions that are available in the Immediate representation
 #[derive(Clone, Debug, PartialEq)]
 pub enum IRInstruction {
@@ -34,6 +57,9 @@ pub enum IRInstruction {
     Jnc(IRSize, IRReg, IRLabel),
     Jmp(IRLabel),
     Label(IRLabel),
+
+    Phi(Box<IRPhi>),
+    PhiSrc(IRLabel),
 
     Ret(IRSize, IRReg),
 }
@@ -66,6 +92,9 @@ pub enum IRType {
     Jnc,
     Jmp,
     Label,
+
+    Phi,
+    PhiSrc,
 
     Ret,
 }
@@ -109,6 +138,9 @@ impl IRInstruction {
             &Self::Jnc(..) => IRType::Jnc,
             &Self::Jmp(..) => IRType::Jmp,
             &Self::Label(..) => IRType::Label,
+
+            &Self::Phi(..) => IRType::Phi,
+            &Self::PhiSrc(..) => IRType::PhiSrc,
 
             &Self::Ret(..) => IRType::Ret,
         }
@@ -198,7 +230,7 @@ impl IRInstruction {
             | Self::Jcc(size, ..)
             | Self::Ret(size, ..) => size.clone(),
 
-            Self::Jmp(_) | Self::Label(_) => IRSize::P,
+            Self::Jmp(_) | Self::Label(_) | Self::PhiSrc(..) | Self::Phi(..) => IRSize::P,
         }
     }
 }

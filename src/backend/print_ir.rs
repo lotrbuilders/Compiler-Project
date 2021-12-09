@@ -49,6 +49,8 @@ impl Display for IRInstruction {
             Jnc(size, left, label) => write!(f, "\tjnc {} %{} L{}", size, left, label),
             Jmp(label) => write!(f, "\tjmp L{}", label),
             Label(label) => write!(f, "L{}:", label),
+            PhiSrc(label) => write!(f, "\tphisrc L{}:", label),
+            Phi(phi) => write!(f, "\t{}", phi),
 
             Ret(size, reg) => write!(f, "\t{} {} %{}", ins, size, reg),
         }
@@ -88,5 +90,20 @@ impl Display for IRSize {
             Self::P => write!(f, "p"),
             //_ => unreachable!(),
         }
+    }
+}
+
+impl Display for IRPhi {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:?} = phi L{} {:?} [ ",
+            self.targets, self.label, self.size
+        )?;
+        for (label, registers) in self.locations.iter().zip(self.sources.iter()) {
+            write!(f, "L{} {:?} ", label, registers)?;
+        }
+        write!(f, " ]")?;
+        Ok(())
     }
 }

@@ -1,6 +1,32 @@
 use crate::backend::ir::*;
 use crate::parser::ast::*;
 
+fn insert_place_holder_jump(
+    result: &mut Vec<IRInstruction>,
+    label_counter: &mut u32,
+) -> (usize, u32) {
+    let index = result.len();
+    result.push(IRInstruction::Jmp(0));
+
+    let label = insert_label(result, label_counter);
+
+    (index, label)
+}
+
+fn insert_label(result: &mut Vec<IRInstruction>, label_counter: &mut u32) -> u32 {
+    let label = *label_counter;
+    *label_counter += 1;
+    result.push(IRInstruction::Label(label));
+
+    label
+}
+
+fn insert_phi_src(result: &mut Vec<IRInstruction>, label_counter: &u32) -> u32 {
+    let label = *label_counter - 1;
+    result.push(IRInstruction::PhiSrc(label));
+    label
+}
+
 // This module is used to evaluate the AST into an IR
 
 // The public function used to evaluate the ast
@@ -21,8 +47,9 @@ impl ExternalDeclaration {
             Some(statements) => {
                 let mut instructions = Vec::<IRInstruction>::new();
                 let mut vreg = 0;
-                let mut label = 0;
+                let mut label = 1;
                 let mut variables = Vec::<IRSize>::new();
+                instructions.push(IRInstruction::Label(0));
                 for statement in statements {
                     statement.eval(&mut instructions, &mut vreg, &mut label, &mut variables);
                 }
@@ -95,30 +122,32 @@ impl Evaluate for Statement {
                 else_statement,
             } => {
                 let cond = expression.eval(result, vreg_counter, label_counter, variables);
-                let index = result.len();
-                result.push(IRInstruction::Jnc(IRSize::S32, cond, 0));
+
+                let phi1 = insert_phi_src(result, label_counter);
+                let (index, _) = insert_place_holder_jump(result, label_counter);
                 statement.eval(result, vreg_counter, label_counter, variables);
 
                 if let Some(statement) = else_statement {
-                    let else_index = result.len();
-                    result.push(IRInstruction::Jmp(0));
+                    let phi1 = insert_phi_src(result, label_counter);
 
-                    let label = *label_counter;
-                    *label_counter += 1;
-                    result.push(IRInstruction::Label(label));
+                    let (else_index, label) = insert_place_holder_jump(result, label_counter);
                     result[index] = IRInstruction::Jnc(IRSize::S32, cond, label);
 
                     statement.eval(result, vreg_counter, label_counter, variables);
 
-                    let label = *label_counter;
-                    *label_counter += 1;
-                    result.push(IRInstruction::Label(label));
+                    let phi2 = insert_phi_src(result, label_counter);
+
+                    let label = insert_label(result, label_counter);
                     result[else_index] = IRInstruction::Jmp(label);
+
+                    result.push(IRPhi::empty(label, vec![phi1, phi2]));
                 } else {
-                    let label = *label_counter;
-                    *label_counter += 1;
-                    result.push(IRInstruction::Label(label));
+                    let phi2 = insert_phi_src(result, label_counter);
+
+                    let label = insert_label(result, label_counter);
                     result[index] = IRInstruction::Jnc(IRSize::S32, cond, label);
+
+                    result.push(IRPhi::empty(label, vec![phi1, phi2]));
                 }
             }
 

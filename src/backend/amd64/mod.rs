@@ -15,6 +15,8 @@ use self::registers::*;
 
 rburg::rburg_main! {
     BackendAMD64,
+:   Phi(#phi)                       ";{phi}\n"
+:   PhiSrc(#lab)                    ";{lab}\n"
 
 :       Ret i32(_a %eax)            "#\n"
 :       Store(r %ireg, a adr)       "mov {a},{r}\n"
