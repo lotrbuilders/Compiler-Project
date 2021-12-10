@@ -29,7 +29,7 @@ impl IRPhi {
         let (l1, l2) = locations;
         let (v1, v2) = vreg;
         Box::new(IRPhi {
-            targets: Vec::new(),
+            targets: vec![result],
             size: Vec::new(),
             locations: vec![l1, l2],
             sources: vec![vec![v1], vec![v2]],
@@ -257,7 +257,21 @@ impl PartialEq for IRSize {
 
 // Get the indices at which virtual registers are defined
 pub fn get_definition_indices(instructions: &Vec<IRInstruction>) -> Vec<u32> {
-    (0..instructions.len())
-        .filter_map(|i| instructions[i].get_result().map(|_| i as u32))
-        .collect()
+    let mut result = Vec::new();
+    for i in 0..instructions.len() {
+        match &instructions[i] {
+            IRInstruction::Label(Some(phi), _) => {
+                for _ in &phi.targets {
+                    result.push(i as u32);
+                }
+            }
+            _ => {
+                if let Some(_) = instructions[i].get_result() {
+                    result.push(i as u32);
+                }
+            }
+        }
+    }
+
+    result
 }

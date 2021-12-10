@@ -36,16 +36,20 @@ impl RegisterAllocator for RegisterAllocatorSimple {
                     &mut assignments,
                 )
             }
-            if let IRInstruction::Label(Some(phi), _lbl) = &backend.instructions[instruction] {
+            if let IRInstruction::Label(Some(phi), _lbl) = backend.instructions[instruction].clone()
+            {
                 for ((&block, source), &target) in phi
                     .locations
                     .iter()
                     .zip(phi.sources.iter())
                     .zip(phi.targets.iter())
                 {
+                    let target = get_spot(backend, target);
+
                     let last = cfg[block as usize].last();
                     let last = &mut assignments.reg_relocations[last as usize];
                     for &vreg in source {
+                        let vreg = get_spot(backend, vreg);
                         last.insert(0, RegisterRelocation::MemMove(vreg, target, Register::Rax));
                     }
                 }

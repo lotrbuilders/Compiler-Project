@@ -195,6 +195,7 @@ impl BackendAMD64 {
                     TwoAddressMove(..) => continue,
                     Spill(..) => continue,
                     Reload(..) => continue,
+                    MemMove(..) => continue,
                     _ => unimplemented!(),
                 }
             }
@@ -268,6 +269,12 @@ impl BackendAMD64 {
             }
             &Reload(reg, mem) => format!("\tmov {}, [ebp-{}]\n", reg, mem),
             &Spill(reg, mem) => format!("\tmov [ebp-{}],{} \n", mem, reg),
+            &MemMove(from, to, reg) => {
+                format!(
+                    "\tmov {}, [ebp-{}]\n\tmov [ebp-{}], {}\n",
+                    reg, from, to, reg
+                )
+            }
             _ => unimplemented!(),
         }
     }

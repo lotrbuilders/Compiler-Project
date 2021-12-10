@@ -112,6 +112,7 @@ fn binding_power(token: &Token) -> (u8, u8) {
     use TokenType::*;
     match token.token() {
         Assign => right_associative(1),
+        Question => left_associative(2),
         Equal | Inequal => left_associative(6),
         Less | LessEqual | Greater | GreaterEqual => left_associative(7),
         Plus | Minus => left_associative(9),
@@ -128,7 +129,7 @@ fn is_binary_operator(token: Option<Token>) -> Option<Token> {
         use TokenType::*;
         match t.token() {
             Plus | Minus | Asterisk | Divide | Less | LessEqual | Greater | GreaterEqual
-            | Equal | Inequal | Assign => true,
+            | Equal | Inequal | Assign | Question => true,
             _ => false,
         }
     })
