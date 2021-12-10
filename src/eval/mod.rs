@@ -16,14 +16,26 @@ fn insert_place_holder_jump(
 fn insert_label(result: &mut Vec<IRInstruction>, label_counter: &mut u32) -> u32 {
     let label = *label_counter;
     *label_counter += 1;
-    result.push(IRInstruction::Label(label));
+    result.push(IRInstruction::Label(None, label));
 
     label
 }
 
-fn insert_phi_src(result: &mut Vec<IRInstruction>, label_counter: &u32) -> u32 {
+fn insert_phi_label(
+    result: &mut Vec<IRInstruction>,
+    label_counter: &mut u32,
+    phi: Box<IRPhi>,
+) -> u32 {
+    let label = *label_counter;
+    *label_counter += 1;
+    result.push(IRInstruction::Label(Some(phi), label));
+
+    label
+}
+
+fn insert_phi_src(_result: &mut Vec<IRInstruction>, label_counter: &u32) -> u32 {
     let label = *label_counter - 1;
-    result.push(IRInstruction::PhiSrc(label));
+    //result.push(IRInstruction::PhiSrc(label));
     label
 }
 
@@ -49,7 +61,7 @@ impl ExternalDeclaration {
                 let mut vreg = 0;
                 let mut label = 1;
                 let mut variables = Vec::<IRSize>::new();
-                instructions.push(IRInstruction::Label(0));
+                instructions.push(IRInstruction::Label(None, 0));
                 for statement in statements {
                     statement.eval(&mut instructions, &mut vreg, &mut label, &mut variables);
                 }
@@ -137,17 +149,15 @@ impl Evaluate for Statement {
 
                     let phi2 = insert_phi_src(result, label_counter);
 
-                    let label = insert_label(result, label_counter);
+                    let label =
+                        insert_phi_label(result, label_counter, IRPhi::empty(vec![phi1, phi2]));
                     result[else_index] = IRInstruction::Jmp(label);
-
-                    result.push(IRPhi::empty(label, vec![phi1, phi2]));
                 } else {
                     let phi2 = insert_phi_src(result, label_counter);
 
-                    let label = insert_label(result, label_counter);
+                    let label =
+                        insert_phi_label(result, label_counter, IRPhi::empty(vec![phi1, phi2]));
                     result[index] = IRInstruction::Jnc(IRSize::S32, cond, label);
-
-                    result.push(IRPhi::empty(label, vec![phi1, phi2]));
                 }
             }
 
@@ -204,11 +214,32 @@ impl Evaluate for Expression {
                 vreg
             }
 
+            #[allow(unused_variables)]
             Ternary(cond, left, right) => {
                 let cond = cond.eval(result, vreg_counter, label_counter, variables);
+
+                let (index, _) = insert_place_holder_jump(result, label_counter);
+                let left = left.eval(result, vreg_counter, label_counter, variables);
+
+                let phi1 = insert_phi_src(result, label_counter);
+
+                let (else_index, label) = insert_place_holder_jump(result, label_counter);
+                result[index] = IRInstruction::Jnc(IRSize::S32, cond, label);
+
+                let right = right.eval(result, vreg_counter, label_counter, variables);
+
+                let phi2 = insert_phi_src(result, label_counter);
+
                 let vreg = *vreg_counter;
-                *vreg_counter += 2;
-                todo!();
+                *vreg_counter += 1;
+
+                let label = insert_phi_label(
+                    result,
+                    label_counter,
+                    IRPhi::ternary((phi1, phi2), vreg, (left, right)),
+                );
+                result[else_index] = IRInstruction::Jmp(label);
+                vreg
             }
 
             Binary(op, left, right) => {

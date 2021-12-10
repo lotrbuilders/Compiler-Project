@@ -3,7 +3,9 @@ use std::vec;
 use super::ir::*;
 use super::Backend;
 mod ralloc;
-mod ralloc_normal;
+mod ralloc_linear;
+mod ralloc_simple;
+//mod ralloc_normal;
 mod registers;
 use self::ralloc::*;
 use self::registers::*;
@@ -95,7 +97,14 @@ impl Backend for BackendAMD64 {
 
         log::info!("definitive rules:\n{:?}", self.rules);
         log::info!("Starting register allocation");
-        RegisterAllocatorNormal::allocate_registers(self);
+        RegisterAllocatorSimple::allocate_registers(self);
+        log::debug!(
+            "vreg2reg at start {:?}",
+            self.allocation
+                .iter()
+                .map(|reg| format!("{}\n", reg))
+                .collect::<Vec<String>>()
+        );
 
         log::info!("Starting assembly generation");
         let assembly = self.emit_asm();
@@ -179,11 +188,13 @@ impl BackendAMD64 {
         for instruction in 0..self.instructions.len() {
             for modification in &self.reg_relocations[instruction] {
                 result.push_str(&self.emit_move(modification));
-                use RegisterLocation::*;
+                //use RegisterLocation::*;
                 use RegisterRelocation::*;
                 match modification {
-                    &Move(vreg, to) => self.vreg2reg[vreg as usize] = Reg(to),
+                    Move(..) => continue, //  self.vreg2reg[vreg as usize] = Reg(to),
                     TwoAddressMove(..) => continue,
+                    Spill(..) => continue,
+                    Reload(..) => continue,
                     _ => unimplemented!(),
                 }
             }
@@ -252,10 +263,11 @@ impl BackendAMD64 {
         use RegisterRelocation::*;
         match modification {
             &TwoAddressMove(from, to) => format!("\tmov {},{}\n", to, from),
-            &Move(vreg, to) => {
-                let from = self.vreg2reg[vreg as usize];
+            &Move(from, to) => {
                 format!("\tmov {},{}\n", to, from)
             }
+            &Reload(reg, mem) => format!("\tmov {}, [ebp-{}]\n", reg, mem),
+            &Spill(reg, mem) => format!("\tmov [ebp-{}],{} \n", mem, reg),
             _ => unimplemented!(),
         }
     }

@@ -9,7 +9,6 @@ pub struct IRFunction {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct IRPhi {
-    pub label: IRLabel,
     pub targets: Vec<IRReg>,
     pub size: Vec<IRSize>,
     pub locations: Vec<IRLabel>,
@@ -17,15 +16,24 @@ pub struct IRPhi {
 }
 
 impl IRPhi {
-    pub fn empty(label: u32, locations: Vec<IRLabel>) -> IRInstruction {
+    pub fn empty(locations: Vec<IRLabel>) -> Box<IRPhi> {
         let len = locations.len();
-        IRInstruction::Phi(Box::new(IRPhi {
-            label,
+        Box::new(IRPhi {
             targets: Vec::new(),
             size: Vec::new(),
             locations,
             sources: vec![Vec::new(); len],
-        }))
+        })
+    }
+    pub fn ternary(locations: (IRLabel, IRLabel), result: u32, vreg: (u32, u32)) -> Box<IRPhi> {
+        let (l1, l2) = locations;
+        let (v1, v2) = vreg;
+        Box::new(IRPhi {
+            targets: Vec::new(),
+            size: Vec::new(),
+            locations: vec![l1, l2],
+            sources: vec![vec![v1], vec![v2]],
+        })
     }
 }
 
@@ -56,7 +64,7 @@ pub enum IRInstruction {
     Jcc(IRSize, IRReg, IRLabel),
     Jnc(IRSize, IRReg, IRLabel),
     Jmp(IRLabel),
-    Label(IRLabel),
+    Label(Option<Box<IRPhi>>, IRLabel),
 
     Phi(Box<IRPhi>),
     PhiSrc(IRLabel),
@@ -230,7 +238,7 @@ impl IRInstruction {
             | Self::Jcc(size, ..)
             | Self::Ret(size, ..) => size.clone(),
 
-            Self::Jmp(_) | Self::Label(_) | Self::PhiSrc(..) | Self::Phi(..) => IRSize::P,
+            Self::Jmp(_) | Self::Label(..) | Self::PhiSrc(..) | Self::Phi(..) => IRSize::P,
         }
     }
 }

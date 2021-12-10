@@ -13,9 +13,10 @@ pub const REG_CLASS_EAX: RegisterClass = RegisterClass {
 pub const REG_CLASS_IREG: RegisterClass = RegisterClass {
     registers: [true; REG_COUNT],
 };
-/*pub const REG_CLASS_EMPTY: RegisterClass = RegisterClass {
+#[allow(dead_code)]
+pub const REG_CLASS_EMPTY: RegisterClass = RegisterClass {
     registers: [false; REG_COUNT],
-};*/
+};
 
 pub const REG_LOOKUP: [Register; REG_COUNT] = {
     use Register::*;
@@ -85,6 +86,9 @@ impl RegisterClass {
     }
     pub(super) fn iter<'a>(&'a self) -> RegisterClassIterRef<'a> {
         self.into_iter()
+    }
+    pub(super) fn add(&mut self, reg: Register) {
+        self.registers[reg as usize] = true;
     }
 }
 
