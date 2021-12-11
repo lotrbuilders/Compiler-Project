@@ -24,6 +24,7 @@ rburg::rburg_main! {
 :       Ret i32(_a %eax)            "#\n"
 :       Store(r %ireg, a adr)       "mov {a},{r}\n"
 :       Label(#i)                   ".L{i}:\n"
+%ireg:  Label(#i)                   ".L{i}:\n"
 :       Jmp(#i)                     "jmp .L{i}\n"
 :       Jcc(r %ireg,#l)             "test {r},{r}\n\tjnz .L{l}\n" {2}
 :       Jnc(r %ireg,#l)             "test {r},{r}\n\tjz .L{l}\n"  {2}
@@ -160,15 +161,13 @@ impl BackendAMD64 {
         let rule_number = self.get_rule(instruction, non_terminal);
         self.reduce_terminals(instruction, rule_number);
 
-        let child_non_terminals: Vec<usize> = self.get_child_non_terminals(rule_number);
+        let child_non_terminals: Vec<usize> =
+            self.get_child_non_terminals(instruction, rule_number);
         let kids: Vec<u32> = self.get_kids(instruction, rule_number);
         for i in 0..kids.len() {
             self.reduce_instruction(kids[i], child_non_terminals[i]);
         }
         self.rules[instruction as usize] = rule_number;
-        //The recursion is either broken by the thing up top or
-        //The actual result is later overwritten because this is recursive over the same data
-        //Maybe assign rule_number first and keep track of first?
     }
 
     // Gives wether the current node is actually an instruction.
