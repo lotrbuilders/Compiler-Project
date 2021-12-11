@@ -1,3 +1,4 @@
+use colored::Colorize;
 use log::{Level, LevelFilter, Metadata, Record, SetLoggerError};
 
 // Uses 'log' to allow for logging
@@ -19,12 +20,19 @@ impl log::Log for SimpleLogger {
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
-            println!(
+            let output = format!(
                 "{} - {} - {}",
                 record.level(),
                 record.target(),
                 record.args()
             );
+
+            match record.level() {
+                Level::Error => println!("{}", output.red()),
+                Level::Warn => println!("{}", output.purple()),
+                Level::Info => println!("{}", output.blue()),
+                _ => println!("{}", output),
+            }
         }
     }
 
