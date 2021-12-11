@@ -13,6 +13,19 @@ fn insert_place_holder_jump(
     (index, label)
 }
 
+fn insert_place_holder_jump_phi(
+    result: &mut Vec<IRInstruction>,
+    label_counter: &mut u32,
+    phi: Box<IRPhi>,
+) -> (usize, u32) {
+    let index = result.len();
+    result.push(IRInstruction::Jmp(0));
+
+    let label = insert_phi_label(result, label_counter, phi);
+
+    (index, label)
+}
+
 fn insert_label(result: &mut Vec<IRInstruction>, label_counter: &mut u32) -> u32 {
     let label = *label_counter;
     *label_counter += 1;
@@ -148,16 +161,23 @@ impl Evaluate for Statement {
                     statement.eval(result, vreg_counter, label_counter, variables);
 
                     let phi2 = insert_phi_src(result, label_counter);
-
-                    let label =
-                        insert_phi_label(result, label_counter, IRPhi::empty(vec![phi1, phi2]));
+                    let (last_index, label) = insert_place_holder_jump_phi(
+                        result,
+                        label_counter,
+                        IRPhi::empty(vec![phi1, phi2]),
+                    );
                     result[else_index] = IRInstruction::Jmp(label);
+                    result[last_index] = IRInstruction::Jmp(label);
                 } else {
                     let phi2 = insert_phi_src(result, label_counter);
 
-                    let label =
-                        insert_phi_label(result, label_counter, IRPhi::empty(vec![phi1, phi2]));
+                    let (last_index, label) = insert_place_holder_jump_phi(
+                        result,
+                        label_counter,
+                        IRPhi::empty(vec![phi1, phi2]),
+                    );
                     result[index] = IRInstruction::Jnc(IRSize::S32, cond, label);
+                    result[last_index] = IRInstruction::Jmp(label);
                 }
             }
 
@@ -230,15 +250,18 @@ impl Evaluate for Expression {
 
                 let phi2 = insert_phi_src(result, label_counter);
 
+                //let (last_index, label) = insert_place_holder_jump(result, label_counter);
+
                 let vreg = *vreg_counter;
                 *vreg_counter += 1;
 
-                let label = insert_phi_label(
+                let (last_index, label) = insert_place_holder_jump_phi(
                     result,
                     label_counter,
                     IRPhi::ternary((phi1, phi2), vreg, (left, right)),
                 );
                 result[else_index] = IRInstruction::Jmp(label);
+                result[last_index] = IRInstruction::Jmp(label);
                 vreg
             }
 

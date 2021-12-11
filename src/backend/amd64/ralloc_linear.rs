@@ -81,7 +81,7 @@ impl ControlFlowGraph {
             block.successors = block
                 .successors
                 .iter()
-                .filter(|&&i| (i as usize) == length)
+                .filter(|&&i| (i as usize) < length)
                 .map(|i| *i)
                 .collect();
         }
@@ -116,9 +116,10 @@ impl ControlFlowGraph {
         if !(start..instructions.len()).is_empty() {
             cfg.push(ControlFlowGraph::new(start..instructions.len(), label))
         }
-
+        log::info!("CFG:\n{}", CFG::to_string(&cfg));
         CFG::check(&cfg);
         CFG::find_successors(&mut cfg, instructions);
+        log::info!("CFG:\n{}", CFG::to_string(&cfg));
         CFG::find_predecessors(&mut cfg);
         log::info!("CFG:\n{}", CFG::to_string(&cfg));
 
