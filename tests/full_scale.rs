@@ -178,28 +178,48 @@ fn test_invalid_full_scale(path: PathBuf, failures: &mut Vec<String>, fail_count
     }
 }
 
+macro_rules! tests {
+    ($($name:ident: ($file:literal, $valid:ident, $invalid:ident))*) => {
+        $(
+            #[test]
+            fn $name() {
+                let mut failures = Vec::<String>::new();
+                let home_dir = env!("CARGO_MANIFEST_DIR");
+                let test_dir = format!("{}/tests/{}", home_dir,$file);
+                let test_path = Path::new(&test_dir);
+                let fail_count = test_stage(
+                    test_path.to_path_buf(),
+                    &mut failures,
+                    &$valid,
+                    &$invalid,
+                )
+                .expect("File error");
+                let mut string = String::new();
+                for failure in failures {
+                    string.push_str(&format!("{}\n", failure));
+                }
+                assert_eq!(
+                    fail_count, 0,
+                    "Failures occured during testing\n {}",
+                    string
+                );
+            }
+        )*
+    };
+}
+/*
 #[test]
 fn full_scale_test() {
-    let mut failures = Vec::<String>::new();
-    let home_dir = env!("CARGO_MANIFEST_DIR");
-    let test_dir = format!("{}/tests/src", home_dir);
-    let test_path = Path::new(&test_dir);
-    let fail_count = test_directories(
-        &test_path,
-        &mut failures,
-        test_valid_full_scale,
-        test_invalid_full_scale,
-    )
-    .expect("File error");
-    let mut string = String::new();
-    for failure in failures {
-        string.push_str(&format!("{}\n", failure));
-    }
-    assert_eq!(
-        fail_count, 0,
-        "Failures occured during testing\n {}",
-        string
-    );
+
+}*/
+
+tests! {
+    full_scale_stage_1: ("src/stage_1",test_valid_full_scale,test_invalid_full_scale)
+    full_scale_stage_2: ("src/stage_2",test_valid_full_scale,test_invalid_full_scale)
+    full_scale_stage_3: ("src/stage_3",test_valid_full_scale,test_invalid_full_scale)
+    full_scale_stage_4: ("src/stage_4",test_valid_full_scale,test_invalid_full_scale)
+    full_scale_stage_5: ("src/stage_5",test_valid_full_scale,test_invalid_full_scale)
+    full_scale_stage_6: ("src/stage_6",test_valid_full_scale,test_invalid_full_scale)
 }
 
 fn test_valid_parser(path: PathBuf, failures: &mut Vec<String>, fail_count: &mut i32) {
