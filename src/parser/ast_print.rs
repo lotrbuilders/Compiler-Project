@@ -51,6 +51,7 @@ impl Display for Statement {
                     writeln!(f, ";")?;
                 }
             }
+            Empty(_) => write!(f, ";")?,
             Expression {
                 span: _,
                 expression,

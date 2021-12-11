@@ -74,6 +74,12 @@ impl Parser {
                 Ok(Statement::Return { span, expression })
             }
 
+            Some(Semicolon) => {
+                let span = self.peek_span();
+                self.next();
+                Ok(Statement::Empty(span))
+            }
+
             Some(_) => {
                 let expression = self.parse_expression();
                 let _ = expect!(self, TokenType::Semicolon, RecoveryStrategy::Nothing);

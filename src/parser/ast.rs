@@ -41,6 +41,7 @@ pub enum Statement {
         decl_type: Vec<Type>,
         init: Option<Expression>,
     },
+    Empty(Span),
 }
 
 // Expression has a seperate expression variant

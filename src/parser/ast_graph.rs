@@ -81,6 +81,11 @@ impl Graph for Statement {
                 }
             }
 
+            Empty(_) => {
+                writeln!(buffer, "n{} [label=\"<empty>\"]", number)?;
+                writeln!(buffer, "n{} -- n{}", parent, number)?;
+            }
+
             Expression {
                 span: _,
                 expression,

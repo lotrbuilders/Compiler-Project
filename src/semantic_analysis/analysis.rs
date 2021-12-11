@@ -66,6 +66,15 @@ impl Analysis for Statement {
                 }
             }
 
+            Expression {
+                span: _,
+                expression,
+            } => {
+                expression.analyze(analyzer);
+            }
+
+            Empty(_) => (),
+
             Declaration {
                 span,
                 ident,
@@ -84,13 +93,6 @@ impl Analysis for Statement {
                         type2string(&analyzer.symbol_table.get(ident).unwrap().symbol_type)
                     ));
                 }
-            }
-
-            Expression {
-                span: _,
-                expression,
-            } => {
-                expression.analyze(analyzer);
             }
         }
     }

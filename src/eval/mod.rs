@@ -133,6 +133,8 @@ impl Evaluate for Statement {
                 }
             }
 
+            Empty(_) => (),
+
             Expression {
                 span: _,
                 expression,
