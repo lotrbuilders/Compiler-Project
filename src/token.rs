@@ -14,6 +14,8 @@ pub enum TokenType {
     While,
     For,
     Do,
+    Break,
+    Continue,
 
     //Statement keywords
     Return,
@@ -137,7 +139,7 @@ impl From<&str> for TokenType {
 impl Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use TokenType::*;
-        match &self {
+        match self {
             Int => write!(f, "'int'"),
 
             If => write!(f, "'if'"),
@@ -145,6 +147,8 @@ impl Display for TokenType {
             While => write!(f, "'while'"),
             For => write!(f, "'for'"),
             Do => write!(f, "'do'"),
+            Break => write!(f, "'break'"),
+            Continue => write!(f, "'continue'"),
 
             Return => write!(f, "'return'"),
 
