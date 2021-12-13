@@ -151,6 +151,9 @@ impl Lexer {
             "int" => Token::new(Int, span),
             "if" => Token::new(If, span),
             "else" => Token::new(Else, span),
+            "while" => Token::new(While, span),
+            "for" => Token::new(For, span),
+            "do" => Token::new(While, span),
             "return" => Token::new(Return, span),
             _ => Token::new(Ident(identifier), span),
         }
