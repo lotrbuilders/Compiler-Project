@@ -15,6 +15,7 @@ use crate::parser::ast::*;
 pub struct SemanticAnalyzer {
     errors: Vec<String>,
     symbol_table: SymbolTable,
+    loop_depth: u32,
 }
 
 impl SemanticAnalyzer {
@@ -22,6 +23,7 @@ impl SemanticAnalyzer {
         SemanticAnalyzer {
             errors: Vec::new(),
             symbol_table: SymbolTable::new(),
+            loop_depth: 0,
         }
     }
 
@@ -32,5 +34,17 @@ impl SemanticAnalyzer {
         } else {
             Ok(())
         }
+    }
+
+    fn enter_loop(&mut self) {
+        self.loop_depth += 1;
+    }
+
+    fn leave_loop(&mut self) {
+        self.loop_depth -= 1;
+    }
+
+    fn in_loop(&mut self) -> bool {
+        return self.loop_depth > 0;
     }
 }

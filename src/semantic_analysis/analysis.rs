@@ -53,9 +53,11 @@ impl Analysis for Statement {
                 statement,
                 do_while: _,
             } => {
+                analyzer.enter_loop();
                 expression.analyze(analyzer);
                 statement.analyze(analyzer);
                 statement.check_for_declaration(analyzer);
+                analyzer.leave_loop();
             }
 
             Return {
@@ -70,16 +72,21 @@ impl Analysis for Statement {
                 expression,
                 statement,
             } => {
-                init.as_mut().map(|init| init.analyze(analyzer));
                 analyzer.symbol_table.enter_scope();
+                analyzer.enter_loop();
+
+                init.as_mut().map(|init| init.analyze(analyzer));
                 condition
                     .as_mut()
                     .map(|condition| condition.analyze(analyzer));
                 expression
                     .as_mut()
                     .map(|expression| expression.analyze(analyzer));
+
                 statement.analyze(analyzer);
                 statement.check_for_declaration(analyzer);
+
+                analyzer.leave_loop();
                 analyzer.symbol_table.leave_scope();
             }
 
@@ -130,10 +137,28 @@ impl Analysis for Statement {
             Compound {
                 span: _,
                 statements,
-            } => todo!(),
+            } => {
+                analyzer.symbol_table.enter_scope();
+                for stmt in statements {
+                    stmt.analyze(analyzer);
+                }
+                analyzer.symbol_table.leave_scope();
+            }
 
-            Break { span } | Continue { span } => {
-                todo!();
+            Continue { span } => {
+                if !analyzer.in_loop() {
+                    analyzer
+                        .errors
+                        .push(error!(span, "'continue' must be in a loop"))
+                }
+            }
+
+            Break { span } => {
+                if !analyzer.in_loop() {
+                    analyzer
+                        .errors
+                        .push(error!(span, "'break' must be in a loop")); //Or switch statement later
+                }
             }
         }
     }
