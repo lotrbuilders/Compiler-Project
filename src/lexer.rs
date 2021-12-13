@@ -154,6 +154,8 @@ impl Lexer {
             "while" => Token::new(While, span),
             "for" => Token::new(For, span),
             "do" => Token::new(While, span),
+            "break" => Token::new(Break, span),
+            "continue" => Token::new(Continue, span),
             "return" => Token::new(Return, span),
             _ => Token::new(Ident(identifier), span),
         }
