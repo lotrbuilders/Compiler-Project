@@ -32,37 +32,67 @@ impl Analysis for ExternalDeclaration {
     }
 }
 
+impl Statement {
+    fn check_for_declaration(&self, analyzer: &mut SemanticAnalyzer) -> () {
+        if let Statement::Declaration { span, .. } = self {
+            analyzer.errors.push(warning!(
+                span,
+                "A declaration can not be used as the body of a control flow statement"
+            ));
+        }
+    }
+}
+
 impl Analysis for Statement {
     fn analyze(&mut self, analyzer: &mut SemanticAnalyzer) -> () {
         use Statement::*;
         match self {
+            While {
+                span: _,
+                expression,
+                statement,
+                do_while: _,
+            } => {
+                expression.analyze(analyzer);
+                statement.analyze(analyzer);
+                statement.check_for_declaration(analyzer);
+            }
+
             Return {
                 span: _,
                 expression,
             } => expression.analyze(analyzer),
 
+            For {
+                span: _,
+                init,
+                condition,
+                expression,
+                statement,
+            } => {
+                init.as_mut().map(|init| init.analyze(analyzer));
+                condition
+                    .as_mut()
+                    .map(|condition| condition.analyze(analyzer));
+                expression
+                    .as_mut()
+                    .map(|expression| expression.analyze(analyzer));
+                statement.analyze(analyzer);
+                statement.check_for_declaration(analyzer);
+            }
+
             If {
-                span,
+                span: _,
                 expression,
                 statement,
                 else_statement,
             } => {
                 expression.analyze(analyzer);
                 statement.analyze(analyzer);
-                if let Declaration { .. } = **statement {
-                    analyzer.errors.push(warning!(
-                        span,
-                        "A declaration can not be used as the body of a control flow statement"
-                    ))
-                }
+                statement.check_for_declaration(analyzer);
                 if let Some(statement) = else_statement {
                     statement.analyze(analyzer);
-                    if let Declaration { .. } = **statement {
-                        analyzer.errors.push(warning!(
-                            span,
-                            "A declaration can not be used as the body of a control flow statement"
-                        ))
-                    }
+                    statement.check_for_declaration(analyzer);
                 }
             }
 
