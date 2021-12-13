@@ -112,6 +112,27 @@ impl Graph for Statement {
                     statement.graph(buffer, node_number, number)?;
                 }
             }
+
+            For {
+                span: _,
+                init,
+                condition,
+                expression,
+                statement,
+            } => {
+                writeln!(buffer, "n{} [label=\"for\"]", number)?;
+                writeln!(buffer, "n{} -- n{}", parent, number)?;
+                init.as_ref()
+                    .map(|init| init.graph(buffer, node_number, number).unwrap());
+                condition
+                    .as_ref()
+                    .map(|condition| condition.graph(buffer, node_number, number).unwrap());
+                expression
+                    .as_ref()
+                    .map(|expression| expression.graph(buffer, node_number, number).unwrap());
+                statement.graph(buffer, node_number, number)?;
+            }
+
             Return {
                 span: _,
                 expression,
@@ -119,6 +140,20 @@ impl Graph for Statement {
                 writeln!(buffer, "n{} [label=\"return\"]", number)?;
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
                 expression.graph(buffer, node_number, number)?;
+            }
+
+            While {
+                span: _,
+                expression,
+                statement,
+                do_while,
+            } => {
+                match do_while {
+                    true => writeln!(buffer, "n{} [label=\"do-while\"]", number)?,
+                    false => writeln!(buffer, "n{} [label=\"while\"]", number)?,
+                }
+                expression.graph(buffer, node_number, number)?;
+                statement.graph(buffer, node_number, number)?;
             }
         }
         Ok(())

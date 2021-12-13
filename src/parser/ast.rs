@@ -31,6 +31,19 @@ pub enum Statement {
         statement: Box<Statement>,
         else_statement: Option<Box<Statement>>,
     },
+    While {
+        span: Span,
+        expression: Expression,
+        statement: Box<Statement>,
+        do_while: bool,
+    },
+    For {
+        span: Span,
+        init: Option<Box<Statement>>,
+        condition: Option<Box<Expression>>,
+        expression: Option<Box<Expression>>,
+        statement: Box<Statement>,
+    },
     Expression {
         span: Span,
         expression: Expression,

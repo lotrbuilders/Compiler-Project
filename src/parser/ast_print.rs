@@ -52,10 +52,12 @@ impl Display for Statement {
                 }
             }
             Empty(_) => write!(f, ";")?,
+
             Expression {
                 span: _,
                 expression,
             } => writeln!(f, "{};", expression)?,
+
             If {
                 span: _,
                 expression,
@@ -68,10 +70,57 @@ impl Display for Statement {
                     writeln!(f, "else \n{}", statement)?;
                 }
             }
+
+            For {
+                span: _,
+                init,
+                condition,
+                expression,
+                statement,
+            } => {
+                write!(f, "for (")?;
+                match init {
+                    Some(init) => write!(f, "{}", init)?,
+                    None => write!(f, ";")?,
+                }
+
+                if let Some(init) = condition {
+                    write!(f, "{}", init)?;
+                }
+                write!(f, ";")?;
+
+                match expression {
+                    Some(init) => writeln!(f, "{})", init)?,
+                    None => writeln!(f, ")")?,
+                }
+
+                writeln!(f, "{}", statement)?;
+            }
+
             Return {
                 span: _,
                 expression,
             } => writeln!(f, "return {};", expression)?,
+
+            While {
+                span: _,
+                expression,
+                statement,
+                do_while: false,
+            } => {
+                writeln!(f, "while ({})", expression)?;
+                writeln!(f, "{}", statement)?;
+            }
+
+            While {
+                span: _,
+                expression,
+                statement,
+                do_while: true,
+            } => {
+                writeln!(f, "do\n{}", statement)?;
+                writeln!(f, "while ({})", expression)?;
+            }
         }
         Ok(())
     }
