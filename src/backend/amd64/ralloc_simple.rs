@@ -47,6 +47,7 @@ impl RegisterAllocator for RegisterAllocatorSimple {
                         let vreg = get_spot(backend, vreg);
                         log::trace!("Insert memmove {}<-{} at {}", vreg, target, index);
                         last.push(RegisterRelocation::MemMove(vreg, target, Register::Rax));
+                        last.sort_unstable_by_key(move_cmp);
                     }
                 }
             }
@@ -95,4 +96,17 @@ fn allocate_register(
 
 fn get_spot(backend: &mut BackendAMD64, vreg: u32) -> u32 {
     (backend.stack_size.abs() as u32) + 4 + 4 * vreg
+}
+
+fn move_cmp(mov: &RegisterRelocation) -> i32 {
+    use RegisterRelocation::*;
+    match mov {
+        MemMove(..) => 10,
+        Move(..) => 20,
+        TwoAddressMove(..) => 20,
+        Spill(..) => 0,
+        Reload(..) => 20,
+        ReloadTemp(..) => 20,
+        _ => unreachable!(),
+    }
 }
