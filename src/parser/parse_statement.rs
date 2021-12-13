@@ -138,7 +138,7 @@ impl Parser {
             }
 
             Some(LBrace) => {
-                let statements = self.parse_braced('{', Parser::parse_compound_statement)?;
+                let statements = self.parse_compound_statement()?;
                 let span = begin.to(&self.peek_span());
                 Ok(Statement::Compound { span, statements })
             }
