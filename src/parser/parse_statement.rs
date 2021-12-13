@@ -43,6 +43,22 @@ impl Parser {
                 self.parse_local_declaration()
             }
 
+            Some(Do) => {
+                self.next();
+                let statement = Box::new(self.parse_statement()?);
+                expect!(self, TokenType::While, RecoveryStrategy::Nothing)?;
+                let expression = self.parse_braced('(', Parser::parse_expression)?;
+                let _ = expect!(self, TokenType::Semicolon, RecoveryStrategy::Nothing);
+
+                let span = begin.to(&self.peek_span());
+                Ok(Statement::While {
+                    span,
+                    expression,
+                    statement,
+                    do_while: true,
+                })
+            }
+
             Some(If) => {
                 self.next();
                 let expression = self.parse_braced('(', Parser::parse_expression)?;
@@ -63,6 +79,22 @@ impl Parser {
                 })
             }
 
+            Some(For) => {
+                self.next();
+                let (init, condition, expression) =
+                    self.parse_braced('(', Parser::parse_for_clause)?;
+                let statement = Box::new(self.parse_statement()?);
+
+                let span = begin.to(&self.peek_span());
+                Ok(Statement::For {
+                    span,
+                    init,
+                    condition,
+                    expression,
+                    statement,
+                })
+            }
+
             Some(Return) => {
                 self.next();
                 let expression = self.parse_expression();
@@ -78,6 +110,20 @@ impl Parser {
                 let span = self.peek_span();
                 self.next();
                 Ok(Statement::Empty(span))
+            }
+
+            Some(While) => {
+                self.next();
+                let expression = self.parse_braced('(', Parser::parse_expression)?;
+                let statement = Box::new(self.parse_statement()?);
+
+                let span = begin.to(&self.peek_span());
+                Ok(Statement::While {
+                    span,
+                    expression,
+                    statement,
+                    do_while: false,
+                })
             }
 
             Some(_) => {
@@ -125,5 +171,65 @@ impl Parser {
             decl_type,
             init,
         })
+    }
+
+    fn parse_for_clause(
+        &mut self,
+    ) -> Result<
+        (
+            Option<Box<Statement>>,
+            Option<Box<Expression>>,
+            Option<Box<Expression>>,
+        ),
+        (),
+    > {
+        let begin = self.peek_span();
+        let init = match self.peek_type() {
+            Some(TokenType::Semicolon) => {
+                self.next();
+                None
+            }
+            Some(_) => Some(Box::new(self.parse_statement()?)),
+
+            // Refactor
+            None => {
+                self.errors
+                    .push(crate::error!(begin, "Unexpected end of file"));
+                return Err(());
+            }
+        };
+
+        let condition = match self.peek_type() {
+            Some(TokenType::Semicolon) => {
+                self.next();
+                None
+            }
+            Some(_) => {
+                let condition = self.parse_expression();
+                let _ = expect!(self, TokenType::Semicolon, RecoveryStrategy::Nothing);
+                Some(Box::new(condition?))
+            }
+
+            // Refactor
+            None => {
+                self.errors
+                    .push(crate::error!(begin, "Unexpected end of file"));
+                return Err(());
+            }
+        };
+
+        let expression = match self.peek_type() {
+            Some(TokenType::RParenthesis) => None,
+            Some(_) => Some(Box::new(self.parse_expression()?)),
+
+            // Refactor
+            None => {
+                self.errors
+                    .push(crate::error!(begin, "Unexpected end of file"));
+                return Err(());
+            }
+        };
+
+        Ok((init, condition, expression))
     }
 }
