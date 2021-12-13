@@ -43,6 +43,18 @@ impl Parser {
                 self.parse_local_declaration()
             }
 
+            Some(Break) => {
+                self.next();
+                self.expect_semicolon();
+                Ok(Statement::Break { span: begin })
+            }
+
+            Some(Continue) => {
+                self.next();
+                self.expect_semicolon();
+                Ok(Statement::Continue { span: begin })
+            }
+
             Some(Do) => {
                 self.next();
                 let statement = Box::new(self.parse_statement()?);
@@ -107,9 +119,8 @@ impl Parser {
             }
 
             Some(Semicolon) => {
-                let span = self.peek_span();
                 self.next();
-                Ok(Statement::Empty(span))
+                Ok(Statement::Empty(begin))
             }
 
             Some(While) => {
@@ -126,6 +137,12 @@ impl Parser {
                 })
             }
 
+            Some(LBrace) => {
+                let statements = self.parse_braced('{', Parser::parse_compound_statement)?;
+                let span = begin.to(&self.peek_span());
+                Ok(Statement::Compound { span, statements })
+            }
+
             Some(_) => {
                 let expression = self.parse_expression();
                 let _ = expect!(self, TokenType::Semicolon, RecoveryStrategy::Nothing);
@@ -138,8 +155,6 @@ impl Parser {
 
             None => Err(()),
         }
-
-        //expect!(self, TokenType::Return, RecoveryStrategy::Until(';'))?;
     }
 
     fn parse_local_declaration(&mut self) -> Result<Statement, ()> {
@@ -154,10 +169,9 @@ impl Parser {
 
         let init = if let Some(TokenType::Assign) = self.peek_type() {
             self.next();
-            if let Ok(init) = self.parse_expression() {
-                Some(init)
-            } else {
-                None
+            match self.parse_expression() {
+                Ok(init) => Some(init),
+                Err(_) => None,
             }
         } else {
             None
@@ -183,7 +197,6 @@ impl Parser {
         ),
         (),
     > {
-        let begin = self.peek_span();
         let init = match self.peek_type() {
             Some(TokenType::Semicolon) => {
                 self.next();
@@ -191,10 +204,8 @@ impl Parser {
             }
             Some(_) => Some(Box::new(self.parse_statement()?)),
 
-            // Refactor
             None => {
-                self.errors
-                    .push(crate::error!(begin, "Unexpected end of file"));
+                self.error_unexpected_eof();
                 return Err(());
             }
         };
@@ -210,10 +221,8 @@ impl Parser {
                 Some(Box::new(condition?))
             }
 
-            // Refactor
             None => {
-                self.errors
-                    .push(crate::error!(begin, "Unexpected end of file"));
+                self.error_unexpected_eof();
                 return Err(());
             }
         };
@@ -222,10 +231,8 @@ impl Parser {
             Some(TokenType::RParenthesis) => None,
             Some(_) => Some(Box::new(self.parse_expression()?)),
 
-            // Refactor
             None => {
-                self.errors
-                    .push(crate::error!(begin, "Unexpected end of file"));
+                self.error_unexpected_eof();
                 return Err(());
             }
         };

@@ -90,8 +90,7 @@ impl Parser {
                 Err(())
             }
             None => {
-                self.errors
-                    .push(crate::error!(begin, "Unexpected end of file"));
+                self.error_unexpected_eof();
                 Err(())
             }
         }

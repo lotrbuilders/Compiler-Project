@@ -79,11 +79,19 @@ impl Parser {
         match token {
             Some(token) => Ok(token),
             None => {
-                let span = self.peek_span();
-                self.errors.push(error!(span, "Unexpected end of file"));
+                self.error_unexpected_eof();
                 Err(())
             }
         }
+    }
+
+    fn expect_semicolon(&mut self) {
+        let _ = crate::expect!(self, TokenType::Semicolon, RecoveryStrategy::Nothing);
+    }
+
+    fn error_unexpected_eof(&mut self) {
+        let span = self.peek_span();
+        self.errors.push(error!(span, "Unexpected end of file"));
     }
 
     fn parse_braced<F, T>(&mut self, c: char, f: F) -> Result<T, ()>
