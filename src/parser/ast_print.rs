@@ -134,8 +134,8 @@ impl Display for Statement {
                 statement,
                 do_while: true,
             } => {
-                writeln!(f, "do\n{}", statement)?;
-                writeln!(f, "while ({})", expression)?;
+                write!(f, "do\n{}", statement)?;
+                writeln!(f, "while ({});", expression)?;
             }
         }
         Ok(())

@@ -361,15 +361,16 @@ impl Evaluate for Expression {
             Ternary(cond, left, right) => {
                 let cond = cond.eval(result, context);
 
-                let (if_index, if_label) = context.insert_place_holder_jump(result);
+                let (if_index, _) = context.insert_place_holder_jump(result);
                 let left = left.eval(result, context);
 
-                let (else_index, else_label) = context.insert_place_holder_jump(result);
+                let if_label = context.get_current_label();
+                let (else_index, _) = context.insert_place_holder_jump(result);
 
                 let right = right.eval(result, context);
 
                 let vreg = context.next_vreg();
-
+                let else_label = context.get_current_label();
                 let (last_index, label) = context.insert_place_holder_jump_phi(
                     result,
                     IRPhi::ternary((if_label, else_label), vreg, (left, right)),

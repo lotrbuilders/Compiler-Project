@@ -74,7 +74,7 @@ impl Parser {
         }
     }
 
-    fn _expect_some(&mut self) -> Result<Token, ()> {
+    fn expect_some(&mut self) -> Result<Token, ()> {
         let token = self.peek();
         match token {
             Some(token) => Ok(token),

@@ -13,6 +13,14 @@ impl Parser {
     // <declaration-specifiers> ::= <type-qualifier>+
     fn parse_declaration_specifiers(&mut self) -> Result<Vec<Type>, ()> {
         if self.peek().filter(Parser::is_type_qualifier) == None {
+            self.expect_some()?;
+            let span = self.peek_span();
+            let token = self.peek_type().unwrap();
+            self.errors.push(crate::error!(
+                span,
+                "Expected type qualifier in declaration, found {}",
+                token
+            ));
             self.next();
             return Err(());
         }

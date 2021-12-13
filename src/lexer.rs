@@ -153,7 +153,7 @@ impl Lexer {
             "else" => Token::new(Else, span),
             "while" => Token::new(While, span),
             "for" => Token::new(For, span),
-            "do" => Token::new(While, span),
+            "do" => Token::new(Do, span),
             "break" => Token::new(Break, span),
             "continue" => Token::new(Continue, span),
             "return" => Token::new(Return, span),
