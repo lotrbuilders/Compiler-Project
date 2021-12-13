@@ -309,8 +309,8 @@ impl Evaluate for Expression {
 
                 result[right_jmp] = IRInstruction::Jmp(right_label);
                 result[left_jmp] = match op {
-                    LogOr => IRInstruction::Jnc(IRSize::S32, left, right_label),
-                    LogAnd => IRInstruction::Jcc(IRSize::S32, left, right_label),
+                    LogOr => IRInstruction::Jcc(IRSize::S32, left, right_label),
+                    LogAnd => IRInstruction::Jnc(IRSize::S32, left, right_label),
                     _ => unreachable!(),
                 };
 
