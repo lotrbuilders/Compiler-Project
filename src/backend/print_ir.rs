@@ -73,6 +73,8 @@ impl Display for IRType {
             Mul => write!(f, "mul"),
             Div => write!(f, "div"),
             Xor => write!(f, "xor"),
+            Or => write!(f, "or"),
+            And => write!(f, "and"),
             Eq => write!(f, "eq"),
             Ne => write!(f, "ne"),
             Lt => write!(f, "lt"),

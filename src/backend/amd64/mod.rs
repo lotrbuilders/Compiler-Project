@@ -18,9 +18,6 @@ use self::registers::*;
 
 rburg::rburg_main! {
     BackendAMD64,
-:   Phi(#phi)                       ";{phi}\n"
-:   PhiSrc(#lab)                    ";{lab}\n"
-
 :       Ret i32(_a %eax)            "#\n"
 :       Store(r %ireg, a adr)       "mov {a},{r}\n"
 :       Label(#i)                   ".L{i}:\n"
@@ -46,6 +43,8 @@ adr:    AddrL(#a)                   "[ebp{a}]"
 %ireg:  Mul s32(a %ireg , b %ireg)  ?"imul {res}, {b} ; {res} = {a} * {b}\n"  {1}
 %eax:   Div s32(a %eax  , b %ireg)  ?"cdq\n\tidiv {b} ; {res} = {a} / {b}\n"  {1}
 
+%ireg:  And(a %ireg , b %ireg)      ?"and {res}, {b} ; {res} = {a} & {b}\n"   {1}
+%ireg:  Or(a %ireg , b %ireg)       ?"or  {res}, {b} ; {res} = {a} | {b}\n"   {1}
 %ireg:  Xor(a %ireg , b %ireg)      ?"xor {res}, {b} ; {res} = {a} ^ {b}\n"   {1}
 %ireg:  Xor(a %ireg , Imm(#_i))     ?"not {res} ; {res} = ~{a}\n"             {self.range(self.get_right_index(index),-1,-1)+1}
 
