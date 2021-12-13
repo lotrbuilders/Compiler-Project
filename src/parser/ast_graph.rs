@@ -69,6 +69,26 @@ impl Graph for Statement {
         let number = *node_number;
         use Statement::*;
         match self {
+            Break { .. } => {
+                writeln!(buffer, "n{} [label=\"break\"]", number)?;
+                writeln!(buffer, "n{} -- n{}", parent, number)?;
+            }
+            Continue { .. } => {
+                writeln!(buffer, "n{} [label=\"continue\"]", number)?;
+                writeln!(buffer, "n{} -- n{}", parent, number)?;
+            }
+
+            Compound {
+                span: _,
+                statements,
+            } => {
+                writeln!(buffer, "n{} [label=\"<compound-statement>\"]", number)?;
+                writeln!(buffer, "n{} -- n{}", parent, number)?;
+                for stmt in statements {
+                    stmt.graph(buffer, node_number, number)?;
+                }
+            }
+
             Declaration {
                 span: _,
                 ident,
@@ -76,6 +96,7 @@ impl Graph for Statement {
                 init,
             } => {
                 writeln!(buffer, "n{} [label=\"declaration {}\"]", number, ident)?;
+                writeln!(buffer, "n{} -- n{}", parent, number)?;
                 if let Some(init) = init {
                     init.graph(buffer, node_number, number)?;
                 }

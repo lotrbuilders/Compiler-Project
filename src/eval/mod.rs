@@ -122,6 +122,13 @@ impl Evaluate for Statement {
     ) -> u32 {
         use Statement::*;
         match self {
+            Break { .. } => todo!(),
+            Continue { .. } => todo!(),
+            Compound {
+                span: _,
+                statements,
+            } => todo!(),
+
             Declaration {
                 span: _,
                 ident: _,

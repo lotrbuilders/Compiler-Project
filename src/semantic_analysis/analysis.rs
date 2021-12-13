@@ -126,6 +126,15 @@ impl Analysis for Statement {
                     ));
                 }
             }
+
+            Compound {
+                span: _,
+                statements,
+            } => todo!(),
+
+            Break { span } | Continue { span } => {
+                todo!();
+            }
         }
     }
 }

@@ -38,6 +38,21 @@ impl Display for Statement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use Statement::*;
         match self {
+            Break { .. } => writeln!(f, "break;")?,
+
+            Continue { .. } => writeln!(f, "continue;")?,
+
+            Compound {
+                span: _,
+                statements,
+            } => {
+                writeln!(f, "{{")?;
+                for stmt in statements {
+                    write!(f, "{}", stmt)?;
+                }
+                writeln!(f, "}}")?;
+            }
+
             Declaration {
                 span: _,
                 ident: _,
@@ -51,6 +66,7 @@ impl Display for Statement {
                     writeln!(f, ";")?;
                 }
             }
+
             Empty(_) => write!(f, ";")?,
 
             Expression {

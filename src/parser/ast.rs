@@ -25,18 +25,21 @@ pub enum Statement {
         span: Span,
         expression: Expression,
     },
+
     If {
         span: Span,
         expression: Expression,
         statement: Box<Statement>,
         else_statement: Option<Box<Statement>>,
     },
+
     While {
         span: Span,
         expression: Expression,
         statement: Box<Statement>,
         do_while: bool,
     },
+
     For {
         span: Span,
         init: Option<Box<Statement>>,
@@ -44,17 +47,33 @@ pub enum Statement {
         expression: Option<Box<Expression>>,
         statement: Box<Statement>,
     },
+
+    Break {
+        span: Span,
+    },
+
+    Continue {
+        span: Span,
+    },
+
     Expression {
         span: Span,
         expression: Expression,
     },
+
+    Empty(Span),
+
     Declaration {
         span: Span,
         ident: String,
         decl_type: Vec<Type>,
         init: Option<Expression>,
     },
-    Empty(Span),
+
+    Compound {
+        span: Span,
+        statements: Vec<Statement>,
+    },
 }
 
 // Expression has a seperate expression variant
