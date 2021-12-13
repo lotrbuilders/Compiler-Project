@@ -97,6 +97,24 @@ impl Lexer {
                         output.push(Token::new(token::punct(c), begin));
                     }
                 }
+                '|' | '&' => {
+                    let first_char = self.peek(input).unwrap();
+                    let begin = self.here();
+                    self.next(input);
+                    let c = self.peek(input);
+                    let span = begin.to(&self.here());
+                    match (c, first_char) {
+                        (Some('|'), '|') => {
+                            output.push(Token::new(TokenType::LogicalOr, span));
+                            self.next(input);
+                        }
+                        (Some('&'), '&') => {
+                            output.push(Token::new(TokenType::LogicalAnd, span));
+                            self.next(input);
+                        }
+                        _ => output.push(Token::new(token::punct(first_char), begin)),
+                    }
+                }
                 ' ' | '\t' | '\n' | '\r' => {
                     self.next(input);
                 }
