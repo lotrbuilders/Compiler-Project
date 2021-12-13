@@ -53,6 +53,8 @@ pub enum IRInstruction {
     Div(IRSize, IRReg, IRReg, IRReg),
 
     Xor(IRSize, IRReg, IRReg, IRReg),
+    Or(IRSize, IRReg, IRReg, IRReg),
+    And(IRSize, IRReg, IRReg, IRReg),
 
     Eq(IRSize, IRReg, IRReg, IRReg),
     Ne(IRSize, IRReg, IRReg, IRReg),
@@ -88,6 +90,8 @@ pub enum IRType {
     Div,
 
     Xor,
+    Or,
+    And,
 
     Eq,
     Ne,
@@ -134,6 +138,8 @@ impl IRInstruction {
             &Self::Div(..) => IRType::Div,
 
             &Self::Xor(..) => IRType::Xor,
+            &Self::Or(..) => IRType::Or,
+            &Self::And(..) => IRType::And,
 
             &Self::Eq(..) => IRType::Eq,
             &Self::Ne(..) => IRType::Ne,
@@ -165,6 +171,8 @@ impl IRInstruction {
             | &Self::Mul(_, _, left, _)
             | &Self::Div(_, _, left, _)
             | &Self::Xor(_, _, left, _)
+            | &Self::Or(_, _, left, _)
+            | &Self::And(_, _, left, _)
             | &Self::Eq(_, _, left, _)
             | &Self::Ne(_, _, left, _)
             | &Self::Lt(_, _, left, _)
@@ -186,6 +194,8 @@ impl IRInstruction {
             | &Self::Mul(.., right)
             | &Self::Div(.., right)
             | &Self::Xor(.., right)
+            | &Self::Or(.., right)
+            | &Self::And(.., right)
             | &Self::Eq(.., right)
             | &Self::Ne(.., right)
             | &Self::Lt(.., right)
@@ -207,6 +217,8 @@ impl IRInstruction {
             | &Self::Mul(_, result, ..)
             | &Self::Div(_, result, ..)
             | &Self::Xor(_, result, ..)
+            | &Self::Or(_, result, ..)
+            | &Self::And(_, result, ..)
             | &Self::Eq(_, result, ..)
             | &Self::Ne(_, result, ..)
             | &Self::Lt(_, result, ..)
@@ -228,6 +240,8 @@ impl IRInstruction {
             | Self::Mul(size, ..)
             | Self::Div(size, ..)
             | Self::Xor(size, ..)
+            | Self::Or(size, ..)
+            | Self::And(size, ..)
             | Self::Eq(size, ..)
             | Self::Ne(size, ..)
             | Self::Lt(size, ..)

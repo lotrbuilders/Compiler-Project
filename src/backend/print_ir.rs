@@ -36,6 +36,8 @@ impl Display for IRInstruction {
             | Mul(size, result, left, right)
             | Div(size, result, left, right)
             | Xor(size, result, left, right)
+            | Or(size, result, left, right)
+            | And(size, result, left, right)
             | Eq(size, result, left, right)
             | Ne(size, result, left, right)
             | Lt(size, result, left, right)
