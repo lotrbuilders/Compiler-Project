@@ -121,6 +121,10 @@ impl Display for BinaryExpressionType {
                 LessEqual => "<=",
                 Greater => ">",
                 GreaterEqual => ">=",
+                BinOr => "|",
+                BinAnd => "&",
+                LogOr => "||",
+                LogAnd => "&&",
             }
         )
     }

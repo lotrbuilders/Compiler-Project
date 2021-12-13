@@ -77,6 +77,10 @@ pub enum BinaryExpressionType {
     LessEqual,
     Greater,
     GreaterEqual,
+    BinOr,
+    BinAnd,
+    LogOr,
+    LogAnd,
 }
 
 #[derive(Debug, Clone)]
