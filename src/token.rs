@@ -38,6 +38,10 @@ pub enum TokenType {
     GreaterEqual,
     Question,
     Colon,
+    LogicalOr,
+    LogicalAnd,
+    Or,
+    And,
 
     //Types with a value
     ConstI(u64),
@@ -92,6 +96,8 @@ impl From<char> for TokenType {
             '>' => Greater,
             '?' => Question,
             ':' => Colon,
+            '|' => Or,
+            '&' => And,
             _ => {
                 log::warn!(
                     "char to TokenType conversion with unimplemented character {}",
@@ -112,6 +118,8 @@ impl From<&str> for TokenType {
             "!=" => Inequal,
             "<=" => LessEqual,
             ">=" => GreaterEqual,
+            "||" => LogicalOr,
+            "&&" => LogicalAnd,
             _ => {
                 log::warn!(
                     "&str to TokenType conversion with unimplemented string {}",
@@ -155,6 +163,10 @@ impl Display for TokenType {
             GreaterEqual => write!(f, "'>='"),
             Question => write!(f, "'?'"),
             Colon => write!(f, "':'"),
+            LogicalOr => write!(f, "'||'"),
+            LogicalAnd => write!(f, "'&&'"),
+            Or => write!(f, "'|'"),
+            And => write!(f, "'&'"),
 
             Ident(val) => write!(f, "'{}'", val),
             ConstI(val) => write!(f, "'{}'", val),
