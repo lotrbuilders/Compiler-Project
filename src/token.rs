@@ -11,6 +11,9 @@ pub enum TokenType {
     //Control flow keywords
     If,
     Else,
+    While,
+    For,
+    Do,
 
     //Statement keywords
     Return,
@@ -139,6 +142,9 @@ impl Display for TokenType {
 
             If => write!(f, "'if'"),
             Else => write!(f, "'else'"),
+            While => write!(f, "'while'"),
+            For => write!(f, "'for'"),
+            Do => write!(f, "'do'"),
 
             Return => write!(f, "'return'"),
 
