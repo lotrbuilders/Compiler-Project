@@ -113,10 +113,14 @@ fn binding_power(token: &Token) -> (u8, u8) {
     match token.token() {
         Assign => right_associative(1),
         Question => left_associative(2),
-        Equal | Inequal => left_associative(6),
-        Less | LessEqual | Greater | GreaterEqual => left_associative(7),
-        Plus | Minus => left_associative(9),
-        Asterisk | Divide => left_associative(10),
+        LogicalOr => left_associative(3),
+        LogicalAnd => left_associative(4),
+        Or => left_associative(5),
+        And => left_associative(6),
+        Equal | Inequal => left_associative(7),
+        Less | LessEqual | Greater | GreaterEqual => left_associative(8),
+        Plus | Minus => left_associative(10),
+        Asterisk | Divide => left_associative(11),
         _ => {
             log::error!("Binding power called on unsupported token {}", token);
             left_associative(0)
@@ -129,7 +133,7 @@ fn is_binary_operator(token: Option<Token>) -> Option<Token> {
         use TokenType::*;
         match t.token() {
             Plus | Minus | Asterisk | Divide | Less | LessEqual | Greater | GreaterEqual
-            | Equal | Inequal | Assign | Question => true,
+            | Equal | Inequal | Assign | Question | LogicalOr | LogicalAnd | Or | And => true,
             _ => false,
         }
     })
@@ -178,6 +182,11 @@ fn new_binary_expression(token: &Token, left: Expression, right: Expression) -> 
         TokenType::LessEqual => LessEqual,
         TokenType::Greater => Greater,
         TokenType::GreaterEqual => GreaterEqual,
+
+        TokenType::LogicalOr => LogOr,
+        TokenType::LogicalAnd => LogAnd,
+        TokenType::Or => BinOr,
+        TokenType::And => BinAnd,
         _ => unreachable!(),
     };
     Expression {
