@@ -267,6 +267,56 @@ impl Evaluate for Expression {
                 vreg
             }
 
+            // Could benefit from constants in phi nodes
+            Binary(op @ (LogOr | LogAnd), left, right) => {
+                let start_label = insert_phi_src(result, label_counter);
+                let left = left.eval(result, vreg_counter, label_counter, variables);
+                let first_operand = {
+                    let vreg = *vreg_counter;
+                    *vreg_counter += 1;
+                    result.push(IRInstruction::Imm(
+                        IRSize::S32,
+                        vreg,
+                        match op {
+                            LogOr => 1,
+                            LogAnd => 0,
+                            _ => unreachable!(),
+                        },
+                    ));
+                    vreg
+                };
+                let (left_jmp, left_label) = insert_place_holder_jump(result, label_counter);
+
+                let right = right.eval(result, vreg_counter, label_counter, variables);
+                let second_operand = {
+                    let vreg = *vreg_counter;
+                    *vreg_counter += 2;
+                    result.push(IRInstruction::Imm(IRSize::S32, vreg, 0));
+                    result.push(IRInstruction::Ne(IRSize::S32, vreg + 1, right, vreg));
+                    vreg + 1
+                };
+                let vreg = *vreg_counter;
+                *vreg_counter += 1;
+                let (right_jmp, right_label) = insert_place_holder_jump_phi(
+                    result,
+                    label_counter,
+                    IRPhi::ternary(
+                        (start_label, left_label),
+                        vreg,
+                        (first_operand, second_operand),
+                    ),
+                );
+
+                result[right_jmp] = IRInstruction::Jmp(right_label);
+                result[left_jmp] = match op {
+                    LogOr => IRInstruction::Jnc(IRSize::S32, left, right_label),
+                    LogAnd => IRInstruction::Jcc(IRSize::S32, left, right_label),
+                    _ => unreachable!(),
+                };
+
+                vreg
+            }
+
             Binary(op, left, right) => {
                 let left = left.eval(result, vreg_counter, label_counter, variables);
                 let right = right.eval(result, vreg_counter, label_counter, variables);
@@ -277,12 +327,17 @@ impl Evaluate for Expression {
                     Subtract => IRInstruction::Sub(IRSize::S32, vreg, left, right),
                     Multiply => IRInstruction::Mul(IRSize::S32, vreg, left, right),
                     Divide => IRInstruction::Div(IRSize::S32, vreg, left, right),
+
+                    BinOr => IRInstruction::Or(IRSize::S32, vreg, left, right),
+                    BinAnd => IRInstruction::And(IRSize::S32, vreg, left, right),
+
                     Equal => IRInstruction::Eq(IRSize::S32, vreg, left, right),
                     Inequal => IRInstruction::Ne(IRSize::S32, vreg, left, right),
                     Less => IRInstruction::Lt(IRSize::S32, vreg, left, right),
                     LessEqual => IRInstruction::Le(IRSize::S32, vreg, left, right),
                     Greater => IRInstruction::Gt(IRSize::S32, vreg, left, right),
                     GreaterEqual => IRInstruction::Ge(IRSize::S32, vreg, left, right),
+                    _ => unreachable!(),
                 });
                 vreg
             }

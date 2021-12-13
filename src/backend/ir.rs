@@ -111,8 +111,8 @@ pub enum IRType {
     Ret,
 }
 
-type IRReg = u32;
-type IRLabel = u32;
+pub type IRReg = u32;
+pub type IRLabel = u32;
 
 // Stores the size of a particular operation
 #[derive(Clone, Debug)]
