@@ -71,6 +71,7 @@ impl Analysis for Statement {
                 statement,
             } => {
                 init.as_mut().map(|init| init.analyze(analyzer));
+                analyzer.symbol_table.enter_scope();
                 condition
                     .as_mut()
                     .map(|condition| condition.analyze(analyzer));
@@ -79,6 +80,7 @@ impl Analysis for Statement {
                     .map(|expression| expression.analyze(analyzer));
                 statement.analyze(analyzer);
                 statement.check_for_declaration(analyzer);
+                analyzer.symbol_table.leave_scope();
             }
 
             If {

@@ -26,6 +26,12 @@ fn insert_place_holder_jump_phi(
     (index, label)
 }
 
+fn insert_fall_through(result: &mut Vec<IRInstruction>, label_counter: &mut u32) -> u32 {
+    let label = *label_counter;
+    result.push(IRInstruction::Jmp(label));
+    insert_label(result, label_counter)
+}
+
 fn insert_label(result: &mut Vec<IRInstruction>, label_counter: &mut u32) -> u32 {
     let label = *label_counter;
     *label_counter += 1;
@@ -183,12 +189,68 @@ impl Evaluate for Statement {
                 }
             }
 
+            For {
+                span: _,
+                init,
+                condition,
+                expression,
+                statement,
+            } => {
+                if let Some(init) = init {
+                    init.eval(result, vreg_counter, label_counter, variables);
+                }
+
+                let (jmp_index, loop_label) = insert_place_holder_jump(result, label_counter);
+
+                statement.eval(result, vreg_counter, label_counter, variables);
+                expression
+                    .as_ref()
+                    .map(|exp| exp.eval(result, vreg_counter, label_counter, variables));
+
+                let check_label = insert_fall_through(result, label_counter);
+                let comparison = condition
+                    .as_ref()
+                    .map(|cond| cond.eval(result, vreg_counter, label_counter, variables))
+                    .unwrap_or(0);
+
+                let (last_index, _label_after) = insert_place_holder_jump(result, label_counter);
+
+                result[jmp_index] = IRInstruction::Jmp(check_label);
+                result[last_index] = match condition {
+                    Some(_) => IRInstruction::Jcc(IRSize::S32, comparison, loop_label),
+                    None => IRInstruction::Jmp(loop_label),
+                };
+            }
+
             Return {
                 span: _,
                 expression,
             } => {
                 let vreg = expression.eval(result, vreg_counter, label_counter, variables);
                 result.push(IRInstruction::Ret(IRSize::S32, vreg))
+            }
+
+            // The check is done last, therefore an extra jump is inserted at the front
+            // In most cases this should lead to a speedup as most loops are entered
+            While {
+                span: _,
+                expression,
+                statement,
+                do_while,
+            } => {
+                let (jmp_index, loop_label) = insert_place_holder_jump(result, label_counter);
+
+                statement.eval(result, vreg_counter, label_counter, variables);
+                let check_label = insert_fall_through(result, label_counter);
+
+                let expression = expression.eval(result, vreg_counter, label_counter, variables);
+                let (last_index, _label_after) = insert_place_holder_jump(result, label_counter);
+
+                result[last_index] = IRInstruction::Jcc(IRSize::S32, expression, loop_label);
+                result[jmp_index] = IRInstruction::Jmp(match do_while {
+                    true => loop_label,
+                    false => check_label,
+                });
             }
         }
         0
