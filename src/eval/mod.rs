@@ -384,7 +384,6 @@ impl Evaluate for Expression {
 
             // Could benefit from constants in phi nodes
             Binary(op @ (LogOr | LogAnd), left, right) => {
-                let start_label = context.get_current_label();
                 let left = left.eval(result, context);
                 let first_operand = {
                     let vreg = context.next_vreg();
@@ -399,7 +398,8 @@ impl Evaluate for Expression {
                     ));
                     vreg
                 };
-                let (left_jmp, left_label) = context.insert_place_holder_jump(result);
+                let start_label = context.get_current_label();
+                let (left_jmp, _) = context.insert_place_holder_jump(result);
 
                 let right = right.eval(result, context);
                 let second_operand = {
@@ -410,6 +410,7 @@ impl Evaluate for Expression {
                     vreg
                 };
                 let vreg = context.next_vreg();
+                let left_label = context.get_current_label();
                 let (right_jmp, right_label) = context.insert_place_holder_jump_phi(
                     result,
                     IRPhi::ternary(
