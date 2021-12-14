@@ -3,6 +3,7 @@ use super::SemanticAnalyzer;
 use crate::error;
 use crate::parser::ast::*;
 use crate::parser::r#type::Type;
+use crate::semantic_analysis::type_checking::check_arguments_function;
 
 // The analysis for expressions
 impl Analysis for Expression {
@@ -28,7 +29,13 @@ impl Analysis for Expression {
                 }
             }
 
-            Function(..) => todo!(),
+            Function(func, arguments) => {
+                func.analyze_lvalue(analyzer);
+                for arg in arguments.iter_mut() {
+                    arg.analyze(analyzer);
+                }
+                check_arguments_function(analyzer, &self.span, &func.ast_type, arguments);
+            }
 
             Unary(_op, exp) => {
                 exp.analyze(analyzer);
