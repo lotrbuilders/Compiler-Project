@@ -1,9 +1,10 @@
+use super::r#type::TypeNode;
 use super::{recovery::RecoveryStrategy, Parser, Type};
 use crate::expect;
 use crate::token::TokenType;
 
 impl Parser {
-    pub(super) fn parse_declaration(&mut self) -> Result<Vec<Type>, ()> {
+    pub(super) fn parse_declaration(&mut self) -> Result<Type, ()> {
         let base_type = self.parse_declaration_specifiers()?;
         let declarator = self.parse_declarator()?;
         Ok(Type::combine(base_type, declarator))
@@ -11,7 +12,7 @@ impl Parser {
 
     // Parses all type qualifiers (const, int, void)
     // <declaration-specifiers> ::= <type-qualifier>+
-    fn parse_declaration_specifiers(&mut self) -> Result<Vec<Type>, ()> {
+    fn parse_declaration_specifiers(&mut self) -> Result<Type, ()> {
         if self.peek().filter(Parser::is_type_qualifier) == None {
             self.expect_some()?;
             let span = self.peek_span();
@@ -24,18 +25,18 @@ impl Parser {
             self.next();
             return Err(());
         }
-        let mut result = Vec::<Type>::new();
+        let mut result = Vec::<TypeNode>::new();
         while let Some(token) = self.peek().filter(Parser::is_type_qualifier) {
             self.next();
             result.push(token.into());
         }
-        Ok(result)
+        Ok(result.into())
     }
 
     // Parse a declarator optionally containing pointers and function
     // <declarator> ::= name ( '('  ')' )?
-    fn parse_declarator(&mut self) -> Result<Vec<Type>, ()> {
-        let mut result = Vec::<Type>::new();
+    fn parse_declarator(&mut self) -> Result<Type, ()> {
+        let mut result = Vec::<TypeNode>::new();
         let name = expect!(
             self,
             TokenType::Ident(_),
@@ -58,8 +59,8 @@ impl Parser {
                     )
                 )
             )?;
-            result.push(Type::Function(Vec::new()))
+            result.push(TypeNode::Function(Vec::new()))
         }
-        Ok(result)
+        Ok(result.into())
     }
 }

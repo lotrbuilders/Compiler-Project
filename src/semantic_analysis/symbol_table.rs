@@ -4,7 +4,7 @@ use std::collections::HashMap;
 #[derive(Clone, Debug)]
 pub struct Symbol {
     pub number: u32,
-    pub symbol_type: Vec<Type>,
+    pub symbol_type: Type,
     pub global: bool,
 }
 
@@ -12,7 +12,7 @@ pub struct Symbol {
 pub struct SymbolTable {
     counter: u32,
     local_table: Vec<HashMap<String, Symbol>>,
-    _global_table: HashMap<String, Symbol>,
+    global_table: HashMap<String, Symbol>,
 }
 
 impl SymbolTable {
@@ -20,7 +20,7 @@ impl SymbolTable {
         SymbolTable {
             counter: 0,
             local_table: Vec::new(),
-            _global_table: HashMap::new(),
+            global_table: HashMap::new(),
         }
     }
 
@@ -42,22 +42,33 @@ impl SymbolTable {
         false
     }
 
-    pub fn try_insert(&mut self, key: &String, symbol_type: &Vec<Type>) -> Result<(), ()> {
+    pub fn try_insert(&mut self, key: &String, symbol_type: &Type) -> Result<(), ()> {
+        let number = self.counter;
         if let Some(map) = self.local_table.last_mut() {
-            if !map.contains_key(key) {
-                map.insert(
-                    key.clone(),
-                    Symbol {
-                        number: self.counter,
-                        symbol_type: symbol_type.clone(),
-                        global: false,
-                    },
-                );
-                self.counter += 1;
-                Ok(())
-            } else {
-                Err(())
-            }
+            SymbolTable::try_insert2(map, key, symbol_type, number)
+        } else {
+            SymbolTable::try_insert2(&mut self.global_table, key, symbol_type, number)
+        }?;
+        self.counter += 1;
+        Ok(())
+    }
+
+    fn try_insert2(
+        map: &mut HashMap<String, Symbol>,
+        key: &String,
+        symbol_type: &Type,
+        number: u32,
+    ) -> Result<(), ()> {
+        if !map.contains_key(key) {
+            map.insert(
+                key.clone(),
+                Symbol {
+                    number,
+                    symbol_type: symbol_type.clone(),
+                    global: false,
+                },
+            );
+            Ok(())
         } else {
             Err(())
         }

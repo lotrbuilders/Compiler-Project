@@ -1,5 +1,4 @@
 use super::ast::*;
-use super::r#type::type2string;
 use std::fmt;
 use std::fmt::Display;
 
@@ -19,7 +18,7 @@ impl Display for TranslationUnit {
 
 impl Display for ExternalDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", type2string(&self.ast_type))?;
+        write!(f, "{}", self.ast_type)?;
         match &self.function_body {
             None => writeln!(f, ";")?,
             Some(body) => {
@@ -59,7 +58,7 @@ impl Display for Statement {
                 decl_type,
                 init,
             } => {
-                write!(f, "{}", type2string(decl_type))?;
+                write!(f, "{}", decl_type)?;
                 if let Some(exp) = init {
                     writeln!(f, " = {};", exp)?;
                 } else {

@@ -1,4 +1,5 @@
 use super::ast::*;
+use super::r#type::TypeNode;
 use super::{recovery::RecoveryStrategy, Parser, Type};
 use crate::expect;
 use crate::token::{Token, TokenType};
@@ -65,7 +66,7 @@ impl Parser {
                 self.next();
                 Ok(Expression {
                     span: begin,
-                    ast_type: vec![Type::Int],
+                    ast_type: vec![TypeNode::Int].into(),
                     variant: ExpressionVariant::ConstI(value as i128),
                 })
             }
@@ -73,7 +74,7 @@ impl Parser {
                 self.next();
                 Ok(Expression {
                     span: begin,
-                    ast_type: Vec::new(),
+                    ast_type: Type::empty(),
                     variant: ExpressionVariant::Ident(name, 0),
                 })
             }
@@ -151,7 +152,7 @@ fn new_ternary_expression(
 
     Expression {
         span,
-        ast_type: Vec::new(),
+        ast_type: Type::empty(),
         variant: ExpressionVariant::Ternary(cond, left, right),
     }
 }
@@ -164,7 +165,7 @@ fn new_binary_expression(token: &Token, left: Expression, right: Expression) -> 
     if let TokenType::Assign = token.token() {
         return Expression {
             span,
-            ast_type: Vec::new(),
+            ast_type: Type::empty(),
             variant: Assign(left, right),
         };
     }
@@ -190,7 +191,7 @@ fn new_binary_expression(token: &Token, left: Expression, right: Expression) -> 
     };
     Expression {
         span,
-        ast_type: Vec::new(),
+        ast_type: Type::empty(),
         variant: Binary(op, left, right),
     }
 }
@@ -208,7 +209,7 @@ fn new_unary_expression(token: &Token, exp: Expression) -> Expression {
     };
     Expression {
         span,
-        ast_type: Vec::new(),
+        ast_type: Type::empty(),
         variant: ExpressionVariant::Unary(variant, exp),
     }
 }

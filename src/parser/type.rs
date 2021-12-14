@@ -1,41 +1,70 @@
+use std::fmt::Display;
+
 use crate::token::{Token, TokenType};
 
 // Type contains a component C Type used by something
 // The Name if any should be the highes
 // This is followed in order of dereferencing/calling
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Type {
+pub enum TypeNode {
     Int,
     Name(String),
-    Function(Vec<Vec<Type>>),
+    Function(Vec<Type>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Type {
+    nodes: Vec<TypeNode>,
 }
 
 impl Type {
-    pub fn is_function(input: &Vec<Type>) -> bool {
-        match input.get(1) {
-            Some(Type::Function(_)) => true,
+    pub fn empty() -> Type {
+        Type { nodes: Vec::new() }
+    }
+    pub fn is_function(&self) -> bool {
+        Type::is_function2(&self.nodes)
+    }
+
+    fn is_function2(input: &[TypeNode]) -> bool {
+        match input.get(0) {
+            Some(TypeNode::Name(_)) => Type::is_function2(&input[1..]),
+            Some(TypeNode::Function(_)) => true,
             _ => false,
         }
     }
-    pub fn get_name(input: &Vec<Type>) -> Option<String> {
+
+    pub fn get_function_arguments<'a>(&'a self) -> Option<&'a Vec<Type>> {
+        Type::get_function_arguments2(&self.nodes)
+    }
+
+    fn get_function_arguments2<'a>(input: &'a [TypeNode]) -> Option<&'a Vec<Type>> {
         match input.get(0) {
-            Some(Type::Name(name)) => Some(name.clone()),
+            Some(TypeNode::Name(_)) => Type::get_function_arguments2(&input[1..]),
+            Some(TypeNode::Function(arguments)) => Some(arguments),
             _ => None,
         }
     }
+
+    pub fn get_name(&self) -> Option<String> {
+        match self.nodes.get(0) {
+            Some(TypeNode::Name(name)) => Some(name.clone()),
+            _ => None,
+        }
+    }
+
     // Function works under current definition of the types, but might need to be processed further when more types are introduced
-    pub fn combine(mut base_type: Vec<Type>, mut declarator: Vec<Type>) -> Vec<Type> {
-        declarator.append(&mut base_type);
+    pub fn combine(mut base_type: Type, mut declarator: Type) -> Type {
+        declarator.nodes.append(&mut base_type.nodes);
         declarator
     }
 }
 
-impl From<Token> for Type {
-    fn from(token: Token) -> Type {
+impl From<Token> for TypeNode {
+    fn from(token: Token) -> TypeNode {
         use TokenType::*;
         match token.token() {
-            Int => Type::Int,
-            Ident(name) => Type::Name(name),
+            Int => TypeNode::Int,
+            Ident(name) => TypeNode::Name(name),
             _ => {
                 log::error!("From<Token> for Type called on unqualified type");
                 std::process::exit(1);
@@ -44,30 +73,41 @@ impl From<Token> for Type {
     }
 }
 
-pub fn type2string(typ: &[Type]) -> String {
-    let mut result = String::new();
+impl From<Vec<TypeNode>> for Type {
+    fn from(nodes: Vec<TypeNode>) -> Type {
+        Type { nodes }
+    }
+}
+
+impl Display for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        format_type(&self.nodes, f)
+    }
+}
+
+fn format_type(typ: &[TypeNode], f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     if typ.is_empty() {
-        return result;
+        return Ok(());
     }
     for i in (0..=(typ.len() - 1)).rev() {
-        use Type::*;
+        use TypeNode::*;
         match &typ[i] {
-            Int => result.push_str("int "),
-            Name(name) => result.push_str(&name),
+            Int => write!(f, "int ")?,
+            Name(name) => write!(f, "{}", name)?,
             Function(arguments) => {
                 //Extend later when functions are fully implemented
-                result.push_str(&format!("{}(", type2string(&typ[0..i])));
+                format_type(&typ[0..i], f)?;
+                write!(f, "(")?;
                 if let Some(arg) = arguments.get(0) {
-                    result.push_str(&type2string(arg));
+                    write!(f, "{}", arg)?;
                 }
                 for arg in arguments.iter().skip(1) {
-                    result.push_str(", ");
-                    result.push_str(&type2string(arg));
+                    write!(f, ", {}", arg)?;
                 }
-                result.push_str(")");
+                write!(f, ")")?;
                 break;
             }
         };
     }
-    result
+    Ok(())
 }

@@ -13,7 +13,7 @@ pub struct TranslationUnit {
 #[derive(Debug, Clone)]
 pub struct ExternalDeclaration {
     pub span: Span,
-    pub ast_type: Vec<Type>,
+    pub ast_type: Type,
     pub name: String,
     pub function_body: Option<Vec<Statement>>,
 }
@@ -66,7 +66,7 @@ pub enum Statement {
     Declaration {
         span: Span,
         ident: String,
-        decl_type: Vec<Type>,
+        decl_type: Type,
         init: Option<Expression>,
     },
 
@@ -81,7 +81,7 @@ pub enum Statement {
 #[derive(Debug, Clone)]
 pub struct Expression {
     pub span: Span,
-    pub ast_type: Vec<Type>,
+    pub ast_type: Type,
     pub variant: ExpressionVariant,
 }
 

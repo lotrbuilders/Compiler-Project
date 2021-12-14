@@ -1,6 +1,5 @@
 use super::SemanticAnalyzer;
 use crate::parser::ast::*;
-use crate::parser::r#type::type2string;
 use crate::{error, warning};
 
 pub(super) trait Analysis {
@@ -128,8 +127,8 @@ impl Analysis for Statement {
                         span,
                         "Identifier {} with type {} already defined as type {}",
                         ident,
-                        type2string(symbol_type),
-                        type2string(&analyzer.symbol_table.get(ident).unwrap().symbol_type)
+                        symbol_type,
+                        &analyzer.symbol_table.get(ident).unwrap().symbol_type
                     ));
                 }
             }
