@@ -149,6 +149,17 @@ impl Display for Expression {
             ConstI(value) => write!(f, "{}", value)?,
             Ident(name, _) => write!(f, "{}", name)?,
 
+            Function(func, arguments) => {
+                write!(f, "({}(", func)?;
+                if let Some(arg) = arguments.get(0) {
+                    write!(f, "{}", arg)?;
+                }
+                for arg in arguments.iter().skip(1) {
+                    write!(f, ",{}", arg)?;
+                }
+                write!(f, "))")?;
+            }
+
             Unary(op, exp) => {
                 write!(f, "({} {})", op, exp)?;
             }
@@ -190,6 +201,7 @@ impl Display for BinaryExpressionType {
                 BinAnd => "&",
                 LogOr => "||",
                 LogAnd => "&&",
+                Comma => ",",
             }
         )
     }

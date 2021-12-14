@@ -93,6 +93,8 @@ pub enum ExpressionVariant {
     Binary(BinaryExpressionType, Box<Expression>, Box<Expression>),
     Unary(UnaryExpressionType, Box<Expression>),
 
+    Function(Box<Expression>, Vec<Expression>),
+
     ConstI(i128),
     Ident(String, u32),
 }
@@ -113,6 +115,7 @@ pub enum BinaryExpressionType {
     BinAnd,
     LogOr,
     LogAnd,
+    Comma,
 }
 
 #[derive(Debug, Clone)]

@@ -54,9 +54,17 @@ pub fn type2string(typ: &[Type]) -> String {
         match &typ[i] {
             Int => result.push_str("int "),
             Name(name) => result.push_str(&name),
-            Function(_) => {
+            Function(arguments) => {
                 //Extend later when functions are fully implemented
-                result.push_str(&format!("{}()", type2string(&typ[0..i])));
+                result.push_str(&format!("{}(", type2string(&typ[0..i])));
+                if let Some(arg) = arguments.get(0) {
+                    result.push_str(&type2string(arg));
+                }
+                for arg in arguments.iter().skip(1) {
+                    result.push_str(", ");
+                    result.push_str(&type2string(arg));
+                }
+                result.push_str(")");
                 break;
             }
         };

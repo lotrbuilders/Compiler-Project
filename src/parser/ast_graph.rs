@@ -201,6 +201,15 @@ impl Graph for Expression {
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
             }
 
+            Function(func, arguments) => {
+                writeln!(buffer, "n{} [label=\"<function-call>\"]", number)?;
+                writeln!(buffer, "n{} -- n{}", parent, number)?;
+                func.graph(buffer, node_number, number)?;
+                for arg in arguments {
+                    arg.graph(buffer, node_number, number)?;
+                }
+            }
+
             Unary(op, exp) => {
                 writeln!(buffer, "n{} [label=\"{}\"]", number, op)?;
                 writeln!(buffer, "n{} -- n{}", parent, number)?;

@@ -28,6 +28,8 @@ impl Analysis for Expression {
                 }
             }
 
+            Function(..) => todo!(),
+
             Unary(_op, exp) => {
                 exp.analyze(analyzer);
             }

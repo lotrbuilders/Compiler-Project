@@ -349,6 +349,8 @@ impl Evaluate for Expression {
                 vreg
             }
 
+            Function(..) => todo!(),
+
             Assign(left, right) => {
                 let vreg = right.eval(result, context);
                 let addr = left.eval_lvalue(result, context);
@@ -428,6 +430,12 @@ impl Evaluate for Expression {
                 };
 
                 vreg
+            }
+
+            Binary(Comma, left, right) => {
+                let _left = left.eval(result, context);
+                let right = right.eval(result, context);
+                right
             }
 
             Binary(op, left, right) => {
