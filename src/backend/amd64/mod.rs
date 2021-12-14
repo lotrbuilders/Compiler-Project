@@ -26,9 +26,13 @@ rburg::rburg_main! {
 :       Jcc(r %ireg,#l)             "test {r},{r}\n\tjnz .L{l}\n" {2}
 :       Jnc(r %ireg,#l)             "test {r},{r}\n\tjz .L{l}\n"  {2}
 
+
 con:    Imm(#i)                     "{i}"
 rc:     i con                       "{i}"
 adr:    AddrL(#a)                   "[ebp{a}]"
+adr:    AddrG(#a)                   "[{a}]"
+acon:   i con                       "{i}"
+acon:   a adr                       "{a}"
 
 %ireg:  i rc                        "mov {res}, {i}\n"      {1}
 %ireg:  a adr                       "lea {res}, {a},\n"     {1}
@@ -57,6 +61,8 @@ adr:    AddrL(#a)                   "[ebp{a}]"
 %ireg:  Le s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetle {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
 %ireg:  Gt s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetg {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
 %ireg:  Ge s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetge {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
+
+%eax:   Call(#name)                 "call {name}; {res} = {name}()\n" {20}
 }
 
 impl Backend for BackendAMD64 {
@@ -306,6 +312,14 @@ impl BackendAMD64 {
         use IRInstruction::*;
         match instruction {
             Div(..) => vec![Register::Rdx],
+            Call(..) => vec![
+                Register::Rax,
+                Register::Rcx,
+                Register::Rdx,
+                Register::R8,
+                Register::R9,
+                Register::R10,
+            ],
             _ => Vec::new(),
         }
     }
