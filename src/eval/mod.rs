@@ -387,20 +387,9 @@ impl Evaluate for Expression {
                 vreg
             }
 
-            Ident(_name, symbol_number, global) => {
-                let addr = context.next_vreg();
+            Ident(..) => {
+                let addr = self.eval_lvalue(result, context);
                 let vreg = context.next_vreg();
-
-                if *global {
-                    todo!();
-                } else {
-                    result.push(IRInstruction::AddrL(
-                        IRSize::P,
-                        addr,
-                        *symbol_number as usize,
-                    ));
-                }
-
                 result.push(IRInstruction::Load(IRSize::S32, vreg, addr));
                 vreg
             }
@@ -571,7 +560,6 @@ impl Expression {
         match &self.variant {
             Ident(_name, symbol_number, false) => {
                 let addr = context.next_vreg();
-
                 result.push(IRInstruction::AddrL(
                     IRSize::P,
                     addr,
@@ -579,14 +567,9 @@ impl Expression {
                 ));
                 addr
             }
-            Ident(_name, symbol_number, true) => {
+            Ident(name, _symbol_number, true) => {
                 let addr = context.next_vreg();
-
-                result.push(IRInstruction::AddrL(
-                    IRSize::P,
-                    addr,
-                    *symbol_number as usize,
-                ));
+                result.push(IRInstruction::AddrG(IRSize::P, addr, name.clone()));
                 addr
             }
             _ => {
