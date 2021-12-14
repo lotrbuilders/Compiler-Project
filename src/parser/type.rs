@@ -1,10 +1,13 @@
+use crate::token::{Token, TokenType};
 use std::fmt::Display;
 
-use crate::token::{Token, TokenType};
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+pub enum DeclarationType {
+    Declaration,
+    Prototype,
+    Definition,
+}
 
-// Type contains a component C Type used by something
-// The Name if any should be the highes
-// This is followed in order of dereferencing/calling
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypeNode {
     Int,
@@ -12,6 +15,9 @@ pub enum TypeNode {
     Function(Vec<Type>),
 }
 
+// Type contains  C Type used by something
+// The Name if any should be the highest
+// This is followed in order of dereferencing/calling
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Type {
     nodes: Vec<TypeNode>,
@@ -21,6 +27,13 @@ impl Type {
     pub fn empty() -> Type {
         Type { nodes: Vec::new() }
     }
+
+    pub fn is_declaration(&self) -> bool {
+        self.get_function_arguments()
+            .map(|args| args.len() == 0)
+            .unwrap_or(false)
+    }
+
     pub fn is_function(&self) -> bool {
         Type::is_function2(&self.nodes)
     }
@@ -52,6 +65,19 @@ impl Type {
         }
     }
 
+    pub fn get_return_type<'a>(&'a self) -> Option<&'a [TypeNode]> {
+        Type::get_return_type2(&self.nodes)
+    }
+
+    fn get_return_type2<'a>(input: &'a [TypeNode]) -> Option<&'a [TypeNode]> {
+        match input.get(0) {
+            Some(TypeNode::Name(_)) => Type::get_return_type2(&input[1..]),
+            Some(TypeNode::Function(_)) => Some(&input[1..]),
+            Some(_) => Some(&input[0..]),
+            _ => None,
+        }
+    }
+
     // Function works under current definition of the types, but might need to be processed further when more types are introduced
     pub fn combine(mut base_type: Type, mut declarator: Type) -> Type {
         declarator.nodes.append(&mut base_type.nodes);
@@ -76,6 +102,14 @@ impl From<Token> for TypeNode {
 impl From<Vec<TypeNode>> for Type {
     fn from(nodes: Vec<TypeNode>) -> Type {
         Type { nodes }
+    }
+}
+
+impl From<&[TypeNode]> for Type {
+    fn from(nodes: &[TypeNode]) -> Self {
+        Type {
+            nodes: nodes.iter().map(|t| t.clone()).collect(),
+        }
     }
 }
 

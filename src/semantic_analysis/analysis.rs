@@ -1,5 +1,7 @@
 use super::SemanticAnalyzer;
 use crate::parser::ast::*;
+use crate::parser::r#type::DeclarationType;
+use crate::semantic_analysis::type_checking::{compare_arguments, compare_return_types};
 use crate::{error, warning};
 
 pub(super) trait Analysis {
@@ -16,8 +18,91 @@ impl Analysis for TranslationUnit {
     }
 }
 
+impl ExternalDeclaration {
+    fn insert_or_update(
+        &mut self,
+        analyzer: &mut SemanticAnalyzer,
+        declaration_type: DeclarationType,
+    ) {
+        if let Err(()) =
+            analyzer
+                .symbol_table
+                .try_insert(&self.name, &self.ast_type, declaration_type)
+        {
+            let old_definition = analyzer.symbol_table.get(&self.name).unwrap().clone();
+            compare_return_types(
+                analyzer,
+                &self.span,
+                &self.name,
+                &old_definition.symbol_type,
+                &self.ast_type,
+            );
+            use DeclarationType::*;
+            match (old_definition.declaration_type, declaration_type) {
+                (Declaration, Declaration) => (),
+                (Definition | Prototype, Declaration) => (),
+                (Declaration, Prototype | Definition) => {
+                    let symbol = analyzer.symbol_table.get_mut(&self.name).unwrap();
+                    symbol.symbol_type = self.ast_type.clone();
+                    symbol.declaration_type = declaration_type;
+                }
+
+                (Prototype, Prototype | Definition) => {
+                    compare_arguments(
+                        analyzer,
+                        &self.span,
+                        &self.name,
+                        &old_definition.symbol_type,
+                        &self.ast_type,
+                    );
+                    let symbol = analyzer.symbol_table.get_mut(&self.name).unwrap();
+                    symbol.symbol_type = self.ast_type.clone();
+                    symbol.declaration_type = declaration_type;
+                }
+                (Definition, Prototype) => {
+                    compare_arguments(
+                        analyzer,
+                        &self.span,
+                        &self.name,
+                        &old_definition.symbol_type,
+                        &self.ast_type,
+                    );
+                }
+
+                (Definition, Definition) => analyzer.errors.push(error!(
+                    self.span,
+                    "Global
+                     {} redefined",
+                    self.name
+                )),
+            }
+        }
+    }
+}
+
 impl Analysis for ExternalDeclaration {
     fn analyze(&mut self, analyzer: &mut SemanticAnalyzer) -> () {
+        if let Some(_) = self.function_body {
+            if !self.ast_type.is_function() {
+                analyzer.errors.push(error!(
+                    self.span,
+                    "Function body defined for global variable"
+                ))
+            } else {
+                self.insert_or_update(analyzer, DeclarationType::Definition)
+            }
+        } else {
+            if self.ast_type.is_function() {
+                if self.ast_type.is_declaration() {
+                    self.insert_or_update(analyzer, DeclarationType::Declaration)
+                } else {
+                    self.insert_or_update(analyzer, DeclarationType::Prototype)
+                }
+            } else {
+                self.insert_or_update(analyzer, DeclarationType::Declaration)
+            }
+        }
+
         match &mut self.function_body {
             Some(statements) => {
                 analyzer.symbol_table.enter_scope();
@@ -122,7 +207,11 @@ impl Analysis for Statement {
                 if let Some(init) = init {
                     init.analyze(analyzer);
                 }
-                if let Err(()) = analyzer.symbol_table.try_insert(ident, symbol_type) {
+                if let Err(()) = analyzer.symbol_table.try_insert(
+                    ident,
+                    symbol_type,
+                    DeclarationType::Definition,
+                ) {
                     analyzer.errors.push(error!(
                         span,
                         "Identifier {} with type {} already defined as type {}",

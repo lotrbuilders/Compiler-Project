@@ -1,10 +1,11 @@
-use crate::parser::r#type::Type;
+use crate::parser::r#type::{DeclarationType, Type};
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
 pub struct Symbol {
     pub number: u32,
     pub symbol_type: Type,
+    pub declaration_type: DeclarationType,
     pub global: bool,
 }
 
@@ -42,12 +43,23 @@ impl SymbolTable {
         false
     }
 
-    pub fn try_insert(&mut self, key: &String, symbol_type: &Type) -> Result<(), ()> {
+    pub fn try_insert(
+        &mut self,
+        key: &String,
+        symbol_type: &Type,
+        declaration_type: DeclarationType,
+    ) -> Result<(), ()> {
         let number = self.counter;
         if let Some(map) = self.local_table.last_mut() {
-            SymbolTable::try_insert2(map, key, symbol_type, number)
+            SymbolTable::try_insert2(map, key, symbol_type, declaration_type, number)
         } else {
-            SymbolTable::try_insert2(&mut self.global_table, key, symbol_type, number)
+            SymbolTable::try_insert2(
+                &mut self.global_table,
+                key,
+                symbol_type,
+                declaration_type,
+                number,
+            )
         }?;
         self.counter += 1;
         Ok(())
@@ -57,6 +69,7 @@ impl SymbolTable {
         map: &mut HashMap<String, Symbol>,
         key: &String,
         symbol_type: &Type,
+        declaration_type: DeclarationType,
         number: u32,
     ) -> Result<(), ()> {
         if !map.contains_key(key) {
@@ -65,6 +78,7 @@ impl SymbolTable {
                 Symbol {
                     number,
                     symbol_type: symbol_type.clone(),
+                    declaration_type,
                     global: false,
                 },
             );
@@ -81,7 +95,23 @@ impl SymbolTable {
                 return result;
             }
         }
-        None
+        self.global_table.get(key)
+    }
+
+    pub fn get_mut<'a>(&'a mut self, key: &String) -> Option<&'a mut Symbol> {
+        for map in self.local_table.iter_mut().rev() {
+            let result = map.get_mut(key);
+            if result.is_some() {
+                return result;
+            }
+        }
+        self.global_table.get_mut(key)
+    }
+
+    pub fn update_declaration_type(&mut self, key: &String, declaration_type: DeclarationType) {
+        if let Some(symbol) = self.get_mut(key) {
+            symbol.declaration_type = declaration_type;
+        }
     }
 }
 
