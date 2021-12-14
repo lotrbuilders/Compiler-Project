@@ -406,9 +406,22 @@ impl Evaluate for Expression {
             }
 
             Function(func, arguments) => {
+                let arguments = arguments
+                    .iter()
+                    .map(|arg| arg.eval(result, context))
+                    .collect::<Vec<u32>>();
+                let sizes = vec![IRSize::S32; arguments.len()];
+                let arguments = Box::new(IRArguments { arguments, sizes });
+
                 if let Ident(name, ..) = &func.variant {
                     let vreg = context.next_vreg();
-                    todo!();
+                    result.push(IRInstruction::Call(
+                        IRSize::S32,
+                        vreg,
+                        name.clone(),
+                        arguments,
+                    ));
+                    vreg
                 } else {
                     todo!();
                 }
