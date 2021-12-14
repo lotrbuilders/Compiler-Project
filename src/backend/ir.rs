@@ -56,6 +56,7 @@ pub struct IRArguments {
 pub enum IRInstruction {
     Imm(IRSize, IRReg, i128),
     AddrL(IRSize, IRReg, usize),
+    AddrG(IRSize, IRReg, String),
 
     Load(IRSize, IRReg, IRReg),  // Result address
     Store(IRSize, IRReg, IRReg), // From address
@@ -94,6 +95,7 @@ pub enum IRInstruction {
 pub enum IRType {
     Imm,
     AddrL,
+    AddrG,
 
     Load,
     Store,
@@ -143,6 +145,7 @@ impl IRInstruction {
         match self {
             &Self::Imm(..) => IRType::Imm,
             &Self::AddrL(..) => IRType::AddrL,
+            &Self::AddrG(..) => IRType::AddrG,
 
             &Self::Load(..) => IRType::Load,
             &Self::Store(..) => IRType::Store,
@@ -227,6 +230,7 @@ impl IRInstruction {
         match self {
             &Self::Imm(_, result, ..)
             | &Self::AddrL(_, result, ..)
+            | &Self::AddrG(_, result, ..)
             | &Self::Load(_, result, ..)
             | &Self::Add(_, result, ..)
             | &Self::Sub(_, result, ..)
@@ -250,6 +254,7 @@ impl IRInstruction {
         match self {
             Self::Imm(size, ..)
             | Self::AddrL(size, ..)
+            | Self::AddrG(size, ..)
             | Self::Load(size, ..)
             | Self::Store(size, ..)
             | Self::Add(size, ..)

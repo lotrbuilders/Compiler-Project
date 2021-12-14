@@ -40,6 +40,7 @@ impl Display for IRInstruction {
         match self {
             Imm(size, reg, value) => write!(f, "\t%{} = {} {} #{}", reg, ins, size, value),
             AddrL(size, reg, value) => write!(f, "\t%{} = {} {} ${}", reg, ins, size, value),
+            AddrG(size, reg, name) => write!(f, "\t%{} = {} {} @{}", reg, ins, size, name),
 
             Load(size, reg, addr) => write!(f, "\t%{} = {} {} [%{}]", reg, ins, size, addr),
             Store(size, reg, addr) => write!(f, "\t{} {} %{}, [%{}]\n", ins, size, reg, addr),
@@ -82,6 +83,7 @@ impl Display for IRType {
         match self {
             Imm => write!(f, "loadi"),
             AddrL => write!(f, "addrl"),
+            AddrG => write!(f, "addrg"),
             Load => write!(f, "load"),
             Store => write!(f, "store"),
             Add => write!(f, "add"),
