@@ -47,6 +47,7 @@ pub enum TokenType {
     LogicalAnd,
     Or,
     And,
+    Comma,
 
     //Types with a value
     ConstI(u64),
@@ -103,6 +104,7 @@ impl From<char> for TokenType {
             ':' => Colon,
             '|' => Or,
             '&' => And,
+            ',' => Comma,
             _ => {
                 log::warn!(
                     "char to TokenType conversion with unimplemented character {}",
@@ -177,6 +179,7 @@ impl Display for TokenType {
             LogicalAnd => write!(f, "'&&'"),
             Or => write!(f, "'|'"),
             And => write!(f, "'&'"),
+            Comma => write!(f, "','"),
 
             Ident(val) => write!(f, "'{}'", val),
             ConstI(val) => write!(f, "'{}'", val),
