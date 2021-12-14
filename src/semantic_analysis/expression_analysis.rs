@@ -12,7 +12,7 @@ impl Analysis for Expression {
         match &mut self.variant {
             ConstI(_) => {}
 
-            Ident(name, symbol_number) => {
+            Ident(name, symbol_number, global) => {
                 if let Some(symbol) = analyzer.symbol_table.get(name) {
                     if Type::is_function(&symbol.symbol_type) {
                         log::error!(
@@ -22,6 +22,7 @@ impl Analysis for Expression {
                     }
                     self.ast_type = symbol.symbol_type.clone();
                     *symbol_number = symbol.number;
+                    *global = symbol.global;
                 } else {
                     analyzer
                         .errors

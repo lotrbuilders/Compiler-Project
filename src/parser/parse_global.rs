@@ -42,6 +42,7 @@ impl Parser {
                 None
             }
         } else {
+            expect!(self, TokenType::Semicolon, RecoveryStrategy::Nothing)?;
             None
         };
         let name = Type::get_name(&declaration).unwrap_or("name".to_string());

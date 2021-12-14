@@ -44,8 +44,29 @@ impl Parser {
                 let exp = self.parse_unary()?;
                 new_unary_expression(&token.unwrap(), exp)
             }
-            _ => self.parse_primary()?,
+            _ => self.parse_postfix()?,
         };
+        Ok(exp)
+    }
+
+    fn parse_postfix(&mut self) -> Result<Expression, ()> {
+        use TokenType::*;
+        let begin = self.peek_span();
+        let mut exp = self.parse_primary()?;
+        loop {
+            match self.peek_type() {
+                Some(LParenthesis) => {
+                    let arguments = self.parse_braced('(', Parser::parse_argument_list)?;
+                    let span = begin.to(&self.peek_span());
+                    exp = Expression {
+                        span,
+                        ast_type: Type::empty(),
+                        variant: ExpressionVariant::Function(Box::new(exp), arguments),
+                    };
+                }
+                _ => break,
+            }
+        }
         Ok(exp)
     }
 
@@ -75,7 +96,7 @@ impl Parser {
                 Ok(Expression {
                     span: begin,
                     ast_type: Type::empty(),
-                    variant: ExpressionVariant::Ident(name, 0),
+                    variant: ExpressionVariant::Ident(name, 0, false),
                 })
             }
             Some(_) => {
@@ -96,6 +117,25 @@ impl Parser {
             }
         }
     }
+
+    fn parse_argument_list(&mut self) -> Result<Vec<Expression>, ()> {
+        let mut result = Vec::new();
+        use TokenType::*;
+        loop {
+            match self.peek_type() {
+                Some(RParenthesis) => break,
+                _ => {
+                    result.push(self.pratt_parse(2)?);
+                    if let Some(RParenthesis) = self.peek_type() {
+                        break;
+                    } else {
+                        expect!(self, Comma, RecoveryStrategy::Nothing)?;
+                    }
+                }
+            }
+        }
+        Ok(result)
+    }
 }
 
 fn left_associative(bp: u8) -> (u8, u8) {
@@ -111,6 +151,7 @@ fn right_associative(bp: u8) -> (u8, u8) {
 fn binding_power(token: &Token) -> (u8, u8) {
     use TokenType::*;
     match token.token() {
+        Comma => left_associative(0),
         Assign => right_associative(1),
         Question => left_associative(2),
         LogicalOr => left_associative(3),
@@ -133,7 +174,9 @@ fn is_binary_operator(token: Option<Token>) -> Option<Token> {
         use TokenType::*;
         match t.token() {
             Plus | Minus | Asterisk | Divide | Less | LessEqual | Greater | GreaterEqual
-            | Equal | Inequal | Assign | Question | LogicalOr | LogicalAnd | Or | And => true,
+            | Equal | Inequal | Assign | Question | LogicalOr | LogicalAnd | Or | And | Comma => {
+                true
+            }
             _ => false,
         }
     })
@@ -182,11 +225,11 @@ fn new_binary_expression(token: &Token, left: Expression, right: Expression) -> 
         TokenType::LessEqual => LessEqual,
         TokenType::Greater => Greater,
         TokenType::GreaterEqual => GreaterEqual,
-
         TokenType::LogicalOr => LogOr,
         TokenType::LogicalAnd => LogAnd,
         TokenType::Or => BinOr,
         TokenType::And => BinAnd,
+        TokenType::Comma => Comma,
         _ => unreachable!(),
     };
     Expression {

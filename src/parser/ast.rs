@@ -96,7 +96,7 @@ pub enum ExpressionVariant {
     Function(Box<Expression>, Vec<Expression>),
 
     ConstI(i128),
-    Ident(String, u32),
+    Ident(String, u32, bool),
 }
 
 #[derive(Debug, Clone)]

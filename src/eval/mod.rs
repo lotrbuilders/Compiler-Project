@@ -336,20 +336,32 @@ impl Evaluate for Expression {
                 vreg
             }
 
-            Ident(_name, symbol_number) => {
+            Ident(_name, symbol_number, global) => {
                 let addr = context.next_vreg();
                 let vreg = context.next_vreg();
 
-                result.push(IRInstruction::AddrL(
-                    IRSize::P,
-                    addr,
-                    *symbol_number as usize,
-                ));
+                if *global {
+                    todo!();
+                } else {
+                    result.push(IRInstruction::AddrL(
+                        IRSize::P,
+                        addr,
+                        *symbol_number as usize,
+                    ));
+                }
+
                 result.push(IRInstruction::Load(IRSize::S32, vreg, addr));
                 vreg
             }
 
-            Function(..) => todo!(),
+            Function(func, arguments) => {
+                if let Ident(name, ..) = &func.variant {
+                    let vreg = context.next_vreg();
+                    todo!();
+                } else {
+                    todo!();
+                }
+            }
 
             Assign(left, right) => {
                 let vreg = right.eval(result, context);
@@ -493,7 +505,17 @@ impl Expression {
     fn eval_lvalue(&self, result: &mut Vec<IRInstruction>, context: &mut EvaluationContext) -> u32 {
         use ExpressionVariant::*;
         match &self.variant {
-            Ident(_name, symbol_number) => {
+            Ident(_name, symbol_number, false) => {
+                let addr = context.next_vreg();
+
+                result.push(IRInstruction::AddrL(
+                    IRSize::P,
+                    addr,
+                    *symbol_number as usize,
+                ));
+                addr
+            }
+            Ident(_name, symbol_number, true) => {
                 let addr = context.next_vreg();
 
                 result.push(IRInstruction::AddrL(
