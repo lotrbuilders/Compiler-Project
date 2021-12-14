@@ -35,7 +35,7 @@ impl Analysis for Expression {
                 for arg in arguments.iter_mut() {
                     arg.analyze(analyzer);
                 }
-                check_arguments_function(analyzer, &self.span, &func.ast_type, arguments);
+                //check_arguments_function(analyzer, &self.span, &func.ast_type, arguments);
             }
 
             Unary(_op, exp) => {

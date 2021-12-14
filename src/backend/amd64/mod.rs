@@ -1,5 +1,6 @@
 use std::vec;
 
+use super::ir;
 use super::ir::*;
 use super::Backend;
 mod ralloc;
@@ -312,16 +313,19 @@ impl BackendAMD64 {
         use IRInstruction::*;
         match instruction {
             Div(..) => vec![Register::Rdx],
-            Call(..) => vec![
-                Register::Rax,
-                Register::Rcx,
-                Register::Rdx,
-                Register::R8,
-                Register::R9,
-                Register::R10,
-            ],
+            Call(..) => vec![],
             _ => Vec::new(),
         }
+    }
+
+    fn get_call_regs(&self, sizes: &Vec<IRSize>) -> Vec<&'static RegisterClass> {
+        let mut result = Vec::with_capacity(sizes.len());
+        let mut ireg_index = 0usize;
+        for _size in sizes {
+            result.push(CALL_REGS[ireg_index]);
+            ireg_index += 1;
+        }
+        result
     }
 
     // Should depend on sizes and allignment as given by the backend

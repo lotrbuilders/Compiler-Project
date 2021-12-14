@@ -14,6 +14,7 @@ pub fn check_arguments_function(
         analyzer
             .errors
             .push(error!(span, "Cannot call '{}'", function_type));
+        return;
     }
     let argument_type = Type::get_function_arguments(function_type).unwrap();
 

@@ -48,18 +48,26 @@ impl Parser {
         result.push(name.into());
         if let Some(TokenType::LParenthesis) = self.peek().map(|token| token.token()) {
             self.next();
+            let mut arguments = Vec::new();
+            while let Some(true) = self.peek().as_ref().map(Parser::is_type_qualifier) {
+                arguments.push(self.parse_declaration()?);
+                if let Some(TokenType::RParenthesis) = self.peek_type() {
+                } else {
+                    let _ = expect!(self, TokenType::Comma, RecoveryStrategy::Nothing);
+                }
+            }
             expect!(
                 self,
                 TokenType::RParenthesis,
                 RecoveryStrategy::or(
-                    RecoveryStrategy::Until(')'), // Might be better to be UntilBraced later, but should not be a problem in logical cases
+                    RecoveryStrategy::UntilBraced(')'),
                     RecoveryStrategy::or(
                         RecoveryStrategy::Until(';'),
                         RecoveryStrategy::UntilBraced('{')
                     )
                 )
             )?;
-            result.push(TypeNode::Function(Vec::new()))
+            result.push(TypeNode::Function(arguments))
         }
         Ok(result.into())
     }

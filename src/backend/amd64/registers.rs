@@ -7,13 +7,37 @@ use std::ops::Sub;
 
 // Registers classes that are used. Should be automatically generated
 pub const REG_COUNT: usize = 6;
+#[allow(dead_code)]
+
 pub const REG_CLASS_EAX: RegisterClass = RegisterClass {
     registers: [true, false, false, false, false, false],
 };
+pub const REG_CLASS_ECX: RegisterClass = RegisterClass {
+    registers: [false, true, false, false, false, false],
+};
+pub const REG_CLASS_EDX: RegisterClass = RegisterClass {
+    registers: [false, false, true, false, false, false],
+};
+pub const REG_CLASS_R8: RegisterClass = RegisterClass {
+    registers: [false, false, false, true, false, false],
+};
+pub const REG_CLASS_R9: RegisterClass = RegisterClass {
+    registers: [false, false, false, false, true, false],
+};
+pub const REG_CLASS_R10: RegisterClass = RegisterClass {
+    registers: [false, false, false, false, false, true],
+};
+pub const CALL_REGS: [&'static RegisterClass; 6] = [
+    &REG_CLASS_EAX,
+    &REG_CLASS_ECX,
+    &REG_CLASS_EDX,
+    &REG_CLASS_R8,
+    &REG_CLASS_R9,
+    &REG_CLASS_R10,
+];
 pub const REG_CLASS_IREG: RegisterClass = RegisterClass {
     registers: [true; REG_COUNT],
 };
-#[allow(dead_code)]
 pub const REG_CLASS_EMPTY: RegisterClass = RegisterClass {
     registers: [false; REG_COUNT],
 };
