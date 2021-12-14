@@ -44,6 +44,11 @@ impl IRPhi {
         })
     }
 }
+#[derive(Clone, Debug, PartialEq)]
+pub struct IRArguments {
+    pub sizes: Vec<IRSize>,
+    pub arguments: Vec<IRReg>,
+}
 
 #[allow(dead_code)]
 /// All instructions that are available in the Immediate representation
@@ -74,6 +79,7 @@ pub enum IRInstruction {
     Jcc(IRSize, IRReg, IRLabel),
     Jnc(IRSize, IRReg, IRLabel),
     Jmp(IRLabel),
+    Call(IRSize, IRReg, String, Box<IRArguments>),
     Label(Option<Box<IRPhi>>, IRLabel),
 
     Phi(Box<IRPhi>),
@@ -111,6 +117,7 @@ pub enum IRType {
     Jcc,
     Jnc,
     Jmp,
+    Call,
     Label,
 
     Phi,
@@ -159,6 +166,7 @@ impl IRInstruction {
             &Self::Jcc(..) => IRType::Jcc,
             &Self::Jnc(..) => IRType::Jnc,
             &Self::Jmp(..) => IRType::Jmp,
+            &Self::Call(..) => IRType::Call,
             &Self::Label(..) => IRType::Label,
 
             &Self::Phi(..) => IRType::Phi,
@@ -232,7 +240,8 @@ impl IRInstruction {
             | &Self::Lt(_, result, ..)
             | &Self::Le(_, result, ..)
             | &Self::Gt(_, result, ..)
-            | &Self::Ge(_, result, ..) => Some(result),
+            | &Self::Ge(_, result, ..)
+            | &Self::Call(_, result, ..) => Some(result),
             _ => None,
         }
     }
@@ -258,7 +267,8 @@ impl IRInstruction {
             | Self::Ge(size, ..)
             | Self::Jnc(size, ..)
             | Self::Jcc(size, ..)
-            | Self::Ret(size, ..) => size.clone(),
+            | Self::Ret(size, ..)
+            | Self::Call(size, ..) => size.clone(),
 
             Self::Jmp(_) | Self::Label(..) | Self::PhiSrc(..) | Self::Phi(..) => IRSize::P,
         }

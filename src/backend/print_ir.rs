@@ -63,6 +63,9 @@ impl Display for IRInstruction {
             Jcc(size, left, label) => write!(f, "\tjcc {} %{} L{}", size, left, label),
             Jnc(size, left, label) => write!(f, "\tjnc {} %{} L{}", size, left, label),
             Jmp(label) => write!(f, "\tjmp L{}", label),
+            Call(size, result, name, arguments) => {
+                write!(f, "\t%{} = {} call @{}({})", result, size, name, arguments)
+            }
             Label(Some(phi), label) => write!(f, "L{}:\t{}", label, phi),
             Label(None, label) => write!(f, "L{}:", label),
             PhiSrc(label) => write!(f, "\tphisrc L{}:", label),
@@ -118,6 +121,19 @@ impl Display for IRPhi {
             write!(f, "L{} {:?} ", label, registers)?;
         }
         write!(f, " ]")?;
+        Ok(())
+    }
+}
+
+impl Display for IRArguments {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut iter = self.sizes.iter().zip(self.arguments.iter());
+        if let Some((size, vreg)) = iter.next() {
+            write!(f, "{} %{}", size, vreg)?;
+        }
+        for (size, vreg) in iter {
+            write!(f, ", {} %{}", size, vreg)?;
+        }
         Ok(())
     }
 }
