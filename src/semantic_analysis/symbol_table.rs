@@ -61,7 +61,11 @@ impl SymbolTable {
                 number,
             )
         }?;
-        self.counter += 1;
+        if !self.local_table.is_empty() {
+            self.counter += 1;
+        } else {
+            self.counter = 0;
+        }
         Ok(())
     }
 

@@ -8,6 +8,13 @@ pub struct IRFunction {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct IRGlobal {
+    pub name: String,
+    pub size: IRSize,
+    pub value: Option<i128>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct IRPhi {
     pub targets: Vec<IRReg>,
     pub size: Vec<IRSize>,
