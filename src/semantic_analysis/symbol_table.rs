@@ -13,7 +13,7 @@ pub struct Symbol {
 pub struct SymbolTable {
     counter: u32,
     local_table: Vec<HashMap<String, Symbol>>,
-    global_table: HashMap<String, Symbol>,
+    pub global_table: HashMap<String, Symbol>,
 }
 
 impl SymbolTable {

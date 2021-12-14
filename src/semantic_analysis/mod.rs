@@ -4,8 +4,10 @@ mod analysis;
 mod expression_analysis;
 mod type_checking;
 
+use std::collections::HashMap;
+
 use self::analysis::Analysis;
-use self::symbol_table::SymbolTable;
+use self::symbol_table::{Symbol, SymbolTable};
 use crate::parser::ast::*;
 
 // The semantic analyzer checks the entire syntax tree for problems
@@ -25,6 +27,10 @@ impl SemanticAnalyzer {
             symbol_table: SymbolTable::new(),
             loop_depth: 0,
         }
+    }
+
+    pub fn get_global_table<'a>(&'a self) -> &'a HashMap<String, Symbol> {
+        &self.symbol_table.global_table
     }
 
     pub fn analyze(&mut self, translation_unit: &mut TranslationUnit) -> Result<(), Vec<String>> {

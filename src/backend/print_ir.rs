@@ -20,6 +20,19 @@ impl Display for IRFunction {
     }
 }
 
+impl Display for IRGlobal {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.function {
+            writeln!(f, "declaration {} @{}()", self.size, self.name)?;
+        } else if let Some(value) = self.value {
+            writeln!(f, "@{} = {} {}", self.name, self.size, value)?;
+        } else {
+            writeln!(f, "declaration {} @{}", self.size, self.name)?;
+        }
+        Ok(())
+    }
+}
+
 impl Display for IRInstruction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use IRInstruction::*;

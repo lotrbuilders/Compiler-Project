@@ -7,7 +7,11 @@ use self::ir::*;
 
 // Generates all functions for the specific backend specified
 
-pub fn generate_code(functions: Vec<IRFunction>, architecture: String) -> Result<String, String> {
+pub fn generate_code(
+    functions: Vec<IRFunction>,
+    globals: Vec<IRGlobal>,
+    architecture: String,
+) -> Result<String, String> {
     let mut backend: Box<dyn Backend> = match &architecture as &str {
         "amd64" => Box::new(amd64::BackendAMD64::new()),
         _ => {
@@ -16,11 +20,12 @@ pub fn generate_code(functions: Vec<IRFunction>, architecture: String) -> Result
         }
     };
 
-    let mut assembly = String::new();
+    let mut assembly = backend.generate_global_prologue();
 
     for function in &functions {
         assembly.push_str(&backend.generate(&function));
     }
+    assembly.push_str(&backend.generate_globals(&globals));
 
     Ok(assembly)
 }
@@ -45,5 +50,15 @@ pub trait Backend {
             "/*This is not a properly implemented backend. Cannot implement {}*/",
             function.name
         )
+    }
+
+    fn generate_globals(&mut self, _globals: &Vec<IRGlobal>) -> String {
+        log::error!("Generate global is not implemented for this backend");
+        String::new()
+    }
+
+    fn generate_global_prologue(&mut self) -> String {
+        log::error!("Generate prologue is not implemented for this backend");
+        String::new()
     }
 }

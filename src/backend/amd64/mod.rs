@@ -111,6 +111,22 @@ impl Backend for BackendAMD64 {
         log::info!("Assembly:\n{}", assembly);
         assembly
     }
+
+    fn generate_globals(&mut self, globals: &Vec<IRGlobal>) -> String {
+        let mut result = String::new();
+        for global in globals {
+            if global.function {
+                result.push_str(&self.emit_function_declaration(&global.name));
+            } else {
+                result.push_str(&self.emit_common(&global.name));
+            }
+        }
+        result
+    }
+
+    fn generate_global_prologue(&mut self) -> String {
+        format!("default rel\n.text\n")
+    }
 }
 
 impl BackendAMD64 {
@@ -230,6 +246,14 @@ impl BackendAMD64 {
             }),
             _ => None,
         }
+    }
+
+    fn emit_function_declaration(&self, name: &String) -> String {
+        format!(".text\nextern {}", name)
+    }
+
+    fn emit_common(&self, name: &String) -> String {
+        format!(".bss\n{}:\nzero 4", name)
     }
 
     // Should be handwritten for any backend

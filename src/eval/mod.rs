@@ -1,5 +1,9 @@
+use std::collections::{HashMap, HashSet};
+
 use crate::backend::ir::*;
 use crate::parser::ast::*;
+use crate::parser::r#type::DeclarationType;
+use crate::semantic_analysis::symbol_table::Symbol;
 
 struct EvaluationContext {
     vreg_counter: u32,
@@ -119,15 +123,26 @@ impl EvaluationContext {
 // This module is used to evaluate the AST into an IR
 
 // The public function used to evaluate the ast
-pub fn evaluate(ast: &TranslationUnit) -> Vec<IRFunction> {
-    let mut result = Vec::<IRFunction>::new();
+pub fn evaluate(
+    ast: &TranslationUnit,
+    map: &HashMap<String, Symbol>,
+) -> (Vec<IRFunction>, Vec<IRGlobal>) {
+    let mut functions = Vec::<IRFunction>::new();
     for global in &ast.global_declarations {
-        log::trace!("Evaluating individual global");
         if let Some(declaration) = global.eval() {
-            result.push(declaration);
+            functions.push(declaration);
         }
     }
-    result
+
+    let mut globals = Vec::new();
+    let mut defined = HashSet::new();
+    for global in &ast.global_declarations {
+        log::trace!("Evaluating individual global");
+        if let Some(declaration) = global.eval_global(map, &mut defined) {
+            globals.push(declaration);
+        }
+    }
+    (functions, Vec::new())
 }
 
 impl ExternalDeclaration {
@@ -158,6 +173,42 @@ impl ExternalDeclaration {
             None => {
                 log::info!("Empty function body");
                 None
+            }
+        }
+    }
+    fn eval_global(
+        &self,
+        map: &HashMap<String, Symbol>,
+        defined: &mut HashSet<String>,
+    ) -> Option<IRGlobal> {
+        if defined.contains(&self.name) {
+            None
+        } else if let Some(_) = self.function_body {
+            defined.insert(self.name.clone());
+            None
+        } else if self.ast_type.is_function() {
+            defined.insert(self.name.clone());
+            if map[&self.name].declaration_type == DeclarationType::Definition {
+                None
+            } else {
+                Some(IRGlobal {
+                    name: self.name.clone(),
+                    size: IRSize::S32,
+                    value: None,
+                    function: true,
+                })
+            }
+        } else {
+            defined.insert(self.name.clone());
+            if map[&self.name].declaration_type == DeclarationType::Definition {
+                None
+            } else {
+                Some(IRGlobal {
+                    name: self.name.clone(),
+                    size: IRSize::S32,
+                    value: None,
+                    function: false,
+                })
             }
         }
     }

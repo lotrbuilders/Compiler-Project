@@ -82,14 +82,17 @@ pub fn compile(filename: String, output: String) -> Result<(), String> {
 
     log::info!("Evaluation started");
     log::debug!("\n{}", ast);
-    let ir_functions = evaluate(&ast);
+    let (ir_functions, ir_globals) = evaluate(&ast, analyzer.get_global_table());
     for ir in &ir_functions {
         log::debug!("Evaluation result:\n{}", ir);
+    }
+    for ir in &ir_globals {
+        log::debug!("Evaluation result global: {}", ir);
     }
 
     log::info!("Started the backend");
     log::info!("Using backend amd64");
-    let assembly = backend::generate_code(ir_functions, "amd64".to_string())?;
+    let assembly = backend::generate_code(ir_functions, ir_globals, "amd64".to_string())?;
 
     write(output, assembly)?;
     Ok(())

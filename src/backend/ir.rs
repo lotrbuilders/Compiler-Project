@@ -12,6 +12,7 @@ pub struct IRGlobal {
     pub name: String,
     pub size: IRSize,
     pub value: Option<i128>,
+    pub function: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
