@@ -192,16 +192,6 @@ impl BackendAMD64 {
         self.rules[instruction as usize] = rule_number;
     }
 
-    // Gives wether the current node is actually an instruction.
-    // Currently everything should be an instruction
-    /*fn is_instruction(&self, rule: u16) -> bool {
-        match rule {
-            0xffff => false,
-            0xfffe => false,
-            _ => true,
-        }
-    }*/
-
     // Should be automatically generated
     // Emits handwritten assembly if necessary, otherwise uses the automatic generated function
     fn emit_asm(&mut self) -> String {
@@ -324,6 +314,16 @@ impl BackendAMD64 {
         for _size in sizes {
             result.push(CALL_REGS[ireg_index]);
             ireg_index += 1;
+        }
+        result
+    }
+
+    fn get_arguments_in_registers(&self, sizes: &Vec<IRSize>) -> Vec<bool> {
+        let mut result = Vec::with_capacity(sizes.len());
+        let mut ireg = 0;
+        for _size in sizes {
+            result.push(ireg < 6);
+            ireg += 1;
         }
         result
     }

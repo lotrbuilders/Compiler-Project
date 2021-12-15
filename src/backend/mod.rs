@@ -61,4 +61,9 @@ pub trait Backend {
         log::error!("Generate prologue is not implemented for this backend");
         String::new()
     }
+
+    fn get_arguments_in_registers(&self, _sizes: Vec<IRSize>) -> Vec<bool> {
+        log::error!("Get arguments is not implemented for this backend");
+        Vec::new()
+    }
 }

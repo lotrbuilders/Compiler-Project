@@ -41,6 +41,7 @@ impl Display for IRInstruction {
             Imm(size, reg, value) => write!(f, "\t%{} = {} {} #{}", reg, ins, size, value),
             AddrL(size, reg, value) => write!(f, "\t%{} = {} {} ${}", reg, ins, size, value),
             AddrG(size, reg, name) => write!(f, "\t%{} = {} {} @{}", reg, ins, size, name),
+            Arg(size, reg) => write!(f, "\t%{} {} %{}", ins, size, reg),
 
             Load(size, reg, addr) => write!(f, "\t%{} = {} {} [%{}]", reg, ins, size, addr),
             Store(size, reg, addr) => write!(f, "\t{} {} %{}, [%{}]\n", ins, size, reg, addr),
@@ -84,6 +85,7 @@ impl Display for IRType {
             Imm => write!(f, "loadi"),
             AddrL => write!(f, "addrl"),
             AddrG => write!(f, "addrg"),
+            Arg => write!(f, "arg"),
             Load => write!(f, "load"),
             Store => write!(f, "store"),
             Add => write!(f, "add"),
