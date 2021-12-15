@@ -3,7 +3,7 @@ use super::SemanticAnalyzer;
 use crate::error;
 use crate::parser::ast::*;
 use crate::parser::r#type::Type;
-use crate::semantic_analysis::type_checking::check_arguments_function;
+//use crate::semantic_analysis::type_checking::check_arguments_function;
 
 // The analysis for expressions
 impl Analysis for Expression {

@@ -31,6 +31,9 @@ impl SymbolTable {
 
     pub fn leave_scope(&mut self) {
         self.local_table.pop();
+        if self.local_table.is_empty() {
+            self.counter = 0;
+        }
     }
 
     #[allow(dead_code)]

@@ -1,6 +1,5 @@
 use std::vec;
 
-use super::ir;
 use super::ir::*;
 use super::Backend;
 mod ralloc;
@@ -20,7 +19,7 @@ use self::registers::*;
 rburg::rburg_main! {
     BackendAMD64,
 :       Ret i32(_a %eax)            "#\n"
-:       Store(r %ireg, a adr)       "mov {a},{r}\n"
+:       Store(r %ireg, a adr)       "mov [{a}],{r}\n"
 :       Label(#i)                   ".L{i}:\n"
 %ireg:  Label(#i)                   ".L{i}:\n"
 :       Jmp(#i)                     "jmp .L{i}\n"
@@ -30,7 +29,7 @@ rburg::rburg_main! {
 
 con:    Imm(#i)                     "{i}"
 rc:     i con                       "{i}"
-adr:    AddrL(#a)                   "ebp{a}"
+adr:    AddrL(#a)                   "rbp+{a}"
 adr:    AddrG(#a)                   "{a}"
 mem:    Load(a adr)                 "[{a}]"
 acon:   i con                       "{i}"
@@ -41,8 +40,9 @@ mcon:   m mem                       "{m}"
 
 %ireg:  i rc                        "mov {res}, {i}\n"      {1}
 %ireg:  a adr                       "lea {res}, [{a}],\n"     {1}
+%ireg:  m mem                       "mov {res}, {m}\n"       {1}
 
-%ireg:  Load(m mem)                 "mov {res}, {m}\n"       {1}
+//%ireg:  Load(m mem)                 "mov {res}, {m}\n"       {1}
 
 %ireg:  Add(a %ireg , b %ireg)      ?"add {res}, {b} ; {res} = {a} + {b}\n"   {1}
 
@@ -67,8 +67,7 @@ mcon:   m mem                       "{m}"
 %ireg:  Gt s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetg {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
 %ireg:  Ge s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetge {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
 
-:       Arg(r %ireg)                "push {r}\n" {1}
-:       Arg(m mcon)                 "push dword {m}\nadd rsp,-4" {3}
+:       Arg(r %ireg)                "push {r:.64}\n" {1}
 %eax:   Call(#name)                 "call {name}; {res} = {name}()\n" {20}
 }
 
@@ -82,22 +81,19 @@ impl Backend for BackendAMD64 {
     fn generate(&mut self, function: &IRFunction) -> String {
         self.function_name = function.name.clone();
         self.instructions = function.instructions.clone();
-        self.definition_index = get_definition_indices(&function.instructions);
+        self.definition_index = get_definition_indices(&function);
         self.use_count = BackendAMD64::get_use_count(&self.instructions, &self.definition_index);
         self.instruction_states = vec![State::new(); self.instructions.len()];
         self.rules = vec![0xffff; self.instructions.len()];
+        self.arguments = function.arguments.clone();
 
-        let (local_offsets, stack_size) = BackendAMD64::find_local_offsets(&function.variables);
+        let (local_offsets, stack_size) =
+            BackendAMD64::find_local_offsets(&function.variables, &function.arguments);
+
+        log::info!("Local offsets: {:?}", local_offsets);
+        log::info!("Stack size: {}", stack_size);
         self.local_offsets = local_offsets;
         self.stack_size = stack_size;
-
-        log::trace!(
-            "State at construction:\n{}\n{:?}\n{:?}\n",
-            self.to_string(),
-            self.instructions,
-            self.definition_index
-        );
-
         for instruction in (0..function.instructions.len()).rev() {
             log::trace!("Labeling instruction tree starting at {}", instruction);
             self.label(instruction as u32);
@@ -139,6 +135,24 @@ impl Backend for BackendAMD64 {
 
     fn generate_global_prologue(&mut self) -> String {
         format!("default rel\n.text\n")
+    }
+
+    fn argument_evaluation_direction_registers(&self) -> super::Direction {
+        super::Direction::Left2Right
+    }
+
+    fn argument_evaluation_direction_stack(&self) -> super::Direction {
+        super::Direction::Right2Left
+    }
+
+    fn get_arguments_in_registers(&self, sizes: &Vec<IRSize>) -> Vec<bool> {
+        let mut result = Vec::with_capacity(sizes.len());
+        let mut ireg = 0;
+        for _size in sizes {
+            result.push(ireg < 6);
+            ireg += 1;
+        }
+        result
     }
 }
 
@@ -247,6 +261,16 @@ impl BackendAMD64 {
             } else {
                 String::new()
             }),
+            Call(_size, _vreg, name, arguments) => Some({
+                let length = arguments.count;
+                if length > 6 {
+                    // Only hold for integer and pointer arguments
+                    format!("\tcall {}\n\tadd rsp,{}\n", name, 8 * (length - 6))
+                } else {
+                    format!("\tcall {}\n", name)
+                }
+            }),
+
             _ => None,
         }
     }
@@ -268,7 +292,8 @@ impl BackendAMD64 {
             self.function_name, self.function_name
         );
         if self.stack_size != 0 {
-            prologue.push_str(&format!("\tpush rbp\n\tmov rbp,rsp\n"))
+            prologue.push_str(&format!("\tpush rbp\n\tmov rbp,rsp\n"));
+            prologue.push_str(&format!("\tsub rsp, {}\n", self.stack_size));
         }
         prologue
     }
@@ -279,6 +304,7 @@ impl BackendAMD64 {
     fn emit_epilogue(&self) -> String {
         let mut epilogue = ".end:\n".to_string();
         if self.stack_size != 0 {
+            epilogue.push_str(&format!("\tadd rsp, {}\n", self.stack_size));
             epilogue.push_str(&format!("\tpop rbp\n"));
         }
         epilogue.push_str(&format!("\tret\n"));
@@ -318,40 +344,46 @@ impl BackendAMD64 {
         let mut result = Vec::with_capacity(sizes.len());
         let mut ireg_index = 0usize;
         for _size in sizes {
-            result.push(CALL_REGS[ireg_index]);
-            ireg_index += 1;
-        }
-        result
-    }
-
-    fn get_arguments_in_registers(&self, sizes: &Vec<IRSize>) -> Vec<bool> {
-        let mut result = Vec::with_capacity(sizes.len());
-        let mut ireg = 0;
-        for _size in sizes {
-            result.push(ireg < 6);
-            ireg += 1;
+            if ireg_index < 6 {
+                result.push(CALL_REGS[ireg_index]);
+                ireg_index += 1;
+            }
         }
         result
     }
 
     // Should depend on sizes and allignment as given by the backend
     // Is currently handwritten for x86-64
-    fn find_local_offsets(variable_types: &Vec<IRSize>) -> (Vec<i32>, i32) {
-        let mut offset = -4;
-        let result = variable_types
-            .iter()
-            .map(|typ| match typ {
-                IRSize::S32 | IRSize::I32 => {
-                    offset += -4;
-                    offset
+    fn find_local_offsets(
+        variable_types: &Vec<IRSize>,
+        arguments: &IRArguments,
+    ) -> (Vec<i32>, i32) {
+        let mut arg_offset = 8;
+        let mut offset = 0;
+        let mut result = Vec::new();
+
+        for i in 0..variable_types.len() {
+            result.push(match arguments.arguments.get(i) {
+                // Either a normal variable or an argument passed via register
+                None | Some(Some(..)) => match variable_types[i] {
+                    IRSize::S32 | IRSize::I32 => {
+                        offset += -4;
+                        offset
+                    }
+                    IRSize::P => {
+                        offset += -8;
+                        offset
+                    }
+                },
+                // Stack argument
+                Some(None) => {
+                    arg_offset += 8;
+                    arg_offset
                 }
-                IRSize::P => {
-                    offset += -8;
-                    offset
-                }
-            })
-            .collect();
-        (result, -offset + 4)
+            });
+        }
+
+        (result, -offset + 8)
     }
 
     fn get_use_count(instructions: &Vec<IRInstruction>, definitions: &Vec<u32>) -> Vec<u32> {

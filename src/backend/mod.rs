@@ -33,6 +33,11 @@ pub fn get_backend(architecture: String) -> Result<Box<dyn Backend>, String> {
     Ok(backend)
 }
 
+#[derive(Clone, Copy, PartialEq)]
+pub enum Direction {
+    Left2Right,
+    Right2Left,
+}
 pub trait Backend {
     // Gives the backend type for processing
     fn backend_type(&self) -> &'static str;
@@ -65,8 +70,11 @@ pub trait Backend {
         String::new()
     }
 
-    fn get_arguments_in_registers(&self, _sizes: Vec<IRSize>) -> Vec<bool> {
+    fn get_arguments_in_registers(&self, _sizes: &Vec<IRSize>) -> Vec<bool> {
         log::error!("Get arguments is not implemented for this backend");
         Vec::new()
     }
+
+    fn argument_evaluation_direction_registers(&self) -> Direction;
+    fn argument_evaluation_direction_stack(&self) -> Direction;
 }

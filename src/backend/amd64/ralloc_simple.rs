@@ -23,9 +23,20 @@ impl RegisterAllocator for RegisterAllocatorSimple {
             reg_relocations: vec![Vec::new(); backend.instructions.len()],
         };
 
+        let mut index = 0;
+        for arg in &backend.arguments.arguments {
+            if let Some(arg) = arg {
+                assignments.allocation[*arg as usize].start(
+                    RegisterLocation::Reg(try_allocate2(CALL_REGS[index]).unwrap()),
+                    0,
+                );
+                index += 1;
+            }
+        }
+
         let cfg = ControlFlowGraph::construct(&backend.instructions);
 
-        for instruction in 0..backend.instructions.len() {
+        for instruction in 1..backend.instructions.len() {
             let rule = backend.rules[instruction];
             if backend.is_instruction(rule) {
                 allocate_register(
@@ -53,6 +64,7 @@ impl RegisterAllocator for RegisterAllocatorSimple {
             }
         }
 
+        adjust_stack_size(backend, assignments.vreg2reg.len() as i32);
         backend.allocation = assignments.allocation;
         backend.reg_relocations = assignments.reg_relocations;
     }
@@ -75,11 +87,17 @@ fn allocate_register(
     let (used_vregs, result_vreg) = backend.get_vregisters(index, rule);
 
     for (vreg, class) in used_vregs {
-        let reg = try_allocate2(&(class - &clobbered_registers - &used_registers)).unwrap();
-        let mem = get_spot(backend, vreg);
-        assignments.reg_relocations[index as usize].push(RegisterRelocation::Reload(reg, mem));
+        let reg = if let Reg(reg) = assignments.allocation[vreg as usize][index] {
+            reg
+        } else {
+            let reg = try_allocate2(&(class - &clobbered_registers - &used_registers)).unwrap();
+            let mem = get_spot(backend, vreg);
+            assignments.reg_relocations[index as usize].push(RegisterRelocation::Reload(reg, mem));
 
-        assignments.allocation[vreg as usize].start(RegisterLocation::Reg(reg), index);
+            assignments.allocation[vreg as usize].start(RegisterLocation::Reg(reg), index);
+            reg
+        };
+
         assignments.allocation[vreg as usize].end(index);
         used_registers.add(reg);
     }
@@ -96,6 +114,10 @@ fn allocate_register(
 
 fn get_spot(backend: &mut BackendAMD64, vreg: u32) -> u32 {
     (backend.stack_size.abs() as u32) + 4 + 4 * vreg
+}
+
+fn adjust_stack_size(backend: &mut BackendAMD64, vreg: i32) {
+    backend.stack_size += 4 * vreg;
 }
 
 fn move_cmp(mov: &RegisterRelocation) -> i32 {

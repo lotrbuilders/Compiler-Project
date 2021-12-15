@@ -4,6 +4,7 @@ pub struct IRFunction {
     pub name: String,
     pub return_size: IRSize,
     pub instructions: Vec<IRInstruction>,
+    pub arguments: IRArguments,
     pub variables: Vec<IRSize>,
 }
 
@@ -47,7 +48,8 @@ impl IRPhi {
 #[derive(Clone, Debug, PartialEq)]
 pub struct IRArguments {
     pub sizes: Vec<IRSize>,
-    pub arguments: Vec<IRReg>,
+    pub arguments: Vec<Option<IRReg>>,
+    pub count: usize,
 }
 
 #[allow(dead_code)]
@@ -298,8 +300,15 @@ impl PartialEq for IRSize {
 }
 
 // Get the indices at which virtual registers are defined
-pub fn get_definition_indices(instructions: &Vec<IRInstruction>) -> Vec<u32> {
-    let mut result = Vec::new();
+pub fn get_definition_indices(function: &IRFunction) -> Vec<u32> {
+    let instructions = &function.instructions;
+    let arguments = &function.arguments.arguments;
+    let mut result = arguments
+        .iter()
+        .filter_map(|arg| *arg)
+        .map(|_| 0u32)
+        .collect::<Vec<u32>>();
+
     for i in 0..instructions.len() {
         match &instructions[i] {
             IRInstruction::Label(Some(phi), _) => {

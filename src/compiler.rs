@@ -85,7 +85,7 @@ pub fn compile(filename: String, output: String) -> Result<(), String> {
 
     log::info!("Evaluation started");
     log::debug!("\n{}", ast);
-    let (ir_functions, ir_globals) = evaluate(&ast, analyzer.get_global_table());
+    let (ir_functions, ir_globals) = evaluate(&ast, analyzer.get_global_table(), &mut *backend);
     for ir in &ir_functions {
         log::debug!("Evaluation result:\n{}", ir);
     }

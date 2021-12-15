@@ -192,7 +192,11 @@ impl BackendAMD64 {
         let mut last_use = vec![0u32; length];
         let mut preferred_class: Vec<&'static RegisterClass> = vec![&REG_CLASS_IREG; length];
 
-        for i in (0..self.instructions.len()).rev() {
+        for arg in self.arguments.arguments.iter().filter_map(|arg| *arg) {
+            creation[arg as usize] = 0;
+        }
+
+        for i in (1..self.instructions.len()).rev() {
             let rule = self.rules[i];
             if self.is_instruction(rule) {
                 let (used_vreg, result_vreg) = self.get_vregisters(i as u32, rule);

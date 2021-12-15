@@ -106,6 +106,31 @@ impl Analysis for ExternalDeclaration {
         match &mut self.function_body {
             Some(statements) => {
                 analyzer.symbol_table.enter_scope();
+                if let Some(arguments) = self.ast_type.get_function_arguments() {
+                    for arg in arguments {
+                        if let Some(name) = arg.get_name() {
+                            if let Err(()) = analyzer.symbol_table.try_insert(
+                                &name,
+                                arg,
+                                DeclarationType::Definition,
+                            ) {
+                                analyzer.errors.push(error!(
+                                    self.span,
+                                    "Argument {} with type {} already defined as type {}",
+                                    &name,
+                                    arg,
+                                    &analyzer.symbol_table.get(&name).unwrap().symbol_type
+                                ));
+                            }
+                        } else {
+                            analyzer.errors.push(error!(
+                                self.span,
+                                "Function argument without name in {}", self.name
+                            ));
+                        }
+                    }
+                }
+
                 for statement in statements {
                     statement.analyze(analyzer);
                 }

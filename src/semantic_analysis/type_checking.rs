@@ -4,7 +4,7 @@ use crate::parser::ast::Expression;
 use crate::parser::r#type::Type;
 use crate::span::Span;
 
-pub fn check_arguments_function(
+pub fn _check_arguments_function(
     analyzer: &mut SemanticAnalyzer,
     span: &Span,
     function_type: &Type,

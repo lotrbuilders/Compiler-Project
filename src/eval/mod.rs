@@ -1,20 +1,21 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::backend::ir::*;
+use crate::backend::{ir::*, Backend};
 use crate::parser::ast::*;
 use crate::parser::r#type::DeclarationType;
 use crate::semantic_analysis::symbol_table::Symbol;
 
-struct EvaluationContext {
+struct EvaluationContext<'a> {
     vreg_counter: u32,
     label_counter: u32,
     variables: Vec<IRSize>,
     unfixed_continue: Vec<(usize, u32)>,
     unfixed_break: Vec<(usize, u32)>,
     loop_depth: u32,
+    backend: &'a dyn Backend,
 }
 
-impl EvaluationContext {
+impl<'a> EvaluationContext<'a> {
     fn next_vreg(&mut self) -> u32 {
         let vreg = self.vreg_counter;
         self.vreg_counter += 1;
@@ -27,7 +28,7 @@ impl EvaluationContext {
     }
 }
 
-impl EvaluationContext {
+impl<'a> EvaluationContext<'a> {
     fn insert_place_holder_jump(&mut self, result: &mut Vec<IRInstruction>) -> (usize, u32) {
         let index = result.len();
         result.push(IRInstruction::Jmp(0));
@@ -76,7 +77,7 @@ impl EvaluationContext {
     }
 }
 
-impl EvaluationContext {
+impl<'a> EvaluationContext<'a> {
     fn enter_loop(&mut self) {
         self.loop_depth += 1;
     }
@@ -126,10 +127,11 @@ impl EvaluationContext {
 pub fn evaluate(
     ast: &TranslationUnit,
     map: &HashMap<String, Symbol>,
+    backend: &mut dyn Backend,
 ) -> (Vec<IRFunction>, Vec<IRGlobal>) {
     let mut functions = Vec::<IRFunction>::new();
     for global in &ast.global_declarations {
-        if let Some(declaration) = global.eval() {
+        if let Some(declaration) = global.eval(backend) {
             functions.push(declaration);
         }
     }
@@ -146,7 +148,7 @@ pub fn evaluate(
 }
 
 impl ExternalDeclaration {
-    fn eval(&self) -> Option<IRFunction> {
+    fn eval(&self, backend: &mut dyn Backend) -> Option<IRFunction> {
         match &self.function_body {
             Some(statements) => {
                 let mut instructions = Vec::<IRInstruction>::new();
@@ -157,9 +159,11 @@ impl ExternalDeclaration {
                     unfixed_break: Vec::new(),
                     unfixed_continue: Vec::new(),
                     loop_depth: 0,
+                    backend: backend,
                 };
-
                 instructions.push(IRInstruction::Label(None, 0));
+
+                let arguments = self.eval_function_arguments(&mut instructions, &mut context);
                 for statement in statements {
                     statement.eval(&mut instructions, &mut context);
                 }
@@ -167,6 +171,7 @@ impl ExternalDeclaration {
                     name: self.name.clone(),
                     return_size: IRSize::S32,
                     instructions,
+                    arguments,
                     variables: context.variables,
                 })
             }
@@ -176,6 +181,42 @@ impl ExternalDeclaration {
             }
         }
     }
+
+    fn eval_function_arguments(
+        &self,
+        result: &mut Vec<IRInstruction>,
+        context: &mut EvaluationContext,
+    ) -> IRArguments {
+        let arguments = self.ast_type.get_function_arguments().unwrap();
+        let count = arguments.len();
+        let ir_arguments = vec![IRSize::S32; count];
+        let in_register = context.backend.get_arguments_in_registers(&ir_arguments);
+        let vreg_count = in_register.iter().filter(|&&in_reg| in_reg).count() as u32;
+        context.vreg_counter += vreg_count * 2;
+        let mut vregs = Vec::new();
+        for arg in 0..arguments.len() {
+            context.variables.push(ir_arguments[arg].clone());
+            if in_register[arg] {
+                let argument = arg as u32;
+                let addr = vreg_count + argument;
+                result.push(IRInstruction::AddrL(IRSize::P, addr, arg));
+                result.push(IRInstruction::Store(
+                    ir_arguments[arg].clone(),
+                    arg as u32,
+                    addr,
+                ));
+                vregs.push(Some(argument));
+            } else {
+                vregs.push(None);
+            }
+        }
+        IRArguments {
+            sizes: ir_arguments,
+            arguments: vregs,
+            count,
+        }
+    }
+
     fn eval_global(
         &self,
         map: &HashMap<String, Symbol>,
@@ -395,12 +436,46 @@ impl Evaluate for Expression {
             }
 
             Function(func, arguments) => {
-                let arguments = arguments
-                    .iter()
-                    .map(|arg| arg.eval(result, context))
-                    .collect::<Vec<u32>>();
                 let sizes = vec![IRSize::S32; arguments.len()];
-                let arguments = Box::new(IRArguments { arguments, sizes });
+                let in_registers = context.backend.get_arguments_in_registers(&sizes);
+                let count = arguments.len();
+                use crate::backend::Direction;
+                match context.backend.argument_evaluation_direction_stack() {
+                    Direction::Left2Right => {
+                        for arg in 0..arguments.len() {
+                            if !in_registers[arg] {
+                                let vreg = arguments[arg].eval(result, context);
+                                result.push(IRInstruction::Arg(sizes[arg].clone(), vreg));
+                            }
+                        }
+                    }
+                    Direction::Right2Left => {
+                        for arg in (0..arguments.len()).rev() {
+                            if !in_registers[arg] {
+                                let vreg = arguments[arg].eval(result, context);
+                                result.push(IRInstruction::Arg(sizes[arg].clone(), vreg));
+                            }
+                        }
+                    }
+                }
+
+                let arguments = match context.backend.argument_evaluation_direction_registers() {
+                    Direction::Left2Right => (0..arguments.len())
+                        .filter(|&arg| in_registers[arg])
+                        .map(|arg| Some(arguments[arg].eval(result, context)))
+                        .collect(),
+                    Direction::Right2Left => (0..arguments.len())
+                        .rev()
+                        .filter(|&arg| in_registers[arg])
+                        .map(|arg| Some(arguments[arg].eval(result, context)))
+                        .collect(),
+                };
+
+                let arguments = Box::new(IRArguments {
+                    arguments,
+                    sizes,
+                    count,
+                });
 
                 if let Ident(name, ..) = &func.variant {
                     let vreg = context.next_vreg();

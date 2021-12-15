@@ -4,9 +4,33 @@ use std::fmt::{self};
 
 // This prints the IR in an LLVM like format using the Display trait
 
+fn fmt_argument(arguments: &IRArguments, f: &mut fmt::Formatter) -> fmt::Result {
+    let mut iter = arguments.sizes.iter().zip(arguments.arguments.iter());
+    let mut stack_arg = 0;
+    if let Some((size, vreg)) = iter.next() {
+        if let Some(vreg) = vreg {
+            write!(f, "{} %{}", size, vreg)?;
+        } else {
+            write!(f, "{} ${}", size, stack_arg)?;
+            stack_arg += 1;
+        }
+    }
+    for (size, vreg) in iter {
+        if let Some(vreg) = vreg {
+            write!(f, ", {} %{}", size, vreg)?;
+        } else {
+            write!(f, "{} ${}", size, stack_arg)?;
+            stack_arg += 1;
+        }
+    }
+    Ok(())
+}
+
 impl Display for IRFunction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "define {} @{}() [", self.return_size, self.name)?;
+        write!(f, "define {} @{}(", self.return_size, self.name)?;
+        fmt_argument(&self.arguments, f)?;
+        writeln!(f, ") [")?;
         for (local, i) in self.variables.iter().zip(0usize..) {
             writeln!(f, "\t${}: {}", i, local)?;
         }
@@ -133,10 +157,14 @@ impl Display for IRArguments {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut iter = self.sizes.iter().zip(self.arguments.iter());
         if let Some((size, vreg)) = iter.next() {
-            write!(f, "{} %{}", size, vreg)?;
+            if let Some(vreg) = vreg {
+                write!(f, "{} %{}", size, vreg)?;
+            }
         }
         for (size, vreg) in iter {
-            write!(f, ", {} %{}", size, vreg)?;
+            if let Some(vreg) = vreg {
+                write!(f, ", {} %{}", size, vreg)?;
+            }
         }
         Ok(())
     }
