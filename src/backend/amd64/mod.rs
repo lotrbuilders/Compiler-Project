@@ -30,15 +30,19 @@ rburg::rburg_main! {
 
 con:    Imm(#i)                     "{i}"
 rc:     i con                       "{i}"
-adr:    AddrL(#a)                   "[ebp{a}]"
-adr:    AddrG(#a)                   "[{a}]"
+adr:    AddrL(#a)                   "ebp{a}"
+adr:    AddrG(#a)                   "{a}"
+mem:    Load(a adr)                 "[{a}]"
 acon:   i con                       "{i}"
 acon:   a adr                       "{a}"
+mcon:   i con                       "{i}"
+mcon:   m mem                       "{m}"
+
 
 %ireg:  i rc                        "mov {res}, {i}\n"      {1}
-%ireg:  a adr                       "lea {res}, {a},\n"     {1}
+%ireg:  a adr                       "lea {res}, [{a}],\n"     {1}
 
-%ireg:  Load(a adr)                 "mov {res},{a}\n"       {1}
+%ireg:  Load(m mem)                 "mov {res}, {m}\n"       {1}
 
 %ireg:  Add(a %ireg , b %ireg)      ?"add {res}, {b} ; {res} = {a} + {b}\n"   {1}
 
@@ -63,6 +67,8 @@ acon:   a adr                       "{a}"
 %ireg:  Gt s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetg {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
 %ireg:  Ge s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetge {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
 
+:       Arg(r %ireg)                "push {r}\n" {1}
+:       Arg(m mcon)                 "push dword {m}\nadd rsp,-4" {3}
 %eax:   Call(#name)                 "call {name}; {res} = {name}()\n" {20}
 }
 

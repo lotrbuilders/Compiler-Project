@@ -10,16 +10,8 @@ use self::ir::*;
 pub fn generate_code(
     functions: Vec<IRFunction>,
     globals: Vec<IRGlobal>,
-    architecture: String,
+    backend: &mut dyn Backend,
 ) -> Result<String, String> {
-    let mut backend: Box<dyn Backend> = match &architecture as &str {
-        "amd64" => Box::new(amd64::BackendAMD64::new()),
-        _ => {
-            log::error!("There is no backend implemented for {}", architecture);
-            return Err(format!("Unimplemented"));
-        }
-    };
-
     let mut assembly = backend.generate_global_prologue();
 
     for function in &functions {
@@ -28,6 +20,17 @@ pub fn generate_code(
     assembly.push_str(&backend.generate_globals(&globals));
 
     Ok(assembly)
+}
+
+pub fn get_backend(architecture: String) -> Result<Box<dyn Backend>, String> {
+    let backend = match &architecture as &str {
+        "amd64" => Box::new(amd64::BackendAMD64::new()),
+        _ => {
+            log::error!("There is no backend implemented for {}", architecture);
+            return Err(format!("Unimplemented"));
+        }
+    };
+    Ok(backend)
 }
 
 pub trait Backend {

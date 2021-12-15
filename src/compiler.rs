@@ -80,6 +80,9 @@ pub fn compile(filename: String, output: String) -> Result<(), String> {
         return Err("Error in lexing parsing or analysis".to_string());
     }
 
+    log::info!("Getting backend");
+    let mut backend = backend::get_backend("amd64".to_string())?;
+
     log::info!("Evaluation started");
     log::debug!("\n{}", ast);
     let (ir_functions, ir_globals) = evaluate(&ast, analyzer.get_global_table());
@@ -92,7 +95,7 @@ pub fn compile(filename: String, output: String) -> Result<(), String> {
 
     log::info!("Started the backend");
     log::info!("Using backend amd64");
-    let assembly = backend::generate_code(ir_functions, ir_globals, "amd64".to_string())?;
+    let assembly = backend::generate_code(ir_functions, ir_globals, &mut *backend)?;
 
     write(output, assembly)?;
     Ok(())
