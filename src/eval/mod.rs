@@ -246,8 +246,17 @@ impl ExternalDeclaration {
             }
         } else {
             defined.insert(self.name.clone());
-            if map[&self.name].declaration_type == DeclarationType::Definition {
-                None
+            if let Some(expression) = &self.expression {
+                if let ExpressionVariant::ConstI(value) = expression.variant {
+                    Some(IRGlobal {
+                        name: self.name.clone(),
+                        size: IRSize::S32,
+                        value: Some(value),
+                        function: false,
+                    })
+                } else {
+                    unreachable!();
+                }
             } else {
                 Some(IRGlobal {
                     name: self.name.clone(),
