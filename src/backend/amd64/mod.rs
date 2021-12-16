@@ -126,8 +126,10 @@ impl Backend for BackendAMD64 {
         for global in globals {
             if global.function {
                 result.push_str(&self.emit_function_declaration(&global.name));
+            } else if let Some(value) = global.value {
+                result.push_str(&self.emit_global_definition(&global.name, value, &global.size));
             } else {
-                result.push_str(&self.emit_common(&global.name));
+                result.push_str(&self.emit_common(&global.name, &global.size));
             }
         }
         result
@@ -336,7 +338,13 @@ impl BackendAMD64 {
         format!("section .text\nextern {}", name)
     }
 
-    fn emit_common(&self, name: &String) -> String {
+    fn emit_global_definition(&self, name: &String, value: i128, size: &IRSize) -> String {
+        let _ = size;
+        format!("section .data\n{}:\n\tdq {}", name, value)
+    }
+
+    fn emit_common(&self, name: &String, size: &IRSize) -> String {
+        let _ = size;
         format!("section .bss\n{}:\n\tresb 4\n", name)
     }
 
