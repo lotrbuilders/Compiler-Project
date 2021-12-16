@@ -1,20 +1,19 @@
 pub mod ast;
 pub mod ast_graph;
 pub mod ast_print;
+pub mod r#type;
+
 mod parse_declaration;
 mod parse_expression;
 mod parse_global;
 mod parse_statement;
 mod recovery;
-pub mod r#type;
-mod visit;
 
 pub use self::r#type::Type;
 use self::recovery::RecoveryStrategy;
-use crate::error;
-use crate::expect;
 use crate::span::Span;
 use crate::token::{Token, TokenType};
+use crate::{error, expect};
 
 #[allow(dead_code)]
 pub struct Parser {
@@ -85,21 +84,24 @@ impl Parser {
         }
     }
 
+    // Expect a semicolon, but do not do anything if it faisl
     fn expect_semicolon(&mut self) {
         let _ = crate::expect!(self, TokenType::Semicolon, RecoveryStrategy::Nothing);
     }
 
+    // Standard error for cases where end of file was unexpectably hit
     fn error_unexpected_eof(&mut self) {
         let span = self.peek_span();
         self.errors.push(error!(span, "Unexpected end of file"));
     }
 
+    // Takes a type of brace and a function that should be parsed within said brace
+    // Inspired by syn::parse_braced
     fn parse_braced<F, T>(&mut self, c: char, f: F) -> Result<T, ()>
     where
         F: Fn(&mut Self) -> Result<T, ()>,
     {
         let (left, right) = recovery::get_braces(c);
-        //let token = self.expect_some()?;
         expect!(
             self,
             left,
@@ -119,7 +121,8 @@ impl Parser {
 }
 
 // This macro looks at the incoming token
-// Returns Ok(token) if it matches the $expected pattenn
+// Returns Ok(token) if it matches the $expected pattern
+//                              or the given identifier
 // Allows specifying a recovery strategy too allow for further parsing
 #[allow(unused_macros)]
 #[macro_export]

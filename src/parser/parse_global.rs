@@ -28,8 +28,8 @@ impl Parser {
         )
     }
 
-    // Parses a single extarnal declaration, which is either a function or a token
-    // <external-declaration> ::= <declaration> (';'| <compound-statement>)
+    // Parses a single extarnal declaration, which is either a function or a global
+    // <external-declaration> ::= <declaration> (';'|<compound-statement>|'=' <const-expression> ';')
     pub fn parse_external_declaration(&mut self) -> Result<ExternalDeclaration, ()> {
         let begin = self.peek_span();
         let declaration = self.parse_declaration()?;

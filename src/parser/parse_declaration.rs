@@ -34,7 +34,7 @@ impl Parser {
     }
 
     // Parse a declarator optionally containing pointers and function
-    // <declarator> ::= name ( '('  ')' )?
+    // <declarator> ::= name ( '(' <parameter-type-list>? ')' )?
     fn parse_declarator(&mut self) -> Result<Type, ()> {
         let mut result = Vec::<TypeNode>::new();
         let name = expect!(
@@ -46,29 +46,24 @@ impl Parser {
             )
         )?;
         result.push(name.into());
-        if let Some(TokenType::LParenthesis) = self.peek().map(|token| token.token()) {
-            self.next();
-            let mut arguments = Vec::new();
-            while let Some(true) = self.peek().as_ref().map(Parser::is_type_qualifier) {
-                arguments.push(self.parse_declaration()?);
-                if let Some(TokenType::RParenthesis) = self.peek_type() {
-                } else {
-                    let _ = expect!(self, TokenType::Comma, RecoveryStrategy::Nothing);
-                }
-            }
-            expect!(
-                self,
-                TokenType::RParenthesis,
-                RecoveryStrategy::or(
-                    RecoveryStrategy::UntilBraced(')'),
-                    RecoveryStrategy::or(
-                        RecoveryStrategy::Until(';'),
-                        RecoveryStrategy::UntilBraced('{')
-                    )
-                )
-            )?;
+        if let Some(TokenType::LParenthesis) = self.peek_type() {
+            let arguments = self.parse_braced('(', Parser::parse_parameter_type_list)?;
             result.push(TypeNode::Function(arguments))
         }
         Ok(result.into())
+    }
+
+    // Parse a list of paremeter declarations seperated by comma's
+    // <parameter-type-list> ::= <declaration> ( ,<declaration> )*
+    fn parse_parameter_type_list(&mut self) -> Result<Vec<Type>, ()> {
+        let mut arguments = Vec::new();
+        while let Some(true) = self.peek().as_ref().map(Parser::is_type_qualifier) {
+            arguments.push(self.parse_declaration()?);
+            if let Some(TokenType::RParenthesis) = self.peek_type() {
+            } else {
+                let _ = expect!(self, TokenType::Comma, RecoveryStrategy::Nothing);
+            }
+        }
+        Ok(arguments)
     }
 }

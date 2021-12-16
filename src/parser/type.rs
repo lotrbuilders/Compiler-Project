@@ -1,5 +1,5 @@
 use crate::token::{Token, TokenType};
-use std::{fmt::Display, vec};
+use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum DeclarationType {

@@ -17,8 +17,8 @@ impl Parser {
         self.pratt_parse(4)
     }
 
-    // <expression> ::= <primary-expression> | <expression> <bin-op> <expression>
-    // <bin-op> ::= '+' | '-' | '*' | '/'
+    // <expression> ::= <unary-expression> | <expression> <bin-op> <expression>
+    // <bin-op> ::= '+' | '-' | '*' | '/' | '==' | '!=' | '<' | '<=' | '>' | '>=' | '||' | '&&'
     fn pratt_parse(&mut self, min_bp: u8) -> Result<Expression, ()> {
         let mut left = self.parse_unary()?;
         while let Some(token) = is_binary_operator(self.peek()) {
@@ -41,6 +41,8 @@ impl Parser {
         Ok(left)
     }
 
+    // <unary-expression> ::= (<unary-op>)* <postfix-expression>
+    // <unary-op> ::= '+' | '-' | '~' | '!'
     fn parse_unary(&mut self) -> Result<Expression, ()> {
         use TokenType::*;
         let token = self.peek();
@@ -55,6 +57,8 @@ impl Parser {
         Ok(exp)
     }
 
+    // <postfix-expression> ::= <primary-expression> ( <postfix-op> )*
+    // <postfix-op> ::= '(' <argument-list> ')'
     fn parse_postfix(&mut self) -> Result<Expression, ()> {
         use TokenType::*;
         let begin = self.peek_span();
@@ -76,6 +80,9 @@ impl Parser {
         Ok(exp)
     }
 
+    // <primary-expression> ::= '(' <expression> ')'
+    //                        | <integer-constant>
+    //                        | <identifier>
     fn parse_primary(&mut self) -> Result<Expression, ()> {
         let begin = self.peek_span();
         match self.peek_type() {
@@ -124,6 +131,7 @@ impl Parser {
         }
     }
 
+    // <argument-list> ::=  <assignment-expression>? (',' <assignment-expression>)*
     fn parse_argument_list(&mut self) -> Result<Vec<Expression>, ()> {
         let mut result = Vec::new();
         use TokenType::*;
@@ -144,16 +152,19 @@ impl Parser {
     }
 }
 
+// Generates the pratt binding power for left-to-right operands
 fn left_associative(bp: u8) -> (u8, u8) {
     let bp = bp * 2 + 1;
     (bp, bp + 1)
 }
 
+// Generates the pratt binding power for right-to-left operands
 fn right_associative(bp: u8) -> (u8, u8) {
     let bp = bp * 2 + 1;
     (bp + 1, bp)
 }
 
+// Gets the binding power of a binary or ternary expression for pratt parsing
 fn binding_power(token: &Token) -> (u8, u8) {
     use TokenType::*;
     match token.token() {

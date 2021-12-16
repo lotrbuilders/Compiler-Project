@@ -35,6 +35,16 @@ impl Parser {
 
     // Parsing statements
     // <statement> ::= return <expression> ';'
+    //               | ';'
+    //               | <expression> ';'
+    //               | <declaration> ('=' <expression>)? ';'
+    //               | break ';'
+    //               | continue ';'
+    //               | if '(' <expression< ')' <statement> (else <statement)?
+    //               | do <statement> while '(' <expression> ')' ';'
+    //               | while '(' <expression> ')' <statement>
+    //               | for '( <statement> <expression>? ';' <expression>? ')'
+    //               | | '{' <statement>* '}'
     fn parse_statement(&mut self) -> Result<Statement, ()> {
         let begin = self.peek_span();
         use TokenType::*;
