@@ -125,27 +125,3 @@ impl SymbolTable {
         }
     }
 }
-
-/*
-pub struct SymbolTableIter<'a> {
-    vec_iterator: slice::Iter<'a, HashMap<String, Symbol>>,
-    map_iterator: hash_map::Iter<'a, String, Symbol>,
-}
-
-impl<'a> Iterator for SymbolTableIter<'a> {
-    type Item = (&'a String, &'a Symbol);
-    fn next(&mut self) -> Option<Self::Item> {
-        let next = self.map_iterator.next();
-        if next.is_none() {
-            let map_iterator = self.vec_iterator.next().map(|map| map.iter());
-            if let Some(map_iterator) = map_iterator {
-                self.map_iterator = map_iterator;
-                self.next()
-            } else {
-                None
-            }
-        } else {
-            next
-        }
-    }
-}*/

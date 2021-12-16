@@ -3,6 +3,8 @@ pub mod symbol_table;
 mod analysis;
 mod const_eval;
 mod expression_analysis;
+mod global_analysis;
+mod statement_analysis;
 mod type_checking;
 
 use std::collections::HashMap;
