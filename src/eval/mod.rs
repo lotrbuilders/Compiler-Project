@@ -245,8 +245,8 @@ impl ExternalDeclaration {
                 })
             }
         } else {
-            defined.insert(self.name.clone());
             if let Some(expression) = &self.expression {
+                defined.insert(self.name.clone());
                 if let ExpressionVariant::ConstI(value) = expression.variant {
                     Some(IRGlobal {
                         name: self.name.clone(),
@@ -257,13 +257,16 @@ impl ExternalDeclaration {
                 } else {
                     unreachable!();
                 }
-            } else {
+            } else if map[&self.name].declaration_type == DeclarationType::Declaration {
+                defined.insert(self.name.clone());
                 Some(IRGlobal {
                     name: self.name.clone(),
                     size: IRSize::S32,
                     value: None,
                     function: false,
                 })
+            } else {
+                None
             }
         }
     }

@@ -38,7 +38,6 @@ impl Parser {
                 let compound_statement = self.parse_compound_statement()?;
                 Some(compound_statement)
             } else {
-                self.expect_semicolon();
                 None
             }
         } else {

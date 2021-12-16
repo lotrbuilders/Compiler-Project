@@ -335,12 +335,12 @@ impl BackendAMD64 {
     }
 
     fn emit_function_declaration(&self, name: &String) -> String {
-        format!("section .text\nextern {}", name)
+        format!("section .text\nextern {}\n", name)
     }
 
     fn emit_global_definition(&self, name: &String, value: i128, size: &IRSize) -> String {
         let _ = size;
-        format!("section .data\n{}:\n\tdq {}", name, value)
+        format!("section .data\n{}:\n\tdq {}\n", name, value)
     }
 
     fn emit_common(&self, name: &String, size: &IRSize) -> String {
