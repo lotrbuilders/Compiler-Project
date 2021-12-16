@@ -98,45 +98,55 @@ impl Analysis for ExternalDeclaration {
                 } else {
                     self.insert_or_update(analyzer, DeclarationType::Prototype)
                 }
+            } else if let Some(_) = self.expression {
+                self.insert_or_update(analyzer, DeclarationType::Definition)
             } else {
                 self.insert_or_update(analyzer, DeclarationType::Declaration)
             }
         }
 
-        match &mut self.function_body {
-            Some(statements) => {
-                analyzer.symbol_table.enter_scope();
-                if let Some(arguments) = self.ast_type.get_function_arguments() {
-                    for arg in arguments {
-                        if let Some(name) = arg.get_name() {
-                            if let Err(()) = analyzer.symbol_table.try_insert(
-                                &name,
-                                arg,
-                                DeclarationType::Definition,
-                            ) {
-                                analyzer.errors.push(error!(
-                                    self.span,
-                                    "Argument {} with type {} already defined as type {}",
-                                    &name,
-                                    arg,
-                                    &analyzer.symbol_table.get(&name).unwrap().symbol_type
-                                ));
-                            }
-                        } else {
+        if let Some(statements) = &mut self.function_body {
+            analyzer.symbol_table.enter_scope();
+            if let Some(arguments) = self.ast_type.get_function_arguments() {
+                for arg in arguments {
+                    if let Some(name) = arg.get_name() {
+                        if let Err(()) = analyzer.symbol_table.try_insert(
+                            &name,
+                            arg,
+                            DeclarationType::Definition,
+                        ) {
                             analyzer.errors.push(error!(
                                 self.span,
-                                "Function argument without name in {}", self.name
+                                "Argument {} with type {} already defined as type {}",
+                                &name,
+                                arg,
+                                &analyzer.symbol_table.get(&name).unwrap().symbol_type
                             ));
                         }
+                    } else {
+                        analyzer.errors.push(error!(
+                            self.span,
+                            "Function argument without name in {}", self.name
+                        ));
                     }
                 }
-
-                for statement in statements {
-                    statement.analyze(analyzer);
-                }
-                analyzer.symbol_table.leave_scope();
             }
-            None => (),
+
+            for statement in statements {
+                statement.analyze(analyzer);
+            }
+            analyzer.symbol_table.leave_scope();
+        }
+
+        if let Some(expression) = &mut self.expression {
+            expression.analyze(analyzer);
+            *expression = expression.clone().const_eval();
+            if !expression.is_constant() {
+                analyzer.errors.push(error!(
+                    self.span,
+                    "Initialization of global variable must be constant"
+                ));
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 pub mod symbol_table;
 
 mod analysis;
+mod const_eval;
 mod expression_analysis;
 mod type_checking;
 
