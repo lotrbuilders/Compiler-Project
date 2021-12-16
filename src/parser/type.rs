@@ -18,9 +18,31 @@ pub enum TypeNode {
 // Type contains  C Type used by something
 // The Name if any should be the highest
 // This is followed in order of dereferencing/calling
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Eq)]
 pub struct Type {
     nodes: Vec<TypeNode>,
+}
+
+impl PartialEq for Type {
+    fn eq(&self, other: &Self) -> bool {
+        let mut lhs = self.nodes.iter().peekable();
+        let mut rhs = other.nodes.iter().peekable();
+        use TypeNode::*;
+        while lhs.peek().is_some() && !rhs.peek().is_some() {
+            if let Some(Name(_)) = lhs.peek() {
+                lhs.next();
+                continue;
+            } else if let Some(Name(_)) = rhs.peek() {
+                rhs.next();
+                continue;
+            } else {
+                if lhs.next() != rhs.next() {
+                    return false;
+                }
+            }
+        }
+        true
+    }
 }
 
 impl Type {
