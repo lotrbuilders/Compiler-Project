@@ -1,4 +1,4 @@
-use super::ir::*;
+use super::*;
 use std::fmt::Display;
 use std::fmt::{self};
 

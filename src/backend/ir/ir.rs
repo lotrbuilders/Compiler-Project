@@ -1,3 +1,5 @@
+use super::ir_phi::IRPhi;
+
 /// Stores a function and all the associated information
 #[derive(Clone, Debug, PartialEq)]
 pub struct IRFunction {
@@ -16,35 +18,6 @@ pub struct IRGlobal {
     pub function: bool,
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct IRPhi {
-    pub targets: Vec<IRReg>,
-    pub size: Vec<IRSize>,
-    pub locations: Vec<IRLabel>,
-    pub sources: Vec<Vec<IRReg>>,
-}
-
-impl IRPhi {
-    pub fn empty(locations: Vec<IRLabel>) -> Box<IRPhi> {
-        let len = locations.len();
-        Box::new(IRPhi {
-            targets: Vec::new(),
-            size: Vec::new(),
-            locations,
-            sources: vec![Vec::new(); len],
-        })
-    }
-    pub fn ternary(locations: (IRLabel, IRLabel), result: u32, vreg: (u32, u32)) -> Box<IRPhi> {
-        let (l1, l2) = locations;
-        let (v1, v2) = vreg;
-        Box::new(IRPhi {
-            targets: vec![result],
-            size: Vec::new(),
-            locations: vec![l1, l2],
-            sources: vec![vec![v1], vec![v2]],
-        })
-    }
-}
 #[derive(Clone, Debug, PartialEq)]
 pub struct IRArguments {
     pub sizes: Vec<IRSize>,
@@ -297,32 +270,4 @@ impl PartialEq for IRSize {
             _ => false,
         }
     }
-}
-
-// Get the indices at which virtual registers are defined
-pub fn get_definition_indices(function: &IRFunction) -> Vec<u32> {
-    let instructions = &function.instructions;
-    let arguments = &function.arguments.arguments;
-    let mut result = arguments
-        .iter()
-        .filter_map(|arg| *arg)
-        .map(|_| 0u32)
-        .collect::<Vec<u32>>();
-
-    for i in 0..instructions.len() {
-        match &instructions[i] {
-            IRInstruction::Label(Some(phi), _) => {
-                for _ in &phi.targets {
-                    result.push(i as u32);
-                }
-            }
-            _ => {
-                if let Some(_) = instructions[i].get_result() {
-                    result.push(i as u32);
-                }
-            }
-        }
-    }
-
-    result
 }

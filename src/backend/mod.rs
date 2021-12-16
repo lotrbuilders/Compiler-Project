@@ -1,7 +1,5 @@
 mod amd64;
-pub mod asm;
 pub mod ir;
-pub mod print_ir;
 
 use self::ir::*;
 
