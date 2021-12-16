@@ -2,12 +2,10 @@ use std::vec;
 
 use super::ir::*;
 use super::Backend;
-mod ralloc;
-mod ralloc_linear;
-mod ralloc_simple;
+mod register_allocation;
 //mod ralloc_normal;
 mod registers;
-use self::ralloc::*;
+use self::register_allocation::*;
 use self::registers::*;
 
 //#[allow(dead_code)]

@@ -1,11 +1,13 @@
+use crate::backend::amd64::register_allocation::RegisterAllocation;
 use crate::backend::ir::IRInstruction;
 
 //use super::is_two_address;
-use super::ralloc::RegisterLocation::*;
+use super::super::registers::*;
+use super::super::BackendAMD64;
+use super::linear::ControlFlowGraph;
 use super::ralloc::*;
-use super::ralloc_linear::ControlFlowGraph;
-use super::registers::*;
-use super::BackendAMD64;
+use super::RegisterClass;
+use super::RegisterLocation::*;
 
 impl RegisterAllocator for RegisterAllocatorSimple {
     // Should be generated in a seperate file preferably
@@ -26,10 +28,8 @@ impl RegisterAllocator for RegisterAllocatorSimple {
         let mut index = 0;
         for arg in &backend.arguments.arguments {
             if let Some(arg) = arg {
-                assignments.allocation[*arg as usize].start(
-                    RegisterLocation::Reg(try_allocate2(CALL_REGS[index]).unwrap()),
-                    0,
-                );
+                assignments.allocation[*arg as usize]
+                    .start(try_allocate2(CALL_REGS[index]).unwrap(), 0);
                 index += 1;
             }
         }
@@ -87,14 +87,14 @@ fn allocate_register(
     let (used_vregs, result_vreg) = backend.get_vregisters(index, rule);
 
     for (vreg, class) in used_vregs {
-        let reg = if let Reg(reg) = assignments.allocation[vreg as usize][index] {
+        let reg = if let Some(reg) = assignments.allocation[vreg as usize][index] {
             reg
         } else {
             let reg = try_allocate2(&(class - &clobbered_registers - &used_registers)).unwrap();
             let mem = get_spot(backend, vreg);
             assignments.reg_relocations[index as usize].push(RegisterRelocation::Reload(reg, mem));
 
-            assignments.allocation[vreg as usize].start(RegisterLocation::Reg(reg), index);
+            assignments.allocation[vreg as usize].start(reg, index);
             reg
         };
 
@@ -107,7 +107,7 @@ fn allocate_register(
         let reg = try_allocate2(result_class).unwrap();
         let mem = get_spot(backend, vreg);
         assignments.reg_relocations[(index + 1) as usize].push(RegisterRelocation::Spill(reg, mem));
-        assignments.allocation[vreg as usize].start(RegisterLocation::Reg(reg), index);
+        assignments.allocation[vreg as usize].start(reg, index);
         assignments.allocation[vreg as usize].end(index);
     }
 }

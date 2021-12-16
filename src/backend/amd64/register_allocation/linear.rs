@@ -2,13 +2,16 @@ use std::fmt;
 use std::fmt::Display;
 use std::ops::Range;
 
+use crate::backend::amd64::register_allocation::RegisterAllocation;
 use crate::backend::ir::IRInstruction;
 
-use super::is_two_address;
-use super::ralloc::RegisterLocation::*;
+use super::super::is_two_address;
+use super::super::registers::*;
+use super::super::BackendAMD64;
 use super::ralloc::*;
-use super::registers::*;
-use super::BackendAMD64;
+use super::RegisterClass;
+use super::RegisterLocation;
+use RegisterLocation::*;
 
 pub struct ControlFlowGraph {
     predecessors: Vec<u32>,
@@ -298,7 +301,7 @@ fn allocate_register(
 
                 assignments.reg_occupied_by[reg as usize] = Some(vreg);
                 assignments.vreg2reg[vreg as usize] = Reg(reg);
-                assignments.allocation[vreg as usize].start(Reg(reg), index);
+                assignments.allocation[vreg as usize].start(reg, index);
             } else {
                 unimplemented!();
             }

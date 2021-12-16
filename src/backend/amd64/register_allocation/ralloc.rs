@@ -1,12 +1,12 @@
-use std::fmt::Display;
-use std::ops::Index;
 use std::ops::Range;
 
 use crate::backend::ir::IRInstruction;
 
-use self::RegisterLocation::*;
-use super::registers::*;
-use super::BackendAMD64;
+//use self::RegisterLocation::*;
+use super::super::registers::*;
+use super::super::BackendAMD64;
+use super::RegisterClass;
+use super::{RegisterAllocation, RegisterLocation};
 
 // A vector of this is added to the instruction
 // Shows operation that need to happen to make modifications to the register file
@@ -31,142 +31,15 @@ pub struct RegisterUse {
 
 #[derive(Debug, Clone)]
 pub struct RegisterRange {
-    pub loc: RegisterLocation,
-    range: Range<u32>,
+    pub loc: Option<Register>,
+    pub range: Range<u32>,
 }
 
 impl RegisterRange {
-    fn new(loc: RegisterLocation, range: Range<u32>) -> RegisterRange {
-        RegisterRange { loc, range }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct RegisterAllocation {
-    pub locations: Vec<RegisterRange>,
-}
-
-#[allow(dead_code)]
-impl RegisterAllocation {
-    pub fn empty() -> RegisterAllocation {
-        RegisterAllocation {
-            locations: Vec::new(),
-        }
-    }
-    pub fn new(loc: RegisterLocation, start: u32) -> RegisterAllocation {
-        RegisterAllocation {
-            locations: vec![RegisterRange::new(loc, start..start)],
-        }
-    }
-    pub fn live_at(&self, index: u32) -> bool {
-        match self.locations[index as usize].loc {
-            NotAllocated => false,
-            _ => true,
-        }
-    }
-    pub fn start(&mut self, loc: RegisterLocation, start: u32) {
-        self.locations.push(RegisterRange::new(loc, start..start))
-    }
-    pub fn end(&mut self, end: u32) {
-        let reg = self.locations.last_mut().unwrap();
-        let start = reg.range.start;
-        let end = end + 1;
-        reg.range = start..end;
-    }
-    pub fn end_prev(&mut self, end: u32) {
-        let reg = self.locations.last_mut().unwrap();
-        let start = reg.range.start;
-        reg.range = start..end;
-    }
-}
-
-impl Index<u32> for RegisterAllocation {
-    type Output = RegisterLocation;
-    fn index(&self, index: u32) -> &Self::Output {
-        for range in &self.locations {
-            if range.range.contains(&index) {
-                return &range.loc;
-            }
-        }
-        if let Some(range) = self.locations.last() {
-            let start = range.range.start;
-            let end = range.range.end;
-            if start == end && index >= start {
-                return &range.loc;
-            }
-        }
-        &NOT_ALLOCATED
-    }
-}
-impl Index<usize> for RegisterAllocation {
-    type Output = RegisterLocation;
-    fn index(&self, index: usize) -> &Self::Output {
-        self.index(index as u32)
-    }
-}
-
-impl Display for RegisterAllocation {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[")?;
-        for entry in &self.locations {
-            write!(
-                f,
-                "({}:{}..{}) ",
-                entry.loc, entry.range.start, entry.range.end
-            )?;
-        }
-        write!(f, "]")
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum RegisterLocation {
-    Reg(Register),
-    Vreg(u32),
-    NotAllocated,
-}
-
-const NOT_ALLOCATED: RegisterLocation = RegisterLocation::NotAllocated;
-
-impl RegisterLocation {
-    pub fn reg(&self) -> Option<Register> {
-        match self {
-            Reg(reg) => Some(*reg),
-            _ => None,
-        }
-    }
-}
-
-impl From<RegisterLocation> for Option<Register> {
-    fn from(reg: RegisterLocation) -> Self {
-        match reg {
-            Reg(register) => Some(register),
-            _ => None,
-        }
-    }
-}
-
-impl From<RegisterLocation> for Option<u32> {
-    fn from(reg: RegisterLocation) -> Self {
-        match reg {
-            Vreg(vreg) => Some(vreg),
-            _ => None,
-        }
-    }
-}
-
-impl Display for RegisterLocation {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Reg(reg) => {
-                if let Some(precision) = f.precision() {
-                    write!(f, "{:.precision$}", reg, precision = precision)
-                } else {
-                    write!(f, "{}", reg)
-                }
-            }
-            Vreg(vreg) => write!(f, "[{}]", vreg),
-            NotAllocated => write!(f, "-"),
+    pub fn new(loc: Register, range: Range<u32>) -> RegisterRange {
+        RegisterRange {
+            loc: Some(loc),
+            range,
         }
     }
 }
@@ -266,6 +139,7 @@ impl RegisterAssignment {
     }
 }
 
+use RegisterLocation::*;
 impl RegisterAssignment {
     pub fn try_allocate(
         &mut self,
@@ -352,7 +226,7 @@ impl RegisterAssignment {
     pub fn spill(&mut self, index: u32, reg: Register, vreg: u32) {
         self.reg_relocations[index as usize].push(RegisterRelocation::Spill(reg, vreg));
         self.allocation[vreg as usize].end_prev(index);
-        self.allocation[vreg as usize].start(Vreg(0), index);
+        //self.allocation[vreg as usize].start(Vreg(0), index);
         self.vreg2reg[vreg as usize] = Vreg(0); //TODO!!
         self.reg_occupied_by[reg as usize] = None;
     }
@@ -370,5 +244,5 @@ pub fn assign_register(reg: Register, vreg: u32, assignments: &mut RegisterAssig
     log::trace!("Using register {} for vreg {}", reg.to_string(), vreg);
     assignments.reg_occupied_by[reg as usize] = Some(vreg);
     assignments.vreg2reg[vreg as usize] = Reg(reg);
-    assignments.allocation[vreg as usize].start(Reg(reg), index);
+    assignments.allocation[vreg as usize].start(reg, index);
 }
