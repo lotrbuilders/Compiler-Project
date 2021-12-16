@@ -157,6 +157,9 @@ impl Backend for BackendAMD64 {
 }
 
 impl BackendAMD64 {
+    // Automatically generated
+    // Checks if the instruction at index is the last instruction of the function for return optimization
+    #[allow(dead_code)]
     fn range(&self, index: u32, from: i128, to: i128) -> u16 {
         let ins: &IRInstruction = &self.instructions[index as usize];
         match ins {
@@ -172,6 +175,12 @@ impl BackendAMD64 {
                 0xfff
             }
         }
+    }
+    // Automatically generated
+    // Checks if the instruction at index is the last instruction of the function for return optimization
+    #[allow(dead_code)]
+    fn is_last_instruction(&self, index: usize) -> bool {
+        self.instructions.len() - 1 == index
     }
 }
 
@@ -242,13 +251,6 @@ impl BackendAMD64 {
         }
         result.push_str(&self.emit_epilogue());
         result
-    }
-
-    // Automatically generated
-    // Checks if the instruction at index is the last instruction of the function for return optimization
-    #[allow(dead_code)]
-    fn is_last_instruction(&self, index: usize) -> bool {
-        self.instructions.len() - 1 == index
     }
 
     fn get_stack_alignment(&self, arguments: &IRArguments) -> i32 {
@@ -335,7 +337,7 @@ impl BackendAMD64 {
     }
 
     fn emit_common(&self, name: &String) -> String {
-        format!("section .bss\n{}:\nzero 4", name)
+        format!("section .bss\n{}:\n\tresb 4\n", name)
     }
 
     // Should be handwritten for any backend
