@@ -144,7 +144,7 @@ pub fn evaluate(
             globals.push(declaration);
         }
     }
-    (functions, Vec::new())
+    (functions, globals)
 }
 
 impl ExternalDeclaration {
@@ -228,6 +228,11 @@ impl ExternalDeclaration {
             defined.insert(self.name.clone());
             None
         } else if self.ast_type.is_function() {
+            log::trace!(
+                "Found non defined function {} with type {:?}",
+                self.name,
+                map[&self.name].declaration_type
+            );
             defined.insert(self.name.clone());
             if map[&self.name].declaration_type == DeclarationType::Definition {
                 None
@@ -440,12 +445,24 @@ impl Evaluate for Expression {
                 let in_registers = context.backend.get_arguments_in_registers(&sizes);
                 let count = arguments.len();
                 use crate::backend::Direction;
+                let mut first = true;
+                let mut arg_index = None;
                 match context.backend.argument_evaluation_direction_stack() {
                     Direction::Left2Right => {
                         for arg in 0..arguments.len() {
                             if !in_registers[arg] {
                                 let vreg = arguments[arg].eval(result, context);
-                                result.push(IRInstruction::Arg(sizes[arg].clone(), vreg));
+                                if first {
+                                    arg_index = Some(result.len());
+                                    result.push(IRInstruction::Arg(
+                                        sizes[arg].clone(),
+                                        vreg,
+                                        Some(0),
+                                    ));
+                                    first = false;
+                                } else {
+                                    result.push(IRInstruction::Arg(sizes[arg].clone(), vreg, None));
+                                }
                             }
                         }
                     }
@@ -453,7 +470,17 @@ impl Evaluate for Expression {
                         for arg in (0..arguments.len()).rev() {
                             if !in_registers[arg] {
                                 let vreg = arguments[arg].eval(result, context);
-                                result.push(IRInstruction::Arg(sizes[arg].clone(), vreg));
+                                if first {
+                                    arg_index = Some(result.len());
+                                    result.push(IRInstruction::Arg(
+                                        sizes[arg].clone(),
+                                        vreg,
+                                        Some(0),
+                                    ));
+                                    first = false;
+                                } else {
+                                    result.push(IRInstruction::Arg(sizes[arg].clone(), vreg, None));
+                                }
                             }
                         }
                     }
@@ -479,6 +506,12 @@ impl Evaluate for Expression {
 
                 if let Ident(name, ..) = &func.variant {
                     let vreg = context.next_vreg();
+                    let index = result.len();
+                    if let Some(arg_index) = arg_index {
+                        if let IRInstruction::Arg(_, _, Some(fix)) = &mut result[arg_index] {
+                            *fix = index;
+                        }
+                    }
                     result.push(IRInstruction::Call(
                         IRSize::S32,
                         vreg,

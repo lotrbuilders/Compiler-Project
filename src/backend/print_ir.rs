@@ -65,7 +65,8 @@ impl Display for IRInstruction {
             Imm(size, reg, value) => write!(f, "\t%{} = {} {} #{}", reg, ins, size, value),
             AddrL(size, reg, value) => write!(f, "\t%{} = {} {} ${}", reg, ins, size, value),
             AddrG(size, reg, name) => write!(f, "\t%{} = {} {} @{}", reg, ins, size, name),
-            Arg(size, reg) => write!(f, "\t%{} {} %{}", ins, size, reg),
+            Arg(size, reg, Some(index)) => write!(f, "\t%{} {} %{} for {}", ins, size, reg, index),
+            Arg(size, reg, None) => write!(f, "\t%{} {} %{}", ins, size, reg),
 
             Load(size, reg, addr) => write!(f, "\t%{} = {} {} [%{}]", reg, ins, size, addr),
             Store(size, reg, addr) => write!(f, "\t{} {} %{}, [%{}]\n", ins, size, reg, addr),

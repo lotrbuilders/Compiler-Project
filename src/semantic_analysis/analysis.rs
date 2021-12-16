@@ -229,6 +229,7 @@ impl Analysis for Statement {
                 decl_type: symbol_type,
                 init,
             } => {
+                log::trace!("Declaration of {} with type {}", ident, symbol_type);
                 if let Some(init) = init {
                     init.analyze(analyzer);
                 }

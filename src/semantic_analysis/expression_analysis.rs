@@ -2,7 +2,8 @@ use super::analysis::Analysis;
 use super::SemanticAnalyzer;
 use crate::error;
 use crate::parser::ast::*;
-use crate::parser::r#type::Type;
+//use crate::parser::r#type::Type;
+use crate::semantic_analysis::type_checking::check_arguments_function;
 //use crate::semantic_analysis::type_checking::check_arguments_function;
 
 // The analysis for expressions
@@ -14,12 +15,6 @@ impl Analysis for Expression {
 
             Ident(name, symbol_number, global) => {
                 if let Some(symbol) = analyzer.symbol_table.get(name) {
-                    if Type::is_function(&symbol.symbol_type) {
-                        log::error!(
-                            "{} Currently unsupported function declaration in function",
-                            self.span
-                        );
-                    }
                     self.ast_type = symbol.symbol_type.clone();
                     *symbol_number = symbol.number;
                     *global = symbol.global;
@@ -35,7 +30,7 @@ impl Analysis for Expression {
                 for arg in arguments.iter_mut() {
                     arg.analyze(analyzer);
                 }
-                //check_arguments_function(analyzer, &self.span, &func.ast_type, arguments);
+                check_arguments_function(analyzer, &self.span, &func.ast_type, arguments);
             }
 
             Unary(_op, exp) => {
@@ -66,7 +61,7 @@ impl Expression {
     fn analyze_lvalue(&mut self, analyzer: &mut SemanticAnalyzer) -> () {
         use ExpressionVariant::*;
         match &mut self.variant {
-            Ident(..) => (),
+            Ident(..) => self.analyze(analyzer),
             _ => {
                 analyzer
                     .errors

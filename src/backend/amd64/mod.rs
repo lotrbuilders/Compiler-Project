@@ -134,7 +134,7 @@ impl Backend for BackendAMD64 {
     }
 
     fn generate_global_prologue(&mut self) -> String {
-        format!("default rel\n.text\n")
+        format!("default rel\nsection .text\n")
     }
 
     fn argument_evaluation_direction_registers(&self) -> super::Direction {
@@ -230,11 +230,14 @@ impl BackendAMD64 {
                     _ => unimplemented!(),
                 }
             }
-            let handwritten = self.emit_asm2(instruction);
+            let (handwritten, procede) = self.emit_asm2(instruction);
             if let Some(assembly) = handwritten {
                 result.push_str(&assembly);
-            } else if self.is_instruction(self.rules[instruction]) {
-                result.push_str(&self.gen_asm(instruction));
+            }
+            if procede {
+                if self.is_instruction(self.rules[instruction]) {
+                    result.push_str(&self.gen_asm(instruction));
+                }
             }
         }
         result.push_str(&self.emit_epilogue());
@@ -248,39 +251,91 @@ impl BackendAMD64 {
         self.instructions.len() - 1 == index
     }
 
+    fn get_stack_alignment(&self, arguments: &IRArguments) -> i32 {
+        let length = arguments.count as i32;
+        let extra_stack_size = (std::cmp::max(length, 6) - 6) * 8;
+        let next_alignment = self.stack_size + extra_stack_size as i32;
+        match next_alignment % 16 {
+            0 => 0,
+            i => 16 - i,
+        }
+    }
+
+    fn stack_alignment_instruction(&self, alignment: i32) -> String {
+        match alignment {
+            0 => String::new(),
+            i => format!("\tsub rsp,{}\n", i),
+        }
+    }
+
     // Should be handwritten for any backend
     // Might use a macro to generate parts
     // Emits handwritten assembly for instruction that are too complex to process normally
-    fn emit_asm2(&self, index: usize) -> Option<String> {
+    // The boolean specifies wether the normal assembly should also be generated
+    fn emit_asm2(&self, index: usize) -> (Option<String>, bool) {
         let instruction = &self.instructions[index];
         let _rule = self.rules[index];
         use IRInstruction::*;
         match instruction {
-            Ret(_size, _vreg) => Some(if !self.is_last_instruction(index) {
-                format!("\tjmp .end\n")
-            } else {
-                String::new()
-            }),
-            Call(_size, _vreg, name, arguments) => Some({
-                let length = arguments.count;
-                if length > 6 {
-                    // Only hold for integer and pointer arguments
-                    format!("\tcall {}\n\tadd rsp,{}\n", name, 8 * (length - 6))
+            Ret(_size, _vreg) => (
+                Some(if !self.is_last_instruction(index) {
+                    format!("\tjmp .end\n")
                 } else {
-                    format!("\tcall {}\n", name)
-                }
-            }),
+                    String::new()
+                }),
+                false,
+            ),
+            Call(_size, _vreg, name, arguments) => (
+                Some({
+                    let length = arguments.count;
+                    let alignment = self.get_stack_alignment(arguments);
+                    let alignment_instruction = if length <= 6 {
+                        self.stack_alignment_instruction(alignment)
+                    } else {
+                        String::new()
+                    };
 
-            _ => None,
+                    format!(
+                        "{}{}",
+                        alignment_instruction,
+                        if length > 6 || alignment != 0 {
+                            // Only hold for integer and pointer arguments
+                            format!(
+                                "\tcall {}\n\tadd rsp,{}\n",
+                                name,
+                                8 * (std::cmp::max(6, length) - 6) + alignment as usize
+                            )
+                        } else {
+                            format!("\tcall {}\n", name)
+                        }
+                    )
+                }),
+                false,
+            ),
+            Arg(_size, _vreg, Some(index)) => (
+                Some({
+                    if let IRInstruction::Call(_size, _result, _name, arguments) =
+                        &self.instructions[*index]
+                    {
+                        let alignment = self.get_stack_alignment(arguments);
+                        self.stack_alignment_instruction(alignment)
+                    } else {
+                        String::new()
+                    }
+                }),
+                true,
+            ),
+
+            _ => (None, true),
         }
     }
 
     fn emit_function_declaration(&self, name: &String) -> String {
-        format!(".text\nextern {}", name)
+        format!("section .text\nextern {}", name)
     }
 
     fn emit_common(&self, name: &String) -> String {
-        format!(".bss\n{}:\nzero 4", name)
+        format!("section .bss\n{}:\nzero 4", name)
     }
 
     // Should be handwritten for any backend
@@ -318,11 +373,11 @@ impl BackendAMD64 {
             &Move(from, to) => {
                 format!("\tmov {},{}\n", to, from)
             }
-            &Reload(reg, mem) => format!("\tmov {}, [ebp-{}]\n", reg, mem),
-            &Spill(reg, mem) => format!("\tmov [ebp-{}],{} \n", mem, reg),
+            &Reload(reg, mem) => format!("\tmov {}, [rbp-{}]\n", reg, mem),
+            &Spill(reg, mem) => format!("\tmov [rbp-{}],{} \n", mem, reg),
             &MemMove(from, to, reg) => {
                 format!(
-                    "\tmov {}, [ebp-{}]\n\tmov [ebp-{}], {}\n",
+                    "\tmov {}, [rbp-{}]\n\tmov [rbp-{}], {}\n",
                     reg, from, to, reg
                 )
             }

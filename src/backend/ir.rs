@@ -59,7 +59,7 @@ pub enum IRInstruction {
     Imm(IRSize, IRReg, i128),
     AddrL(IRSize, IRReg, usize),
     AddrG(IRSize, IRReg, String),
-    Arg(IRSize, IRReg),
+    Arg(IRSize, IRReg, Option<usize>),
 
     Load(IRSize, IRReg, IRReg),  // Result address
     Store(IRSize, IRReg, IRReg), // From address
@@ -188,7 +188,7 @@ impl IRInstruction {
     pub fn get_left(&self) -> Option<IRReg> {
         match self {
             &Self::Ret(_, left)
-            | &Self::Arg(_, left)
+            | &Self::Arg(_, left, _)
             | &Self::Load(_, _, left)
             | &Self::Store(_, left, _)
             | &Self::Add(_, _, left, _)

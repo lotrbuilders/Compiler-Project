@@ -54,14 +54,17 @@ impl SymbolTable {
     ) -> Result<(), ()> {
         let number = self.counter;
         if let Some(map) = self.local_table.last_mut() {
-            SymbolTable::try_insert2(map, key, symbol_type, declaration_type, number)
+            log::trace!("Local insertion of {} with type {}", key, symbol_type);
+            SymbolTable::try_insert2(map, key, symbol_type, declaration_type, number, false)
         } else {
+            log::trace!("Global insertion of {} with type {}", key, symbol_type);
             SymbolTable::try_insert2(
                 &mut self.global_table,
                 key,
                 symbol_type,
                 declaration_type,
                 number,
+                true,
             )
         }?;
         if !self.local_table.is_empty() {
@@ -78,6 +81,7 @@ impl SymbolTable {
         symbol_type: &Type,
         declaration_type: DeclarationType,
         number: u32,
+        global: bool,
     ) -> Result<(), ()> {
         if !map.contains_key(key) {
             map.insert(
@@ -86,7 +90,7 @@ impl SymbolTable {
                     number,
                     symbol_type: symbol_type.clone(),
                     declaration_type,
-                    global: false,
+                    global,
                 },
             );
             Ok(())
