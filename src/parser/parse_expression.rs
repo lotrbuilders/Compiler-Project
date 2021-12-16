@@ -10,6 +10,12 @@ impl Parser {
     pub(super) fn parse_expression(&mut self) -> Result<Expression, ()> {
         self.pratt_parse(0)
     }
+    pub(super) fn parse_assignment(&mut self) -> Result<Expression, ()> {
+        self.pratt_parse(2)
+    }
+    pub(super) fn parse_conditional(&mut self) -> Result<Expression, ()> {
+        self.pratt_parse(4)
+    }
 
     // <expression> ::= <primary-expression> | <expression> <bin-op> <expression>
     // <bin-op> ::= '+' | '-' | '*' | '/'
@@ -125,7 +131,7 @@ impl Parser {
             match self.peek_type() {
                 Some(RParenthesis) => break,
                 _ => {
-                    result.push(self.pratt_parse(2)?);
+                    result.push(self.parse_assignment()?);
                     if let Some(RParenthesis) = self.peek_type() {
                         break;
                     } else {

@@ -16,6 +16,7 @@ pub struct ExternalDeclaration {
     pub ast_type: Type,
     pub name: String,
     pub function_body: Option<Vec<Statement>>,
+    pub expression: Option<Expression>,
 }
 
 // Represents all possible statements

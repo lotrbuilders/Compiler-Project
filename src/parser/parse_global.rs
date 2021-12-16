@@ -1,6 +1,6 @@
 use super::ast::*;
-use super::{recovery::RecoveryStrategy, Parser, Type};
-use crate::expect;
+use super::{Parser, Type};
+
 use crate::token::{Token, TokenType};
 
 impl Parser {
@@ -38,19 +38,37 @@ impl Parser {
                 let compound_statement = self.parse_compound_statement()?;
                 Some(compound_statement)
             } else {
-                expect!(self, TokenType::Semicolon, RecoveryStrategy::Nothing)?;
+                self.expect_semicolon();
                 None
             }
         } else {
-            expect!(self, TokenType::Semicolon, RecoveryStrategy::Nothing)?;
             None
         };
+        let expression = if function_body.is_none() {
+            if let Some(TokenType::Assign) = self.peek_type() {
+                self.next();
+                let expression = self.parse_conditional().unwrap_or_else(|_| Expression {
+                    span: begin.clone(),
+                    ast_type: Type::int(),
+                    variant: ExpressionVariant::ConstI(0),
+                });
+                self.expect_semicolon();
+                Some(expression)
+            } else {
+                self.expect_semicolon();
+                None
+            }
+        } else {
+            None
+        };
+
         let name = Type::get_name(&declaration).unwrap_or("name".to_string());
         Ok(ExternalDeclaration {
             span: begin.to(&self.peek_span()),
             ast_type: declaration,
             name,
             function_body,
+            expression,
         })
     }
 }

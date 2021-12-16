@@ -1,5 +1,5 @@
 use crate::token::{Token, TokenType};
-use std::fmt::Display;
+use std::{fmt::Display, vec};
 
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum DeclarationType {
@@ -48,6 +48,11 @@ impl PartialEq for Type {
 impl Type {
     pub fn empty() -> Type {
         Type { nodes: Vec::new() }
+    }
+    pub fn int() -> Type {
+        Type {
+            nodes: vec![TypeNode::Int],
+        }
     }
 
     pub fn is_declaration(&self) -> bool {
