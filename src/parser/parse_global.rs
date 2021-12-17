@@ -33,6 +33,8 @@ impl Parser {
     pub fn parse_external_declaration(&mut self) -> Result<ExternalDeclaration, ()> {
         let begin = self.peek_span();
         let declaration = self.parse_declaration()?;
+        let name = Type::get_name(&declaration).unwrap_or("name".to_string());
+        let declaration = declaration.remove_name();
         let function_body = if Type::is_function(&declaration) {
             if let Some(TokenType::LBrace) = self.peek_type() {
                 let compound_statement = self.parse_compound_statement()?;
@@ -61,7 +63,6 @@ impl Parser {
             None
         };
 
-        let name = Type::get_name(&declaration).unwrap_or("name".to_string());
         Ok(ExternalDeclaration {
             span: begin.to(&self.peek_span()),
             ast_type: declaration,

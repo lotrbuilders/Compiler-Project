@@ -97,6 +97,12 @@ impl Type {
             _ => None,
         }
     }
+    pub fn remove_name(self) -> Type {
+        match self.nodes.get(0) {
+            Some(TypeNode::Name(_)) => self.nodes[1..].into(),
+            _ => self.clone(),
+        }
+    }
 
     pub fn get_return_type<'a>(&'a self) -> Option<&'a [TypeNode]> {
         Type::get_return_type2(&self.nodes)

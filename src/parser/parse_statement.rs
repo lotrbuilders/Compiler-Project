@@ -176,6 +176,7 @@ impl Parser {
                 .push(error!(span, "Missing identifier in declaration"));
             "name".to_string()
         });
+        let decl_type = decl_type.remove_name();
 
         let init = if let Some(TokenType::Assign) = self.peek_type() {
             self.next();
