@@ -11,6 +11,7 @@ pub enum DeclarationType {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypeNode {
     Int,
+    Pointer,
     Name(String),
     Function(Vec<Type>),
 }
@@ -117,6 +118,7 @@ impl From<Token> for TypeNode {
         use TokenType::*;
         match token.token() {
             Int => TypeNode::Int,
+            Asterisk => TypeNode::Pointer,
             Ident(name) => TypeNode::Name(name),
             _ => {
                 log::error!("From<Token> for Type called on unqualified type");
@@ -154,6 +156,7 @@ fn format_type(typ: &[TypeNode], f: &mut std::fmt::Formatter<'_>) -> std::fmt::R
         use TypeNode::*;
         match &typ[i] {
             Int => write!(f, "int ")?,
+            Pointer => write!(f, "* ")?,
             Name(name) => write!(f, "{}", name)?,
             Function(arguments) => {
                 //Extend later when functions are fully implemented
