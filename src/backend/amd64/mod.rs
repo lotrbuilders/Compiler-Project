@@ -154,6 +154,15 @@ impl Backend for BackendAMD64 {
         }
         result
     }
+
+    fn get_size(&self, typ: &crate::parser::TypeNode) -> IRSize {
+        use crate::parser::TypeNode::*;
+        match typ {
+            Int => IRSize::S32,
+            Pointer => IRSize::P,
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl BackendAMD64 {

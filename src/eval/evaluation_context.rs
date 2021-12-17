@@ -1,4 +1,7 @@
-use crate::backend::{ir::*, Backend};
+use crate::{
+    backend::{ir::*, Backend},
+    parser::Type,
+};
 
 pub struct EvaluationContext<'a> {
     pub vreg_counter: u32,
@@ -118,5 +121,11 @@ impl<'a> EvaluationContext<'a> {
             .collect();
 
         self.loop_depth -= 1;
+    }
+}
+
+impl<'a> EvaluationContext<'a> {
+    pub fn get_size(&self, typ: Type) -> IRSize {
+        self.backend.get_size(&typ.nodes[0])
     }
 }

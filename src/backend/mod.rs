@@ -1,6 +1,8 @@
 mod amd64;
 pub mod ir;
 
+use crate::parser::TypeNode;
+
 use self::ir::*;
 
 // Generates all functions for the specific backend specified
@@ -75,4 +77,6 @@ pub trait Backend {
 
     fn argument_evaluation_direction_registers(&self) -> Direction;
     fn argument_evaluation_direction_stack(&self) -> Direction;
+
+    fn get_size(&self, typ: &TypeNode) -> IRSize;
 }
