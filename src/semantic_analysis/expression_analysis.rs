@@ -108,8 +108,7 @@ impl Expression {
                 if left.ast_type.is_in(Pointer) && right.ast_type.is_in(Pointer) {
                     analyzer.assert_compatible(&self.span, &left.ast_type, &right.ast_type);
                 } else {
-                    analyzer.assert_in(&self.span, &left.ast_type, Arithmetic);
-                    analyzer.assert_in(&self.span, &right.ast_type, Arithmetic);
+                    analyzer.assert_both_in(&self.span, &left.ast_type, &right.ast_type, Arithmetic)
                 }
                 left.ast_type.clone()
             }
@@ -119,8 +118,12 @@ impl Expression {
                 if left.ast_type.is_in(Pointer) && right.ast_type.is_in(Pointer) {
                     analyzer.assert_compatible(&self.span, &left.ast_type, &right.ast_type);
                 } else {
-                    analyzer.assert_in(&self.span, &left.ast_type, Arithmetic);
-                    analyzer.assert_in(&self.span, &right.ast_type, Arithmetic);
+                    analyzer.assert_both_in(
+                        &self.span,
+                        &left.ast_type,
+                        &right.ast_type,
+                        Arithmetic,
+                    );
                 }
                 left.ast_type.clone()
             }
