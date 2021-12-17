@@ -34,8 +34,14 @@ impl Parser {
     }
 
     // Parse a declarator optionally containing pointers and function
-    // <declarator> ::= name ( '(' <parameter-type-list>? ')' )?
+    // <declarator> ::= ('*')* name ( '(' <parameter-type-list>? ')' )?
     fn parse_declarator(&mut self) -> Result<Type, ()> {
+        let mut pointers = Vec::new();
+        while let Some(TokenType::Asterisk) = self.peek_type() {
+            self.next();
+            pointers.push(TypeNode::Pointer);
+        }
+
         let mut result = Vec::<TypeNode>::new();
         let name = expect!(
             self,
@@ -50,6 +56,7 @@ impl Parser {
             let arguments = self.parse_braced('(', Parser::parse_parameter_type_list)?;
             result.push(TypeNode::Function(arguments))
         }
+        result.append(&mut pointers);
         Ok(result.into())
     }
 
