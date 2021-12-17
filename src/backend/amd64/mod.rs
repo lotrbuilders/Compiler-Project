@@ -18,6 +18,7 @@ rburg::rburg_main! {
     BackendAMD64,
 :       Ret i32(_a %eax)            "#\n"
 :       Store(r %ireg, a adr)       "mov [{a}],{r}\n"
+:       Store P(r %ireg, a adr)       "mov [{a}],{r:.64}\n"
 :       Label(#i)                   ".L{i}:\n"
 %ireg:  Label(#i)                   ".L{i}:\n"
 :       Jmp(#i)                     "jmp .L{i}\n"
@@ -30,17 +31,18 @@ rc:     i con                       "{i}"
 adr:    AddrL(#a)                   "rbp+{a}"
 adr:    AddrG(#a)                   "{a}"
 mem:    Load(a adr)                 "[{a}]"
+mem:    Load(r %ireg)               "[{r}]"
 acon:   i con                       "{i}"
 acon:   a adr                       "{a}"
 mcon:   i con                       "{i}"
 mcon:   m mem                       "{m}"
 
 
-%ireg:  i rc                        "mov {res}, {i}\n"      {1}
-%ireg:  a adr                       "lea {res}, [{a}],\n"     {1}
+%ireg:  i rc                        "mov {res}, {i}\n"       {1}
+%ireg:  a adr                       "lea {res}, [{a}],\n"    {1}
 %ireg:  m mem                       "mov {res}, {m}\n"       {1}
-
-//%ireg:  Load(m mem)                 "mov {res}, {m}\n"       {1}
+%ireg:  Load P(a adr)               "mov {res:.64}, [{a}]\n" {1}
+%ireg:  Load P(r %ireg)             "mov {res:.64}, [{r}]"   {1}
 
 %ireg:  Add(a %ireg , b %ireg)      ?"add {res}, {b} ; {res} = {a} + {b}\n"   {1}
 
@@ -65,7 +67,7 @@ mcon:   m mem                       "{m}"
 %ireg:  Gt s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetg {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
 %ireg:  Ge s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetge {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
 
-:       Arg(r %ireg)                "push {r:.64}\n" {1}
+:       Arg pi32(r %ireg)                "push {r:.64}\n" {1}
 %eax:   Call(#name)                 "call {name}; {res} = {name}()\n" {20}
 }
 
