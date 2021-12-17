@@ -55,6 +55,11 @@ impl Type {
             nodes: vec![TypeNode::Int],
         }
     }
+    pub fn pointer() -> Type {
+        Type {
+            nodes: vec![TypeNode::Pointer],
+        }
+    }
 
     pub fn is_declaration(&self) -> bool {
         self.get_function_arguments()
@@ -110,6 +115,19 @@ impl Type {
     pub fn combine(mut base_type: Type, mut declarator: Type) -> Type {
         declarator.nodes.append(&mut base_type.nodes);
         declarator
+    }
+
+    pub fn append(mut self, other: &Type) -> Type {
+        self.nodes.extend(other.nodes.clone());
+        self
+    }
+
+    pub fn deref(self) -> Type {
+        if let Some(TypeNode::Pointer) = self.nodes.get(0) {
+            self.nodes[1..].into()
+        } else {
+            self
+        }
     }
 }
 
