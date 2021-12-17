@@ -126,4 +126,5 @@ pub enum UnaryExpressionType {
     BinNot,
     LogNot,
     Deref,
+    Address,
 }

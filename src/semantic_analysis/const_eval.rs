@@ -14,7 +14,10 @@ impl Expression {
             ExpressionVariant::Assign(..)
             | ExpressionVariant::Function(..)
             | ExpressionVariant::Ident(..) => self,
-            ExpressionVariant::Unary(UnaryExpressionType::Deref, ..) => self,
+            ExpressionVariant::Unary(
+                UnaryExpressionType::Deref | UnaryExpressionType::Address,
+                ..,
+            ) => self,
 
             ExpressionVariant::Ternary(cond, left, right) => {
                 let cond = cond.const_eval();
@@ -118,7 +121,7 @@ impl UnaryExpressionType {
             Negate => -exp,
             BinNot => !exp,
             LogNot => (exp == 0) as i128,
-            Deref => unreachable!(),
+            Deref | Address => unreachable!(),
         }
     }
 }

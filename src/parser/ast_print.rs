@@ -218,6 +218,7 @@ impl Display for UnaryExpressionType {
                 BinNot => '~',
                 LogNot => '!',
                 Deref => '*',
+                Address => '&',
             }
         )
     }
