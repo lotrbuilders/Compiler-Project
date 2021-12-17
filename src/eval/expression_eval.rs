@@ -101,6 +101,7 @@ impl Evaluate for Expression {
                     ));
                     vreg
                 } else {
+                    // Function pointers are not yet supported
                     todo!();
                 }
             }
@@ -216,9 +217,13 @@ impl Evaluate for Expression {
                 vreg
             }
 
-            Unary(Identity, exp) => {
-                let exp = exp.eval(result, context);
-                exp
+            Unary(Identity, exp) => exp.eval(result, context),
+            Unary(Address, exp) => exp.eval_lvalue(result, context),
+            Unary(Deref, _exp) => {
+                let addr = self.eval_lvalue(result, context);
+                let vreg = context.next_vreg();
+                result.push(IRInstruction::Load(IRSize::S32, vreg, addr));
+                vreg
             }
 
             Unary(op, exp) => {
@@ -226,16 +231,16 @@ impl Evaluate for Expression {
                 let right = context.next_vreg();
                 let vreg = context.next_vreg();
 
-                result.push(match op {
-                    Negate | LogNot => IRInstruction::Imm(IRSize::S32, right, 0),
-                    BinNot => IRInstruction::Imm(IRSize::S32, right, -1),
-                    _ => unreachable!(),
-                });
+                match op {
+                    Negate | LogNot => result.push(IRInstruction::Imm(IRSize::S32, right, 0)),
+                    BinNot => result.push(IRInstruction::Imm(IRSize::S32, right, -1)),
+                    _ => (),
+                }
                 result.push(match op {
                     Negate => IRInstruction::Sub(IRSize::S32, vreg, right, left),
                     BinNot => IRInstruction::Xor(IRSize::S32, vreg, left, right),
                     LogNot => IRInstruction::Eq(IRSize::S32, vreg, left, right),
-                    _ => unreachable!(),
+                    Identity | Address | Deref => unreachable!(),
                 });
                 vreg
             }
@@ -246,6 +251,7 @@ impl Evaluate for Expression {
 impl Expression {
     fn eval_lvalue(&self, result: &mut Vec<IRInstruction>, context: &mut EvaluationContext) -> u32 {
         use ExpressionVariant::*;
+        use UnaryExpressionType::*;
         match &self.variant {
             Ident(_name, symbol_number, false) => {
                 let addr = context.next_vreg();
@@ -261,6 +267,7 @@ impl Expression {
                 result.push(IRInstruction::AddrG(IRSize::P, addr, name.clone()));
                 addr
             }
+            Unary(Deref, exp) => exp.eval(result, context),
             _ => {
                 unreachable!()
             }
