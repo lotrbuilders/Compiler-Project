@@ -18,12 +18,17 @@ impl IRPhi {
             sources: vec![Vec::new(); len],
         })
     }
-    pub fn ternary(locations: (IRLabel, IRLabel), result: u32, vreg: (u32, u32)) -> Box<IRPhi> {
+    pub fn ternary(
+        size: IRSize,
+        locations: (IRLabel, IRLabel),
+        result: u32,
+        vreg: (u32, u32),
+    ) -> Box<IRPhi> {
         let (l1, l2) = locations;
         let (v1, v2) = vreg;
         Box::new(IRPhi {
             targets: vec![result],
-            size: Vec::new(),
+            size: vec![size],
             locations: vec![l1, l2],
             sources: vec![vec![v1], vec![v2]],
         })

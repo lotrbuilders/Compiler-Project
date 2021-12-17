@@ -15,14 +15,20 @@ impl Evaluate for Expression {
             }
 
             Ident(..) => {
+                let size = context.get_size(&self.ast_type);
                 let addr = self.eval_lvalue(result, context);
                 let vreg = context.next_vreg();
-                result.push(IRInstruction::Load(IRSize::S32, vreg, addr));
+                result.push(IRInstruction::Load(size, vreg, addr));
                 vreg
             }
 
             Function(func, arguments) => {
-                let sizes = vec![IRSize::S32; arguments.len()];
+                let size = context.get_size(&func.ast_type.get_return_type().unwrap().into());
+                let sizes = arguments
+                    .iter()
+                    .map(|exp| context.get_size(&exp.ast_type))
+                    .collect();
+
                 let in_registers = context.backend.get_arguments_in_registers(&sizes);
                 let count = arguments.len();
                 use crate::backend::Direction;
@@ -93,12 +99,7 @@ impl Evaluate for Expression {
                             *fix = index;
                         }
                     }
-                    result.push(IRInstruction::Call(
-                        IRSize::S32,
-                        vreg,
-                        name.clone(),
-                        arguments,
-                    ));
+                    result.push(IRInstruction::Call(size, vreg, name.clone(), arguments));
                     vreg
                 } else {
                     // Function pointers are not yet supported
@@ -107,15 +108,18 @@ impl Evaluate for Expression {
             }
 
             Assign(left, right) => {
+                let size = context.get_size(&self.ast_type);
                 let vreg = right.eval(result, context);
                 let addr = left.eval_lvalue(result, context);
 
-                result.push(IRInstruction::Store(IRSize::S32, vreg, addr));
+                result.push(IRInstruction::Store(size, vreg, addr));
                 vreg
             }
 
             #[allow(unused_variables)]
             Ternary(cond, left, right) => {
+                let cond_size = context.get_size(&cond.ast_type);
+                let size = context.get_size(&self.ast_type);
                 let cond = cond.eval(result, context);
 
                 let (if_index, _) = context.insert_place_holder_jump(result);
@@ -130,10 +134,10 @@ impl Evaluate for Expression {
                 let else_label = context.get_current_label();
                 let (last_index, label) = context.insert_place_holder_jump_phi(
                     result,
-                    IRPhi::ternary((if_label, else_label), vreg, (left, right)),
+                    IRPhi::ternary(size, (if_label, else_label), vreg, (left, right)),
                 );
 
-                result[if_index] = IRInstruction::Jnc(IRSize::S32, cond, else_label);
+                result[if_index] = IRInstruction::Jnc(cond_size, cond, else_label);
                 result[else_index] = IRInstruction::Jmp(label);
                 result[last_index] = IRInstruction::Jmp(label);
                 vreg
@@ -141,6 +145,8 @@ impl Evaluate for Expression {
 
             // Could benefit from constants in phi nodes
             Binary(op @ (LogOr | LogAnd), left, right) => {
+                let left_size = context.get_size(&left.ast_type);
+                let right_size = context.get_size(&left.ast_type);
                 let left = left.eval(result, context);
                 let first_operand = {
                     let vreg = context.next_vreg();
@@ -162,8 +168,8 @@ impl Evaluate for Expression {
                 let second_operand = {
                     let temp = context.next_vreg();
                     let vreg = context.next_vreg();
-                    result.push(IRInstruction::Imm(IRSize::S32, temp, 0));
-                    result.push(IRInstruction::Ne(IRSize::S32, vreg, right, temp));
+                    result.push(IRInstruction::Imm(right_size.clone(), temp, 0));
+                    result.push(IRInstruction::Ne(right_size, vreg, right, temp));
                     vreg
                 };
                 let vreg = context.next_vreg();
@@ -171,6 +177,7 @@ impl Evaluate for Expression {
                 let (right_jmp, right_label) = context.insert_place_holder_jump_phi(
                     result,
                     IRPhi::ternary(
+                        IRSize::S32,
                         (start_label, left_label),
                         vreg,
                         (first_operand, second_operand),
@@ -179,11 +186,10 @@ impl Evaluate for Expression {
 
                 result[right_jmp] = IRInstruction::Jmp(right_label);
                 result[left_jmp] = match op {
-                    LogOr => IRInstruction::Jcc(IRSize::S32, left, right_label),
-                    LogAnd => IRInstruction::Jnc(IRSize::S32, left, right_label),
+                    LogOr => IRInstruction::Jcc(left_size, left, right_label),
+                    LogAnd => IRInstruction::Jnc(left_size, left, right_label),
                     _ => unreachable!(),
                 };
-
                 vreg
             }
 
@@ -193,26 +199,30 @@ impl Evaluate for Expression {
                 right
             }
 
+            // TODO add IRInstruction for adding number to pointer?
+            // Or add conversion from integer in int* +/- int
+            // Adding/subtracting pointer does not currently lead to correct behaviour
             Binary(op, left, right) => {
+                let size = op.get_size(context, &left.ast_type, &right.ast_type);
                 let left = left.eval(result, context);
                 let right = right.eval(result, context);
                 let vreg = context.next_vreg();
                 result.push(match op {
-                    Add => IRInstruction::Add(IRSize::S32, vreg, left, right),
-                    Subtract => IRInstruction::Sub(IRSize::S32, vreg, left, right),
-                    Multiply => IRInstruction::Mul(IRSize::S32, vreg, left, right),
-                    Divide => IRInstruction::Div(IRSize::S32, vreg, left, right),
+                    Add => IRInstruction::Add(size, vreg, left, right),
+                    Subtract => IRInstruction::Sub(size, vreg, left, right),
+                    Multiply => IRInstruction::Mul(size, vreg, left, right),
+                    Divide => IRInstruction::Div(size, vreg, left, right),
 
-                    BinOr => IRInstruction::Or(IRSize::S32, vreg, left, right),
-                    BinAnd => IRInstruction::And(IRSize::S32, vreg, left, right),
+                    BinOr => IRInstruction::Or(size, vreg, left, right),
+                    BinAnd => IRInstruction::And(size, vreg, left, right),
 
-                    Equal => IRInstruction::Eq(IRSize::S32, vreg, left, right),
-                    Inequal => IRInstruction::Ne(IRSize::S32, vreg, left, right),
-                    Less => IRInstruction::Lt(IRSize::S32, vreg, left, right),
-                    LessEqual => IRInstruction::Le(IRSize::S32, vreg, left, right),
-                    Greater => IRInstruction::Gt(IRSize::S32, vreg, left, right),
-                    GreaterEqual => IRInstruction::Ge(IRSize::S32, vreg, left, right),
-                    _ => unreachable!(),
+                    Equal => IRInstruction::Eq(size, vreg, left, right),
+                    Inequal => IRInstruction::Ne(size, vreg, left, right),
+                    Less => IRInstruction::Lt(size, vreg, left, right),
+                    LessEqual => IRInstruction::Le(size, vreg, left, right),
+                    Greater => IRInstruction::Gt(size, vreg, left, right),
+                    GreaterEqual => IRInstruction::Ge(size, vreg, left, right),
+                    Comma | LogOr | LogAnd => unreachable!(),
                 });
                 vreg
             }
@@ -220,26 +230,28 @@ impl Evaluate for Expression {
             Unary(Identity, exp) => exp.eval(result, context),
             Unary(Address, exp) => exp.eval_lvalue(result, context),
             Unary(Deref, _exp) => {
+                let size = context.get_size(&self.ast_type);
                 let addr = self.eval_lvalue(result, context);
                 let vreg = context.next_vreg();
-                result.push(IRInstruction::Load(IRSize::S32, vreg, addr));
+                result.push(IRInstruction::Load(size, vreg, addr));
                 vreg
             }
 
             Unary(op, exp) => {
+                let size = context.get_size(&exp.ast_type);
                 let left = exp.eval(result, context);
                 let right = context.next_vreg();
                 let vreg = context.next_vreg();
 
                 match op {
-                    Negate | LogNot => result.push(IRInstruction::Imm(IRSize::S32, right, 0)),
-                    BinNot => result.push(IRInstruction::Imm(IRSize::S32, right, -1)),
+                    Negate | LogNot => result.push(IRInstruction::Imm(size.clone(), right, 0)),
+                    BinNot => result.push(IRInstruction::Imm(size.clone(), right, -1)),
                     _ => (),
                 }
                 result.push(match op {
-                    Negate => IRInstruction::Sub(IRSize::S32, vreg, right, left),
-                    BinNot => IRInstruction::Xor(IRSize::S32, vreg, left, right),
-                    LogNot => IRInstruction::Eq(IRSize::S32, vreg, left, right),
+                    Negate => IRInstruction::Sub(size, vreg, right, left),
+                    BinNot => IRInstruction::Xor(size, vreg, left, right),
+                    LogNot => IRInstruction::Eq(size, vreg, left, right),
                     Identity | Address | Deref => unreachable!(),
                 });
                 vreg

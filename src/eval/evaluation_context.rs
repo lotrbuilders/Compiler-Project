@@ -1,6 +1,6 @@
 use crate::{
     backend::{ir::*, Backend},
-    parser::Type,
+    parser::{ast::BinaryExpressionType, Type},
 };
 
 pub struct EvaluationContext<'a> {
@@ -125,7 +125,21 @@ impl<'a> EvaluationContext<'a> {
 }
 
 impl<'a> EvaluationContext<'a> {
-    pub fn get_size(&self, typ: Type) -> IRSize {
+    pub fn get_size(&self, typ: &Type) -> IRSize {
         self.backend.get_size(&typ.nodes[0])
+    }
+}
+
+impl BinaryExpressionType {
+    pub fn get_size(&self, context: &mut EvaluationContext, left: &Type, _right: &Type) -> IRSize {
+        use BinaryExpressionType::*;
+        let size = context.get_size(left);
+        match self {
+            Subtract => size,
+            Add => size,
+            Multiply | Divide | BinOr | BinAnd | Equal | Inequal | Less | LessEqual | Greater
+            | GreaterEqual => size,
+            _ => unreachable!(),
+        }
     }
 }

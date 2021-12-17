@@ -143,7 +143,6 @@ impl UnaryExpressionType {
                     analyzer.assert_in(span, typ, self.get_type_class());
                     exp.ast_type.clone()
                 }
-
                 Deref => {
                     analyzer.assert_in(span, typ, Pointer);
                     exp.ast_type.clone().deref()
@@ -158,7 +157,6 @@ impl UnaryExpressionType {
         use UnaryExpressionType::*;
         match self {
             Identity | Negate => Arithmetic,
-
             BinNot => Integer,
             LogNot => Scalar,
             Deref | Address => unreachable!(),
@@ -225,7 +223,7 @@ impl BinaryExpressionType {
                         left.ast_type.clone()
                     }
                 }
-                Multiply | Divide | BinOr | BinAnd | LogOr | LogAnd => {
+                Multiply | Divide | BinOr | BinAnd => {
                     analyzer.assert_both_in(
                         span,
                         &left.ast_type,
@@ -234,6 +232,17 @@ impl BinaryExpressionType {
                     );
                     left.ast_type.clone()
                 }
+
+                LogOr | LogAnd => {
+                    analyzer.assert_both_in(
+                        span,
+                        &left.ast_type,
+                        &right.ast_type,
+                        self.get_type_class(),
+                    );
+                    Type::int()
+                }
+
                 Comma => right.ast_type.clone(),
             }
         }
