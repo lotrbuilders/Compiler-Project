@@ -31,6 +31,10 @@ impl Analysis for Expression {
                 check_arguments_function(analyzer, &self.span, &func.ast_type, arguments);
             }
 
+            Unary(UnaryExpressionType::Address, exp) => {
+                exp.analyze_lvalue(analyzer);
+            }
+
             Unary(_op, exp) => {
                 exp.analyze(analyzer);
             }
@@ -47,9 +51,8 @@ impl Analysis for Expression {
             }
 
             Assign(left, right) => {
-                left.analyze(analyzer);
-                right.analyze(analyzer);
                 left.analyze_lvalue(analyzer);
+                right.analyze(analyzer);
             }
         }
     }
@@ -60,6 +63,7 @@ impl Expression {
         use ExpressionVariant::*;
         match &mut self.variant {
             Ident(..) => self.analyze(analyzer),
+            Unary(UnaryExpressionType::Deref, _) => self.analyze(analyzer),
             _ => {
                 analyzer
                     .errors

@@ -1,9 +1,10 @@
 use crate::parser::{Type, TypeNode};
 
 pub enum TypeClass {
+    Pointer,
+    Function,
     StandardSignedInteger,
     StandardInteger,
-    Pointer,
     Integer,
     Scalar,
     Arithmetic,
@@ -29,6 +30,7 @@ impl Type {
         use TypeClass::*;
         match class {
             StandardSignedInteger => self.nodes[0] == TypeNode::Int,
+            Function => matches!(self.nodes[0], TypeNode::Function(_)),
             Pointer => self.nodes[0] == TypeNode::Pointer,
             StandardInteger => self.is_in2(StandardSignedInteger),
             Integer => self.is_in2(StandardInteger),
