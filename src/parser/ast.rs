@@ -125,4 +125,5 @@ pub enum UnaryExpressionType {
     Negate,
     BinNot,
     LogNot,
+    Deref,
 }

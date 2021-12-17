@@ -217,6 +217,7 @@ impl Display for UnaryExpressionType {
                 Negate => '-',
                 BinNot => '~',
                 LogNot => '!',
+                Deref => '*',
             }
         )
     }

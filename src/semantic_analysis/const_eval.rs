@@ -10,6 +10,12 @@ impl Expression {
     pub fn const_eval(self) -> Expression {
         use ExpressionVariant::ConstI;
         match self.variant {
+            ExpressionVariant::ConstI(_) => self,
+            ExpressionVariant::Assign(..)
+            | ExpressionVariant::Function(..)
+            | ExpressionVariant::Ident(..) => self,
+            ExpressionVariant::Unary(UnaryExpressionType::Deref, ..) => self,
+
             ExpressionVariant::Ternary(cond, left, right) => {
                 let cond = cond.const_eval();
                 let left = left.const_eval();
@@ -71,10 +77,6 @@ impl Expression {
                     },
                 }
             }
-            ExpressionVariant::ConstI(_) => self,
-            ExpressionVariant::Assign(..)
-            | ExpressionVariant::Function(..)
-            | ExpressionVariant::Ident(..) => self,
         }
     }
 }
@@ -116,6 +118,7 @@ impl UnaryExpressionType {
             Negate => -exp,
             BinNot => !exp,
             LogNot => (exp == 0) as i128,
+            Deref => unreachable!(),
         }
     }
 }
