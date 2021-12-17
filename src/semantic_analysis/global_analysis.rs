@@ -96,16 +96,17 @@ impl Analysis for ExternalDeclaration {
             if let Some(arguments) = self.ast_type.get_function_arguments() {
                 for arg in arguments {
                     if let Some(name) = arg.get_name() {
+                        let symbol_type = arg.clone().remove_name();
                         if let Err(()) = analyzer.symbol_table.try_insert(
                             &name,
-                            arg,
+                            &symbol_type,
                             DeclarationType::Definition,
                         ) {
                             analyzer.errors.push(error!(
                                 self.span,
                                 "Argument {} with type {} already defined as type {}",
                                 &name,
-                                arg,
+                                &symbol_type,
                                 &analyzer.symbol_table.get(&name).unwrap().symbol_type
                             ));
                         }
