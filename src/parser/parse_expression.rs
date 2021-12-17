@@ -47,7 +47,8 @@ impl Parser {
         use TokenType::*;
         let token = self.peek();
         let exp = match self.peek_type() {
-            Some(Plus) | Some(Minus) | Some(Tilde) | Some(Exclamation) => {
+            Some(Plus) | Some(Minus) | Some(Tilde) | Some(Exclamation) | Some(Asterisk)
+            | Some(And) => {
                 self.next();
                 let exp = self.parse_unary()?;
                 new_unary_expression(&token.unwrap(), exp)
@@ -265,6 +266,8 @@ fn new_unary_expression(token: &Token, exp: Expression) -> Expression {
         TokenType::Minus => Negate,
         TokenType::Tilde => BinNot,
         TokenType::Exclamation => LogNot,
+        TokenType::Asterisk => Deref,
+        TokenType::And => Address,
         _ => unreachable!(),
     };
     Expression {
