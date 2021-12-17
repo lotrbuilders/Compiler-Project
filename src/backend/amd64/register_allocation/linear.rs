@@ -1,9 +1,6 @@
-use std::fmt;
-use std::fmt::Display;
-use std::ops::Range;
-
 use crate::backend::amd64::register_allocation::RegisterAllocation;
-use crate::backend::ir::IRInstruction;
+use crate::backend::ir::control_flow_graph::ControlFlowGraph;
+use crate::backend::ir::control_flow_graph::CFG;
 
 use super::super::is_two_address;
 use super::super::registers::*;
@@ -12,123 +9,6 @@ use super::ralloc::*;
 use super::RegisterClass;
 use super::RegisterLocation;
 use RegisterLocation::*;
-
-pub struct ControlFlowGraph {
-    predecessors: Vec<u32>,
-    successors: Vec<u32>,
-    instructions: Range<usize>,
-    label: u32,
-}
-
-impl Display for ControlFlowGraph {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{:?} -> {} -> {:?}",
-            self.predecessors, self.label, self.successors
-        )
-    }
-}
-
-type CFG<'a> = ControlFlowGraph;
-
-impl ControlFlowGraph {
-    pub fn to_string(cfg: &Vec<ControlFlowGraph>) -> String {
-        let mut result = String::new();
-        for block in cfg {
-            result.push_str(&format!("{}\n", block));
-        }
-        result
-    }
-
-    pub fn new(range: Range<usize>, label: u32) -> ControlFlowGraph {
-        ControlFlowGraph {
-            predecessors: Vec::new(),
-            successors: Vec::new(),
-            instructions: range,
-            label,
-        }
-    }
-
-    pub fn last(&self) -> u32 {
-        return (self.instructions.end - 1) as u32;
-    }
-
-    pub fn check(cfg: &Vec<ControlFlowGraph>) {
-        for (block, i) in cfg.iter().zip(0..) {
-            assert_eq!(
-                block.label, i,
-                "The label of a cfg block({}) and it's index({}) must be equal.",
-                block.label, i
-            )
-        }
-    }
-
-    pub fn find_successors(cfg: &mut Vec<ControlFlowGraph>, instructions: &Vec<IRInstruction>) {
-        for (block, i) in cfg.iter_mut().zip(0..) {
-            let end = block.instructions.end - 1;
-            use IRInstruction::*;
-            match instructions[end] {
-                Jmp(next) => block.successors.push(next),
-                Jcc(.., next) | Jnc(.., next) => {
-                    block.successors.push(next);
-                    block.successors.push(i + 1)
-                }
-                Ret(..) => (),
-                _ => block.successors.push(i + 1),
-            }
-        }
-
-        let length = cfg.len();
-        if let Some(block) = cfg.last_mut() {
-            block.successors = block
-                .successors
-                .iter()
-                .filter(|&&i| (i as usize) < length)
-                .map(|i| *i)
-                .collect();
-        }
-    }
-
-    pub fn find_predecessors(cfg: &mut Vec<ControlFlowGraph>) {
-        for block in 0..cfg.len() {
-            for successor in cfg[block].successors.clone() {
-                cfg[successor as usize].predecessors.push(block as u32);
-            }
-        }
-    }
-
-    pub fn construct(instructions: &Vec<IRInstruction>) -> Vec<ControlFlowGraph> {
-        log::info!("Constructing CFG");
-        let mut cfg = Vec::new();
-        let mut start = 0;
-        let mut label = 0;
-        for (ins, i) in instructions.iter().zip(0usize..) {
-            use IRInstruction::*;
-            match ins {
-                Label(_, lbl) => {
-                    if !(start..i).is_empty() {
-                        cfg.push(ControlFlowGraph::new(start..i, label))
-                    }
-                    start = i;
-                    label = *lbl;
-                }
-                _ => (),
-            }
-        }
-        if !(start..instructions.len()).is_empty() {
-            cfg.push(ControlFlowGraph::new(start..instructions.len(), label))
-        }
-        log::info!("CFG:\n{}", CFG::to_string(&cfg));
-        CFG::check(&cfg);
-        CFG::find_successors(&mut cfg, instructions);
-        log::info!("CFG:\n{}", CFG::to_string(&cfg));
-        CFG::find_predecessors(&mut cfg);
-        log::info!("CFG:\n{}", CFG::to_string(&cfg));
-
-        cfg
-    }
-}
 
 impl RegisterAllocator for RegisterAllocatorLinear {
     // Should be generated in a seperate file preferably
@@ -181,7 +61,7 @@ impl RegisterAllocator for RegisterAllocatorLinear {
 
 fn _insert_moves(
     assignments: &mut RegisterAssignment,
-    cfg: &mut Vec<ControlFlowGraph>,
+    cfg: &mut ControlFlowGraph,
     cfg_vreg2reg: &mut Vec<Vec<RegisterLocation>>,
     cfg_used: &mut Vec<bool>,
     label: u32,

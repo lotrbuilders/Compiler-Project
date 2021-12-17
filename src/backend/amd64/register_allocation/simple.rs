@@ -1,10 +1,10 @@
 use crate::backend::amd64::register_allocation::RegisterAllocation;
+use crate::backend::ir::control_flow_graph::ControlFlowGraph;
 use crate::backend::ir::IRInstruction;
 
 //use super::is_two_address;
 use super::super::registers::*;
 use super::super::BackendAMD64;
-use super::linear::ControlFlowGraph;
 use super::ralloc::*;
 use super::RegisterClass;
 use super::RegisterLocation::*;

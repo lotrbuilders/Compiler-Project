@@ -1,3 +1,4 @@
+pub mod control_flow_graph;
 pub mod ir;
 pub mod ir_phi;
 pub mod print_ir;
