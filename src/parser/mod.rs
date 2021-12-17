@@ -9,7 +9,7 @@ mod parse_global;
 mod parse_statement;
 mod recovery;
 
-pub use self::r#type::Type;
+pub use self::r#type::{Type, TypeNode};
 use self::recovery::RecoveryStrategy;
 use crate::span::Span;
 use crate::token::{Token, TokenType};

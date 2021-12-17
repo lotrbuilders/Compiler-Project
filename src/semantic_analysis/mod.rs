@@ -6,6 +6,7 @@ mod expression_analysis;
 mod global_analysis;
 mod statement_analysis;
 mod type_checking;
+mod type_class;
 
 use std::collections::HashMap;
 

@@ -21,7 +21,7 @@ pub enum TypeNode {
 // This is followed in order of dereferencing/calling
 #[derive(Debug, Clone, Eq)]
 pub struct Type {
-    nodes: Vec<TypeNode>,
+    pub nodes: Vec<TypeNode>,
 }
 
 impl PartialEq for Type {
