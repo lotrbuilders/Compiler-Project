@@ -18,7 +18,10 @@ impl Display for TranslationUnit {
 
 impl Display for ExternalDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.ast_type)?;
+        use super::TypeNode;
+        let mut typ = self.ast_type.clone();
+        typ.nodes.insert(0, TypeNode::Name(self.name.clone()));
+        write!(f, "{}", typ)?;
         match &self.function_body {
             None => writeln!(f, ";")?,
             Some(body) => {
@@ -54,11 +57,14 @@ impl Display for Statement {
 
             Declaration {
                 span: _,
-                ident: _,
+                ident,
                 decl_type,
                 init,
             } => {
-                write!(f, "{}", decl_type)?;
+                use super::TypeNode;
+                let mut typ = decl_type.clone();
+                typ.nodes.insert(0, TypeNode::Name(ident.clone()));
+                write!(f, "{}", typ)?;
                 if let Some(exp) = init {
                     writeln!(f, " = {};", exp)?;
                 } else {
