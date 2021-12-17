@@ -18,7 +18,11 @@ rburg::rburg_main! {
     BackendAMD64,
 :       Ret i32(_a %eax)            "#\n"
 :       Store(r %ireg, a adr)       "mov [{a}],{r}\n"
-:       Store P(r %ireg, a adr)       "mov [{a}],{r:.64}\n"
+:       Store P(r %ireg, a adr)     "mov [{a}],{r:.64}\n"
+:       Store(Imm(#i),a adr)     "mov dword[{a}],{i}\n"
+:       Store P(Imm(#i),a adr)     "mov qword[{a}],{i}\n"
+:       Store(Imm(#i),a %ireg)     "mov dword[{a}],{i}\n"
+:       Store P(Imm(#i),a %ireg)     "mov qword[{a}],{i}\n"
 :       Label(#i)                   ".L{i}:\n"
 %ireg:  Label(#i)                   ".L{i}:\n"
 :       Jmp(#i)                     "jmp .L{i}\n"
@@ -31,7 +35,7 @@ rc:     i con                       "{i}"
 adr:    AddrL(#a)                   "rbp+{a}"
 adr:    AddrG(#a)                   "{a}"
 mem:    Load(a adr)                 "[{a}]"
-mem:    Load(r %ireg)               "[{r}]"
+mem:    Load(r %ireg)               "[{r:.64}]"
 acon:   i con                       "{i}"
 acon:   a adr                       "{a}"
 mcon:   i con                       "{i}"
@@ -39,7 +43,7 @@ mcon:   m mem                       "{m}"
 
 
 %ireg:  i rc                        "mov {res}, {i}\n"       {1}
-%ireg:  a adr                       "lea {res}, [{a}],\n"    {1}
+%ireg:  a adr                       "lea {res:.64}, [{a}]\n"    {1}
 %ireg:  m mem                       "mov {res}, {m}\n"       {1}
 %ireg:  Load P(a adr)               "mov {res:.64}, [{a}]\n" {1}
 %ireg:  Load P(r %ireg)             "mov {res:.64}, [{r}]"   {1}
@@ -57,18 +61,28 @@ mcon:   m mem                       "{m}"
 %ireg:  Xor(a %ireg , b %ireg)      ?"xor {res}, {b} ; {res} = {a} ^ {b}\n"   {1}
 %ireg:  Xor(a %ireg , Imm(#_i))     ?"not {res} ; {res} = ~{a}\n"             {self.range(self.get_right_index(index),-1,-1)+1}
 
-%ireg:  Eq (a %ireg , b %ireg)      "cmp {a}, {b}\n\tsete {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
-%ireg:  Ne (a %ireg , b %ireg)      "cmp {a}, {b}\n\tsetne {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
-%ireg:  Eq (a %ireg , Imm(#i))      "test {a}, {a}\n\tsetz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n " {self.range(self.get_right_index(index),0,0)+1}
-%ireg:  Ne (a %ireg , Imm(#i))      "test {a}, {a}\n\tsetnz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n " {self.range(self.get_right_index(index),0,0)+1}
+%ireg:  Eq (a %ireg , b %ireg)      "cmp {a}, {b}\n\tsete {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "              {3}
+%ireg:  Ne (a %ireg , b %ireg)      "cmp {a}, {b}\n\tsetne {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "             {3}
+%ireg:  Eq (a %ireg , Imm(#i))      "test {a}, {a}\n\tsetz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n "             {self.range(self.get_right_index(index),0,0)+2}
+%ireg:  Ne (a %ireg , Imm(#i))      "test {a}, {a}\n\tsetnz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n "            {self.range(self.get_right_index(index),0,0)+2}
 
-%ireg:  Lt s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetl {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
-%ireg:  Le s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetle {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
-%ireg:  Gt s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetg {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
-%ireg:  Ge s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetge {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "  {1}
+%ireg:  Lt s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetl {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "              {3}
+%ireg:  Le s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetle {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "             {3}
+%ireg:  Gt s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetg {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "              {3}
+%ireg:  Ge s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetge {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "             {3}
 
-:       Arg pi32(r %ireg)                "push {r:.64}\n" {1}
-%eax:   Call(#name)                 "call {name}; {res} = {name}()\n" {20}
+%ireg:  Eq p (a %ireg , b %ireg)    "cmp {a:.64}, {b:.64}\n\tsete {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "      {3}
+%ireg:  Ne p (a %ireg , b %ireg)    "cmp {a:.64}, {b:.64}\n\tsetne {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "     {3}
+%ireg:  Eq p (a %ireg , Imm(#i))    "test {a:.64}, {a:.64}\n\tsetz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n "     {self.range(self.get_right_index(index),0,0)+2}
+%ireg:  Ne p (a %ireg , Imm(#i))    "test {a:.64}, {a:.64}\n\tsetnz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n "    {self.range(self.get_right_index(index),0,0)+2}
+
+%ireg:  Lt p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetb {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "      {3}
+%ireg:  Le p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetbe {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "     {3}
+%ireg:  Gt p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tseta {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "      {3}
+%ireg:  Ge p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetae {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n "     {3}
+
+:       Arg pi32(r %ireg)           "push {r:.64}\n" {1}
+%eax:   Call pi32(#name)            "call {name}; {res} = {name}()\n" {20}
 }
 
 impl Backend for BackendAMD64 {
@@ -388,15 +402,15 @@ impl BackendAMD64 {
     fn emit_move(&self, modification: &RegisterRelocation) -> String {
         use RegisterRelocation::*;
         match modification {
-            &TwoAddressMove(from, to) => format!("\tmov {},{}\n", to, from),
+            &TwoAddressMove(from, to) => format!("\tmov {:.64},{:.64}\n", to, from),
             &Move(from, to) => {
-                format!("\tmov {},{}\n", to, from)
+                format!("\tmov {:.64},{:.64}\n", to, from)
             }
-            &Reload(reg, mem) => format!("\tmov {}, [rbp-{}]\n", reg, mem),
-            &Spill(reg, mem) => format!("\tmov [rbp-{}],{} \n", mem, reg),
+            &Reload(reg, mem) => format!("\tmov {:.64}, [rbp-{}]\n", reg, mem),
+            &Spill(reg, mem) => format!("\tmov [rbp-{}],{:.64} \n", mem, reg),
             &MemMove(from, to, reg) => {
                 format!(
-                    "\tmov {}, [rbp-{}]\n\tmov [rbp-{}], {}\n",
+                    "\tmov {:.64}, [rbp-{}]\n\tmov [rbp-{}], {:.64}\n",
                     reg, from, to, reg
                 )
             }

@@ -66,6 +66,9 @@ impl RegisterAllocator for RegisterAllocatorSimple {
 
         adjust_stack_size(backend, assignments.vreg2reg.len() as i32);
         backend.allocation = assignments.allocation;
+        log::debug!("Before optimization {:?}", assignments.reg_relocations);
+        peephole_optimization(&mut assignments.reg_relocations);
+        log::debug!("After optimization {:?}", assignments.reg_relocations);
         backend.reg_relocations = assignments.reg_relocations;
     }
 }
@@ -113,11 +116,11 @@ fn allocate_register(
 }
 
 fn get_spot(backend: &mut BackendAMD64, vreg: u32) -> u32 {
-    (backend.stack_size.abs() as u32) + 4 + 4 * vreg
+    (backend.stack_size.abs() as u32) + 4 + 8 * vreg
 }
 
 fn adjust_stack_size(backend: &mut BackendAMD64, vreg: i32) {
-    backend.stack_size += 4 * vreg;
+    backend.stack_size += 8 * vreg;
 }
 
 fn move_cmp(mov: &RegisterRelocation) -> i32 {
@@ -130,5 +133,19 @@ fn move_cmp(mov: &RegisterRelocation) -> i32 {
         Reload(..) => 20,
         ReloadTemp(..) => 20,
         _ => unreachable!(),
+    }
+}
+
+// Because of non-instructions this does not really work well
+fn peephole_optimization(relocations: &mut Vec<Vec<RegisterRelocation>>) {
+    use RegisterRelocation::*;
+    for relocations in relocations {
+        match (relocations.get(0), relocations.get(1)) {
+            (Some(Spill(reg1, mem1)), Some(Reload(reg2, mem2))) if reg1 == reg2 && mem1 == mem2 => {
+                relocations.remove(1);
+            }
+
+            _ => (),
+        }
     }
 }
