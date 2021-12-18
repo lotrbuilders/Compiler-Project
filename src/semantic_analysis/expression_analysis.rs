@@ -104,7 +104,7 @@ impl Expression {
 
             Ternary(cond, left, right) => {
                 use TypeClass::*;
-                analyzer.assert_in(&self.span, &cond.ast_type, Arithmetic);
+                analyzer.assert_in(&self.span, &cond.ast_type, Scalar);
                 if left.ast_type.is_in(Pointer) && right.ast_type.is_in(Pointer) {
                     analyzer.assert_compatible(&self.span, &left.ast_type, &right.ast_type);
                 } else {
@@ -139,9 +139,13 @@ impl UnaryExpressionType {
             let span = &exp.span;
             let typ = &exp.ast_type;
             match self {
-                Identity | Negate | BinNot | LogNot => {
+                Identity | Negate | BinNot => {
                     analyzer.assert_in(span, typ, self.get_type_class());
                     exp.ast_type.clone()
+                }
+                LogNot => {
+                    analyzer.assert_in(span, typ, self.get_type_class());
+                    Type::int()
                 }
                 Deref => {
                     analyzer.assert_in(span, typ, Pointer);

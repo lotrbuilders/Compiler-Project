@@ -28,6 +28,8 @@ rburg::rburg_main! {
 :       Jmp(#i)                     "jmp .L{i}\n"
 :       Jcc(r %ireg,#l)             "test {r},{r}\n\tjnz .L{l}\n" {2}
 :       Jnc(r %ireg,#l)             "test {r},{r}\n\tjz .L{l}\n"  {2}
+:       Jcc p(r %ireg,#l)           "test {r:.64},{r:.64}\n\tjnz .L{l}\n" {2}
+:       Jnc p(r %ireg,#l)           "test {r:.64},{r:.64}\n\tjz .L{l}\n"  {2}
 
 
 con:    Imm(#i)                     "{i}"
@@ -73,8 +75,8 @@ mcon:   m mem                       "{m}"
 
 %ireg:  Eq p (a %ireg , b %ireg)    "cmp {a:.64}, {b:.64}\n\tsete {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"      {3}
 %ireg:  Ne p (a %ireg , b %ireg)    "cmp {a:.64}, {b:.64}\n\tsetne {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"     {3}
-%ireg:  Eq p (a %ireg , Imm(#i))    "test {a:.64}, {a:.64}\n\tsetz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n"     {self.range(self.get_right_index(index),0,0)+2}
-%ireg:  Ne p (a %ireg , Imm(#i))    "test {a:.64}, {a:.64}\n\tsetnz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n"    {self.range(self.get_right_index(index),0,0)+2}
+%ireg:  Eq p (a %ireg , Imm p (#i)) "test {a:.64}, {a:.64}\n\tsetz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n"     {self.range(self.get_right_index(index),0,0)+2}
+%ireg:  Ne p (a %ireg , Imm p (#i)) "test {a:.64}, {a:.64}\n\tsetnz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n"    {self.range(self.get_right_index(index),0,0)+2}
 
 %ireg:  Lt p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetb {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"      {3}
 %ireg:  Le p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetbe {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"     {3}

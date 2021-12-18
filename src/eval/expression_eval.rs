@@ -146,7 +146,7 @@ impl Evaluate for Expression {
             // Could benefit from constants in phi nodes
             Binary(op @ (LogOr | LogAnd), left, right) => {
                 let left_size = context.get_size(&left.ast_type);
-                let right_size = context.get_size(&left.ast_type);
+                let right_size = context.get_size(&right.ast_type);
                 let left = left.eval(result, context);
                 let first_operand = {
                     let vreg = context.next_vreg();
@@ -238,20 +238,22 @@ impl Evaluate for Expression {
             }
 
             Unary(op, exp) => {
-                let size = context.get_size(&exp.ast_type);
+                let size = context.get_size(&self.ast_type);
+                let exp_size = context.get_size(&exp.ast_type);
                 let left = exp.eval(result, context);
                 let right = context.next_vreg();
                 let vreg = context.next_vreg();
 
                 match op {
-                    Negate | LogNot => result.push(IRInstruction::Imm(size.clone(), right, 0)),
+                    Negate => result.push(IRInstruction::Imm(size.clone(), right, 0)),
+                    LogNot => result.push(IRInstruction::Imm(exp_size.clone(), right, 0)),
                     BinNot => result.push(IRInstruction::Imm(size.clone(), right, -1)),
                     _ => (),
                 }
                 result.push(match op {
                     Negate => IRInstruction::Sub(size, vreg, right, left),
                     BinNot => IRInstruction::Xor(size, vreg, left, right),
-                    LogNot => IRInstruction::Eq(size, vreg, left, right),
+                    LogNot => IRInstruction::Eq(exp_size, vreg, left, right),
                     Identity | Address | Deref => unreachable!(),
                 });
                 vreg
