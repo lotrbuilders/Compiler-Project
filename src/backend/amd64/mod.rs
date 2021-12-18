@@ -32,10 +32,14 @@ rburg::rburg_main! {
 :       Jnc p(r %ireg,#l)           "test {r:.64},{r:.64}\n\tjz .L{l}\n"  {2}
 
 
+scale:  Imm(#i)                     "{i}" {self.scale(index)}
 con:    Imm(#i)                     "{i}"
 rc:     i con                       "{i}"
 adr:    AddrL(#a)                   "rbp+{a}"
 adr:    AddrG(#a)                   "{a}"
+//adr:    Add p(AddrL(#a),Cvp s32(Mul(r %ireg,i scale)))  "{a}+{i}*{r}"
+//adr:    Add p(AddrG(#a),Cvp s32(Mul(r %ireg,i scale)))  "{a}+{i}*{r}"
+adr:    Add p(a %ireg,  Cvp s32(Mul(r %ireg,i scale)))  "{a}+{i}*{r}"
 mem:    Load(a adr)                 "[{a}]"
 mem:    Load(r %ireg)               "[{r:.64}]"
 acon:   i con                       "{i}"
@@ -53,6 +57,7 @@ mcon:   m mem                       "{m}"
 %ireg:  Add(a %ireg , b %ireg)      ?"add {res}, {b} ; {res} = {a} + {b}\n"   {1}
 
 %ireg:  Sub(a %ireg , b %ireg)      ?"sub {res}, {b} ; {res} = {a} - {b}\n"   {1}
+%ireg:  Sub p(a %ireg , b %ireg)    ?"sub {res:.64}, {b:.64} ; {res} = {a} - {b}\n"   {1}
 %ireg:  Sub(Imm(#_i), b %ireg)      ?"neg {res} ; {res} = -{b}\n"             {self.range(self.get_left_index(index),0,0)+1}
 
 %ireg:  Mul s32(a %ireg , b %ireg)  ?"imul {res}, {b} ; {res} = {a} * {b}\n"  {1}
@@ -82,6 +87,7 @@ mcon:   m mem                       "{m}"
 %ireg:  Le p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetbe {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"     {3}
 %ireg:  Gt p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tseta {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"      {3}
 %ireg:  Ge p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetae {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"     {3}
+%ireg:  Cvp s32(r %ireg)            "movsx {res:.64},{r}\n" {2}
 
 :       Arg pi32(r %ireg)           "push {r:.64}\n" {1}
 %eax:   Call pi32(#name)            "call {name}; {res} = {name}()\n" {20}
@@ -124,11 +130,12 @@ impl Backend for BackendAMD64 {
         log::info!("Starting register allocation");
         RegisterAllocatorSimple::allocate_registers(self);
         log::debug!(
-            "vreg2reg at start {:?}",
+            "vreg2reg at start \n[\n{}]",
             self.allocation
                 .iter()
-                .map(|reg| format!("{}\n", reg))
-                .collect::<Vec<String>>()
+                .map(|reg| format!("\t{}\n", reg))
+                .flat_map(|s| s.chars().collect::<Vec<char>>())
+                .collect::<String>()
         );
 
         log::info!("Starting assembly generation");
@@ -212,6 +219,20 @@ impl BackendAMD64 {
     #[allow(dead_code)]
     fn is_last_instruction(&self, index: usize) -> bool {
         self.instructions.len() - 1 == index
+    }
+
+    fn scale(&self, index: u32) -> u16 {
+        let ins: &IRInstruction = &self.instructions[index as usize];
+        match ins {
+            &IRInstruction::Imm(_, _, value) => match value {
+                1 | 2 | 4 | 8 => 0,
+                _ => 0xfff,
+            },
+            _ => {
+                log::error!("range called on unsupported instruction");
+                0xfff
+            }
+        }
     }
 }
 
@@ -481,6 +502,10 @@ impl BackendAMD64 {
     }
 
     fn get_use_count(instructions: &Vec<IRInstruction>, definitions: &Vec<u32>) -> Vec<u32> {
+        log::debug!(
+            "Started get use count with {} definitions",
+            definitions.len()
+        );
         let mut use_count = vec![0u32; definitions.len()];
         for instruction in instructions {
             if let Some(left) = instruction.get_left() {

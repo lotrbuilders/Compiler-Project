@@ -192,7 +192,10 @@ impl IRInstruction {
             | &Self::Gt(_, _, left, _)
             | &Self::Ge(_, _, left, _)
             | &Self::Jcc(_, left, _)
-            | &Self::Jnc(_, left, _) => Some(left),
+            | &Self::Jnc(_, left, _)
+            | &Self::Cvp(.., left)
+            | &Self::Cvs(.., left)
+            | &Self::Cvu(.., left) => Some(left),
             _ => None,
         }
     }
@@ -238,7 +241,10 @@ impl IRInstruction {
             | &Self::Le(_, result, ..)
             | &Self::Gt(_, result, ..)
             | &Self::Ge(_, result, ..)
-            | &Self::Call(_, result, ..) => Some(result),
+            | &Self::Call(_, result, ..)
+            | &Self::Cvp(_, result, ..)
+            | &Self::Cvs(_, result, ..)
+            | &Self::Cvu(_, result, ..) => Some(result),
             _ => None,
         }
     }

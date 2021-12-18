@@ -133,7 +133,10 @@ impl Display for IRType {
             Gt => write!(f, "gt"),
             Ge => write!(f, "ge"),
             Ret => write!(f, "ret"),
-            Cvp | Cvs | Cvu => write!(f, "Cvt"),
+            Cvp => write!(f, "cvp"),
+            Cvs => write!(f, "cvs"),
+            Cvu => write!(f, "cvu"),
+
             _ => unreachable!(),
         }
     }
