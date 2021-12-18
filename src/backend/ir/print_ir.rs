@@ -95,6 +95,12 @@ impl Display for IRInstruction {
             }
             Label(Some(phi), label) => write!(f, "L{}:\t{}", label, phi),
             Label(None, label) => write!(f, "L{}:", label),
+
+            Cvs(to_s, to_r, from_s, from_r)
+            | Self::Cvu(to_s, to_r, from_s, from_r)
+            | Self::Cvp(to_s, to_r, from_s, from_r) => {
+                write!(f, "\t%{} = {} {} {} %{}", to_r, to_s, ins, from_s, from_r)
+            }
             PhiSrc(label) => write!(f, "\tphisrc L{}:", label),
             Phi(phi) => write!(f, "\t{}", phi),
 
@@ -127,6 +133,7 @@ impl Display for IRType {
             Gt => write!(f, "gt"),
             Ge => write!(f, "ge"),
             Ret => write!(f, "ret"),
+            Cvp | Cvs | Cvu => write!(f, "Cvt"),
             _ => unreachable!(),
         }
     }
@@ -135,8 +142,10 @@ impl Display for IRType {
 impl Display for IRSize {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            Self::S8 => write!(f, "s8"),
+            Self::S16 => write!(f, "s16"),
             Self::S32 => write!(f, "s32"),
-            Self::I32 => write!(f, "i32"),
+            Self::S64 => write!(f, "s64"),
             Self::P => write!(f, "p"),
             //_ => unreachable!(),
         }

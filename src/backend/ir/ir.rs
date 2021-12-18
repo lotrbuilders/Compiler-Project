@@ -59,6 +59,10 @@ pub enum IRInstruction {
     Call(IRSize, IRReg, String, Box<IRArguments>),
     Label(Option<Box<IRPhi>>, IRLabel),
 
+    Cvp(IRSize, IRReg, IRSize, IRReg), // (to,from) to:IRSize=p
+    Cvs(IRSize, IRReg, IRSize, IRReg), // (to,from) to:IRSize in {S8,S16,S32,S64}
+    Cvu(IRSize, IRReg, IRSize, IRReg), // (to,from) //Unsupported
+
     Phi(Box<IRPhi>),
     PhiSrc(IRLabel),
 
@@ -99,6 +103,10 @@ pub enum IRType {
     Call,
     Label,
 
+    Cvp,
+    Cvs,
+    Cvu,
+
     Phi,
     PhiSrc,
 
@@ -109,10 +117,12 @@ pub type IRReg = u32;
 pub type IRLabel = u32;
 
 // Stores the size of a particular operation
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum IRSize {
-    I32,
+    S8,
+    S16,
     S32,
+    S64,
     P,
 }
 
@@ -149,6 +159,10 @@ impl IRInstruction {
             &Self::Jmp(..) => IRType::Jmp,
             &Self::Call(..) => IRType::Call,
             &Self::Label(..) => IRType::Label,
+
+            &Self::Cvp(..) => IRType::Cvp,
+            &Self::Cvs(..) => IRType::Cvs,
+            &Self::Cvu(..) => IRType::Cvu,
 
             &Self::Phi(..) => IRType::Phi,
             &Self::PhiSrc(..) => IRType::PhiSrc,
@@ -255,19 +269,12 @@ impl IRInstruction {
             | Self::Ret(size, ..)
             | Self::Call(size, ..) => size.clone(),
 
-            Self::Jmp(_) | Self::Label(..) | Self::PhiSrc(..) | Self::Phi(..) => IRSize::P,
-        }
-    }
-}
+            Self::Cvs(to, _, from, _) | Self::Cvu(to, _, from, _) | Self::Cvp(to, _, from, _) => {
+                let _ = to;
+                from.clone()
+            }
 
-impl PartialEq for IRSize {
-    fn eq(&self, other: &Self) -> bool {
-        use IRSize::*;
-        match (self, other) {
-            (I32, I32) => true,
-            (S32, S32) | (S32, I32) | (I32, S32) => true,
-            (P, P) => true,
-            _ => false,
+            Self::Jmp(_) | Self::Label(..) | Self::PhiSrc(..) | Self::Phi(..) => IRSize::P,
         }
     }
 }
