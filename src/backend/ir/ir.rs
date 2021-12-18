@@ -117,7 +117,7 @@ pub type IRReg = u32;
 pub type IRLabel = u32;
 
 // Stores the size of a particular operation
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum IRSize {
     S8,
     S16,

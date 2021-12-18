@@ -168,7 +168,7 @@ impl Evaluate for Expression {
                 let second_operand = {
                     let temp = context.next_vreg();
                     let vreg = context.next_vreg();
-                    result.push(IRInstruction::Imm(right_size.clone(), temp, 0));
+                    result.push(IRInstruction::Imm(right_size, temp, 0));
                     result.push(IRInstruction::Ne(right_size, vreg, right, temp));
                     vreg
                 };
@@ -205,23 +205,32 @@ impl Evaluate for Expression {
                 };
 
                 let right_size = context.get_size(&right.ast_type);
-                let left = left.eval(result, context);
-                let right = right.eval(result, context);
+                let left_vreg = left.eval(result, context);
+                let mut right = right.eval(result, context);
+
+                // If the right is not pointer we must multiply it with sizeof(*left)
+                // The constant will always be added on the right side
+                if right_size != IRSize::P {
+                    let constant = context.next_vreg();
+                    let vreg = context.next_vreg();
+                    let size = context.sizeof(context.get_size(&left.ast_type.clone().deref()));
+                    result.push(IRInstruction::Imm(right_size, constant, size as i128));
+                    result.push(IRInstruction::Mul(right_size, vreg, right, constant));
+                    right = vreg
+                }
 
                 //Conversions are only inserted if right is not a pointer(subtraction only)
                 //And sizeof(right) != sizeof(pointer) This means that on ILP32 and IP16 environments convert is not inserted
-                let right = if right_size != IRSize::P && right_size != context.int_ptr(true) {
+                if right_size != IRSize::P && right_size != context.int_ptr(true) {
                     let vreg = context.next_vreg();
                     result.push(IRInstruction::Cvp(IRSize::P, vreg, right_size, right));
-                    vreg
-                } else {
-                    right
-                };
+                    right = vreg
+                }
 
                 let vreg = context.next_vreg();
                 result.push(match op {
-                    Add => IRInstruction::Add(IRSize::P, vreg, left, right),
-                    Subtract => IRInstruction::Sub(IRSize::P, vreg, left, right),
+                    Add => IRInstruction::Add(IRSize::P, vreg, left_vreg, right),
+                    Subtract => IRInstruction::Sub(IRSize::P, vreg, left_vreg, right),
                     _ => unreachable!(),
                 });
                 vreg
@@ -279,9 +288,9 @@ impl Evaluate for Expression {
                 let vreg = context.next_vreg();
 
                 match op {
-                    Negate => result.push(IRInstruction::Imm(size.clone(), right, 0)),
-                    LogNot => result.push(IRInstruction::Imm(exp_size.clone(), right, 0)),
-                    BinNot => result.push(IRInstruction::Imm(size.clone(), right, -1)),
+                    Negate => result.push(IRInstruction::Imm(size, right, 0)),
+                    LogNot => result.push(IRInstruction::Imm(exp_size, right, 0)),
+                    BinNot => result.push(IRInstruction::Imm(size, right, -1)),
                     _ => (),
                 }
                 result.push(match op {
