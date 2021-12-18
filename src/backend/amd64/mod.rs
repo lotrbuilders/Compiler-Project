@@ -181,6 +181,10 @@ impl Backend for BackendAMD64 {
             _ => unreachable!(),
         }
     }
+
+    fn sizeof_pointer(&self) -> u32 {
+        return 8;
+    }
 }
 
 impl BackendAMD64 {

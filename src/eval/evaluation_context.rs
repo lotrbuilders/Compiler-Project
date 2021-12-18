@@ -128,6 +128,24 @@ impl<'a> EvaluationContext<'a> {
     pub fn get_size(&self, typ: &Type) -> IRSize {
         self.backend.get_size(&typ.nodes[0])
     }
+    pub fn sizeof(&self, size: IRSize) -> u32 {
+        match size {
+            IRSize::S8 => 1,
+            IRSize::S16 => 2,
+            IRSize::S32 => 4,
+            IRSize::S64 => 8,
+            IRSize::P => self.backend.sizeof_pointer(),
+        }
+    }
+    pub fn int_ptr(&self, signed: bool) -> IRSize {
+        assert!(signed); //Unsigned integers are currently unsupported
+        match self.backend.sizeof_pointer() {
+            8 => IRSize::S16,
+            4 => IRSize::S32,
+            2 => IRSize::S64,
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl BinaryExpressionType {

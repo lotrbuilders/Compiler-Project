@@ -67,6 +67,13 @@ impl Type {
             .unwrap_or(false)
     }
 
+    pub fn is_pointer(&self) -> bool {
+        match self.nodes.get(0) {
+            Some(TypeNode::Pointer) => true,
+            _ => false,
+        }
+    }
+
     pub fn is_function(&self) -> bool {
         Type::is_function2(&self.nodes)
     }

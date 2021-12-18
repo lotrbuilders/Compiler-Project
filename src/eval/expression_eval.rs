@@ -193,6 +193,40 @@ impl Evaluate for Expression {
                 vreg
             }
 
+            Binary(op @ (Subtract | Add), left, right)
+                if left.ast_type.is_pointer() || right.ast_type.is_pointer() =>
+            {
+                // Swap pointers such that left is always a pointer
+                // This also ensures that matching only needs to consider left side
+                let (left, right) = if right.ast_type.is_pointer() {
+                    (right, left)
+                } else {
+                    (left, right)
+                };
+
+                let right_size = context.get_size(&right.ast_type);
+                let left = left.eval(result, context);
+                let right = right.eval(result, context);
+
+                //Conversions are only inserted if right is not a pointer(subtraction only)
+                //And sizeof(right) != sizeof(pointer) This means that on ILP32 and IP16 environments convert is not inserted
+                let right = if right_size != IRSize::P && right_size != context.int_ptr(true) {
+                    let vreg = context.next_vreg();
+                    result.push(IRInstruction::Cvp(IRSize::P, vreg, right_size, right));
+                    vreg
+                } else {
+                    right
+                };
+
+                let vreg = context.next_vreg();
+                result.push(match op {
+                    Add => IRInstruction::Add(IRSize::P, vreg, left, right),
+                    Subtract => IRInstruction::Sub(IRSize::P, vreg, left, right),
+                    _ => unreachable!(),
+                });
+                vreg
+            }
+
             Binary(Comma, left, right) => {
                 let _left = left.eval(result, context);
                 let right = right.eval(result, context);

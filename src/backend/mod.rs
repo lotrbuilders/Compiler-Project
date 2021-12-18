@@ -79,4 +79,5 @@ pub trait Backend {
     fn argument_evaluation_direction_stack(&self) -> Direction;
 
     fn get_size(&self, typ: &TypeNode) -> IRSize;
+    fn sizeof_pointer(&self) -> u32;
 }
