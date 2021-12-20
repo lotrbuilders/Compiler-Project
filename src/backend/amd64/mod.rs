@@ -139,7 +139,7 @@ impl Backend for BackendAMD64 {
         );
 
         log::info!("Starting assembly generation");
-        let assembly = self.emit_asm();
+        let assembly = self.emit_asm(&function.strings);
         log::info!("Assembly:\n{}", assembly);
         assembly
     }
@@ -277,7 +277,7 @@ impl BackendAMD64 {
 
     // Should be automatically generated
     // Emits handwritten assembly if necessary, otherwise uses the automatic generated function
-    fn emit_asm(&mut self) -> String {
+    fn emit_asm(&mut self, strings: &Vec<String>) -> String {
         let mut result = self.emit_prologue();
         for instruction in 0..self.instructions.len() {
             for modification in &self.reg_relocations[instruction] {
@@ -308,6 +308,7 @@ impl BackendAMD64 {
             }
         }
         result.push_str(&self.emit_epilogue());
+        result.push_str(&self.emit_strings(strings));
         result
     }
 
@@ -441,6 +442,14 @@ impl BackendAMD64 {
         }
         epilogue.push_str(&format!("\tret\n"));
         epilogue
+    }
+
+    fn emit_strings(&self, strings: &Vec<String>) -> String {
+        let mut result = String::new();
+        for (string, i) in strings.iter().zip(0..) {
+            result.push_str(&format!("__string{}:\n\tdb\"{}\",0\n", i, string));
+        }
+        result
     }
 
     fn emit_move(&self, modification: &RegisterRelocation) -> String {
