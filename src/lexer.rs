@@ -148,6 +148,7 @@ impl Lexer {
         let span = start.to(&self.here());
         use TokenType::*;
         match identifier.as_str() {
+            "char" => Token::new(Char, span),
             "int" => Token::new(Int, span),
             "if" => Token::new(If, span),
             "else" => Token::new(Else, span),
