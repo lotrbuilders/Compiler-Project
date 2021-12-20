@@ -8,6 +8,7 @@ pub struct IRFunction {
     pub instructions: Vec<IRInstruction>,
     pub arguments: IRArguments,
     pub variables: Vec<IRSize>,
+    pub strings: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
