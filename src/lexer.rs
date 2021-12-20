@@ -74,6 +74,20 @@ impl Lexer {
                         errors.push(err);
                     }
                 },
+                '\'' => match self.lex_char(input) {
+                    (token, Ok(_)) => output.push(token),
+                    (token, Err(err)) => {
+                        output.push(token);
+                        errors.push(err);
+                    }
+                },
+                '"' => match self.lex_string(input) {
+                    (token, Ok(_)) => output.push(token),
+                    (token, Err(err)) => {
+                        output.push(token);
+                        errors.push(err);
+                    }
+                },
                 ';' | '{' | '}' | '(' | ')' | '+' | '-' | '*' | '/' | '~' | '?' | ':' | ',' => {
                     self.next(input);
                     output.push(Token::new(token::punct(c), self.here()));
@@ -115,6 +129,7 @@ impl Lexer {
                         _ => output.push(Token::new(token::punct(first_char), begin)),
                     }
                 }
+
                 ' ' | '\t' | '\n' | '\r' => {
                     self.next(input);
                 }
@@ -190,6 +205,106 @@ impl Lexer {
                 Err(error!(
                     span,
                     "number {} to big too fit in any integer", number
+                )),
+            ),
+        }
+    }
+
+    fn lex_string<T: Iterator<Item = char>>(
+        &mut self,
+        input: &mut T,
+    ) -> (Token, Result<(), String>) {
+        let start = self.here();
+        let mut errors = String::new();
+        let mut string = String::new();
+        self.next(input);
+
+        while let Some(c) = self.peek(input) {
+            if c == '"' {
+                self.next(input);
+                break;
+            }
+            let (c, err) = self.lex_single_char(input);
+            string.push(c);
+            if let Err(err) = err {
+                errors.push_str(&err)
+            }
+        }
+
+        let err = if string.is_empty() {
+            Err(errors)
+        } else {
+            Ok(())
+        };
+
+        let span = start.to(&self.here());
+        let token = Token::new(TokenType::CString(string), span.clone());
+        match self.peek(input) {
+            Some(_) => (token, err),
+            None => (token, Err(error!(span, "Unexpected end of file"))),
+        }
+    }
+
+    fn lex_char<T: Iterator<Item = char>>(&mut self, input: &mut T) -> (Token, Result<(), String>) {
+        let start = self.here();
+        self.next(input);
+        let (c, err) = self.lex_single_char(input);
+        let span = start.to(&self.here());
+        let token = Token::new(TokenType::ConstI(c as u64), span.clone());
+        match self.peek(input) {
+            Some('\'') => (token, err),
+            _ => (
+                token,
+                Err(error!(span, "Expected ' after character constant")),
+            ),
+        }
+    }
+
+    fn lex_single_char<T: Iterator<Item = char>>(
+        &mut self,
+        input: &mut T,
+    ) -> (char, Result<(), String>) {
+        let start = self.here();
+        match self.next(input) {
+            Some('\\') => match self.next(input) {
+                Some('\'') => ('\'', Ok(())),
+                Some('"') => ('"', Ok(())),
+                Some('a') => ('\x07', Ok(())),
+                Some('b') => ('\x08', Ok(())),
+                Some('f') => ('\x0e', Ok(())),
+                Some('n') => ('\n', Ok(())),
+                Some('r') => ('\r', Ok(())),
+                Some('t') => ('\t', Ok(())),
+                Some('v') => ('\x0b', Ok(())),
+                Some(c) => (
+                    '_',
+                    Err(error!(
+                        start,
+                        "Expected an escape sequence in string/character, but found '\\{}'", c
+                    )),
+                ),
+                None => (
+                    '_',
+                    Err(error!(
+                        start,
+                        "Expected an escape sequence in string/character, but found end of file"
+                    )),
+                ),
+            },
+            //   \' \" \? \\ \a \b \f \n \r \t \v
+            Some(c) if c.is_ascii() => (c, Ok(())),
+            Some(c) => (
+                '_',
+                Err(error!(
+                    start,
+                    "Expected an ascii character in string/character, but found '{}'", c
+                )),
+            ),
+            None => (
+                '_',
+                Err(error!(
+                    start,
+                    "Expected an ascii character in string/character, but found end of file"
                 )),
             ),
         }
