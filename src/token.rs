@@ -53,6 +53,7 @@ pub enum TokenType {
     //Types with a value
     ConstI(u64),
     Ident(String),
+    CString(String),
 }
 
 // Stores the location and type of a lexed token
@@ -185,6 +186,7 @@ impl Display for TokenType {
 
             Ident(val) => write!(f, "'{}'", val),
             ConstI(val) => write!(f, "'{}'", val),
+            CString(val) => write!(f, "\"{}\"", val),
         }
     }
 }
