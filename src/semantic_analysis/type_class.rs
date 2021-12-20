@@ -54,20 +54,20 @@ impl Type {
                 log::error!("Type was improperly passed");
                 true
             }
-            Some(_) => self.is_in2(class),
+            Some(_) => Type::is_in2(&self.nodes, class),
         }
     }
 
-    fn is_in2(&self, class: TypeClass) -> bool {
+    fn is_in2(typ: &[TypeNode], class: TypeClass) -> bool {
         use TypeClass::*;
         match class {
-            StandardSignedInteger => matches!(self.nodes[0], TypeNode::Int),
-            Function => matches!(self.nodes[0], TypeNode::Function(_)),
-            Pointer => matches!(self.nodes[0], TypeNode::Pointer),
-            StandardInteger => self.is_in2(StandardSignedInteger),
-            Integer => self.is_in2(StandardInteger) | matches!(self.nodes[0], TypeNode::Char),
-            Arithmetic => self.is_in2(Integer),
-            Scalar => self.is_in2(Arithmetic) | self.is_in2(Pointer),
+            StandardSignedInteger => matches!(typ[0], TypeNode::Int),
+            Function => matches!(typ[0], TypeNode::Function(_)),
+            Pointer => matches!(typ[0], TypeNode::Pointer),
+            StandardInteger => Type::is_in2(typ, StandardSignedInteger),
+            Integer => Type::is_in2(typ, StandardInteger) | matches!(typ[0], TypeNode::Char),
+            Arithmetic => Type::is_in2(typ, Integer),
+            Scalar => Type::is_in2(typ, Arithmetic) | Type::is_in2(typ, Pointer),
         }
     }
 
@@ -78,7 +78,11 @@ impl Type {
     fn is_compatible2(lhs: &[TypeNode], rhs: &[TypeNode]) -> bool {
         use TypeNode::*;
         if let (Some(Pointer), Some(Pointer)) = (lhs.get(0), rhs.get(0)) {
-            Type::is_compatible2(&lhs[1..], &rhs[1..])
+            lhs[1..] == rhs[1..]
+        } else if Type::is_in2(lhs, TypeClass::Arithmetic)
+            && Type::is_in2(rhs, TypeClass::Arithmetic)
+        {
+            true
         } else {
             lhs == rhs
         }

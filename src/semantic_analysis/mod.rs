@@ -7,7 +7,7 @@ mod global_analysis;
 mod statement_analysis;
 mod type_checking;
 mod type_class;
-mod type_promotion;
+pub mod type_promotion;
 
 use std::collections::HashMap;
 

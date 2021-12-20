@@ -32,8 +32,8 @@ impl Analysis for Statement {
                     analyzer.errors.push(error!(
                         span,
                         "Incompatible return types: function returns {}, but {} is returned",
-                        expression.ast_type,
-                        analyzer.function_return_type
+                        analyzer.function_return_type,
+                        expression.ast_type
                     ));
                 }
             }
