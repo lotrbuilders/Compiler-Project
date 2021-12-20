@@ -252,10 +252,23 @@ impl Lexer {
         let span = start.to(&self.here());
         let token = Token::new(TokenType::ConstI(c as u64), span.clone());
         match self.peek(input) {
-            Some('\'') => (token, err),
-            _ => (
+            Some('\'') => {
+                self.next(input);
+                (token, err)
+            }
+            Some(c) => (
                 token,
-                Err(error!(span, "Expected ' after character constant")),
+                Err(error!(
+                    span,
+                    "Expected ' after character constant, but found {}", c
+                )),
+            ),
+            None => (
+                token,
+                Err(error!(
+                    span,
+                    "Expected ' after character constant, but found end of file"
+                )),
             ),
         }
     }
