@@ -30,7 +30,7 @@ impl PartialEq for Type {
         let mut lhs = self.nodes.iter().peekable();
         let mut rhs = other.nodes.iter().peekable();
         use TypeNode::*;
-        while lhs.peek().is_some() && !rhs.peek().is_some() {
+        while lhs.peek().is_some() && rhs.peek().is_some() {
             if let Some(Name(_)) = lhs.peek() {
                 lhs.next();
                 continue;
