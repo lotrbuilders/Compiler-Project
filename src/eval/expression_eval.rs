@@ -15,8 +15,15 @@ impl Evaluate for Expression {
                 vreg
             }
 
-            CString(_value) => {
-                todo!();
+            CString(value) => {
+                let addr = context.next_vreg();
+                let number = context.add_string(value);
+                result.push(IRInstruction::AddrG(
+                    IRSize::P,
+                    addr,
+                    format!("__string{}", number),
+                ));
+                addr
             }
 
             Ident(..) => {

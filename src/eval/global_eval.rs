@@ -14,6 +14,7 @@ impl ExternalDeclaration {
                     vreg_counter: 0,
                     label_counter: 1,
                     variables: Vec::new(),
+                    strings: Vec::new(),
                     unfixed_break: Vec::new(),
                     unfixed_continue: Vec::new(),
                     loop_depth: 0,
@@ -31,6 +32,7 @@ impl ExternalDeclaration {
                     instructions,
                     arguments,
                     variables: context.variables,
+                    strings: context.strings,
                 })
             }
             None => {

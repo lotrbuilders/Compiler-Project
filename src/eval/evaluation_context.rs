@@ -7,6 +7,7 @@ pub struct EvaluationContext<'a> {
     pub vreg_counter: u32,
     pub label_counter: u32,
     pub variables: Vec<IRSize>,
+    pub strings: Vec<String>,
     pub unfixed_continue: Vec<(usize, u32)>,
     pub unfixed_break: Vec<(usize, u32)>,
     pub loop_depth: u32,
@@ -23,6 +24,11 @@ impl<'a> EvaluationContext<'a> {
         let label = self.label_counter;
         self.label_counter += 1;
         label
+    }
+    pub fn add_string(&mut self, string: &String) -> u32 {
+        let number = string.len() as u32;
+        self.strings.push(string.clone());
+        number
     }
 }
 
