@@ -105,6 +105,14 @@ impl Parser {
                     variant: ExpressionVariant::ConstI(value as i128),
                 })
             }
+            Some(TokenType::CString(string)) => {
+                self.next();
+                Ok(Expression {
+                    span: begin,
+                    ast_type: vec![TypeNode::Pointer, TypeNode::Char].into(),
+                    variant: ExpressionVariant::CString(string),
+                })
+            }
             Some(TokenType::Ident(name)) => {
                 self.next();
                 Ok(Expression {
