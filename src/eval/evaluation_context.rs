@@ -26,7 +26,7 @@ impl<'a> EvaluationContext<'a> {
         label
     }
     pub fn add_string(&mut self, string: &String) -> u32 {
-        let number = string.len() as u32;
+        let number = self.strings.len() as u32;
         self.strings.push(string.clone());
         number
     }
