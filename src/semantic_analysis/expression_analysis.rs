@@ -11,12 +11,8 @@ impl Analysis for Expression {
     fn analyze(&mut self, analyzer: &mut SemanticAnalyzer) -> () {
         use ExpressionVariant::*;
         match &mut self.variant {
-            ConstI(_) => {
+            CString(_) | ConstI(_) => {
                 return;
-            }
-
-            CString(_) => {
-                todo!();
             }
 
             Ident(name, symbol_number, global) => {
