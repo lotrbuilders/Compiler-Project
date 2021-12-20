@@ -1,6 +1,7 @@
 use super::{Evaluate, EvaluationContext};
 use crate::backend::ir::*;
 use crate::parser::{ast::*, Type};
+use crate::semantic_analysis::type_promotion::TypePromotion;
 
 impl Evaluate for Expression {
     fn eval(&self, result: &mut Vec<IRInstruction>, context: &mut EvaluationContext) -> u32 {
@@ -193,6 +194,28 @@ impl Evaluate for Expression {
                 vreg
             }
 
+            Binary(Subtract, left, right)
+                if left.ast_type.is_pointer() && right.ast_type.is_pointer() =>
+            {
+                let int_ptr_size = context.int_ptr(true);
+                let left_vreg = left.eval(result, context);
+                let mut right = right.eval(result, context);
+
+                // IF we are subtracting two pointers we need to devide their distance by the sizeof the pointed-to object
+                let size = context.sizeof(context.get_size(&left.ast_type.clone().deref()));
+                if size != 1 {
+                    let constant = context.next_vreg();
+                    let vreg = context.next_vreg();
+                    result.push(IRInstruction::Imm(int_ptr_size, constant, size as i128));
+                    result.push(IRInstruction::Div(int_ptr_size, vreg, right, constant));
+                    right = vreg
+                }
+
+                let vreg = context.next_vreg();
+                result.push(IRInstruction::Sub(IRSize::P, vreg, left_vreg, right));
+                vreg
+            }
+
             Binary(op @ (Subtract | Add), left, right)
                 if left.ast_type.is_pointer() || right.ast_type.is_pointer() =>
             {
@@ -225,12 +248,14 @@ impl Evaluate for Expression {
                 // If the right is not pointer we must multiply it with sizeof(*left)
                 // The constant will always be added on the right side
                 if right_size != IRSize::P {
-                    let constant = context.next_vreg();
-                    let vreg = context.next_vreg();
                     let size = context.sizeof(context.get_size(&left.ast_type.clone().deref()));
-                    result.push(IRInstruction::Imm(int_ptr_size, constant, size as i128));
-                    result.push(IRInstruction::Mul(int_ptr_size, vreg, right, constant));
-                    right = vreg
+                    if size != 1 {
+                        let constant = context.next_vreg();
+                        let vreg = context.next_vreg();
+                        result.push(IRInstruction::Imm(int_ptr_size, constant, size as i128));
+                        result.push(IRInstruction::Mul(int_ptr_size, vreg, right, constant));
+                        right = vreg
+                    }
                 }
 
                 let vreg = context.next_vreg();
@@ -248,11 +273,33 @@ impl Evaluate for Expression {
                 right
             }
 
+            Binary(
+                op @ (Equal | Inequal | Less | LessEqual | Greater | GreaterEqual),
+                left,
+                right,
+            ) => {
+                let size =
+                    op.get_size(context, &left.ast_type.promote(), &right.ast_type.promote());
+                let left = left.eval(result, context);
+                let right = right.eval(result, context);
+                let vreg = context.next_vreg();
+                result.push(match op {
+                    Equal => IRInstruction::Eq(size, vreg, left, right),
+                    Inequal => IRInstruction::Ne(size, vreg, left, right),
+                    Less => IRInstruction::Lt(size, vreg, left, right),
+                    LessEqual => IRInstruction::Le(size, vreg, left, right),
+                    Greater => IRInstruction::Gt(size, vreg, left, right),
+                    GreaterEqual => IRInstruction::Ge(size, vreg, left, right),
+                    _ => unreachable!(),
+                });
+                vreg
+            }
+
             // TODO add IRInstruction for adding number to pointer?
             // Or add conversion from integer in int* +/- int
             // Adding/subtracting pointer does not currently lead to correct behaviour
             Binary(op, left, right) => {
-                let size = op.get_size(context, &left.ast_type, &right.ast_type);
+                let size = context.get_size(&self.ast_type);
                 let left = left.eval(result, context);
                 let right = right.eval(result, context);
                 let vreg = context.next_vreg();
@@ -265,13 +312,8 @@ impl Evaluate for Expression {
                     BinOr => IRInstruction::Or(size, vreg, left, right),
                     BinAnd => IRInstruction::And(size, vreg, left, right),
 
-                    Equal => IRInstruction::Eq(size, vreg, left, right),
-                    Inequal => IRInstruction::Ne(size, vreg, left, right),
-                    Less => IRInstruction::Lt(size, vreg, left, right),
-                    LessEqual => IRInstruction::Le(size, vreg, left, right),
-                    Greater => IRInstruction::Gt(size, vreg, left, right),
-                    GreaterEqual => IRInstruction::Ge(size, vreg, left, right),
-                    Comma | LogOr | LogAnd => unreachable!(),
+                    Comma | LogOr | LogAnd | Equal | Inequal | Less | LessEqual | Greater
+                    | GreaterEqual => unreachable!(),
                 });
                 vreg
             }
