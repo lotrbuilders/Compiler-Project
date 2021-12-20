@@ -1,18 +1,10 @@
-use std::vec;
-
 use super::ir::*;
 use super::Backend;
+use std::vec;
 mod register_allocation;
-//mod ralloc_normal;
 mod registers;
 use self::register_allocation::*;
 use self::registers::*;
-
-//#[allow(dead_code)]
-/*pub struct BackendAMD64 {
-    instructions: Vec<IRInstruction>,
-    definition_index: Vec<u32>,
-}*/
 
 rburg::rburg_main! {
     BackendAMD64,
@@ -37,8 +29,6 @@ con:    Imm(#i)                     "{i}"
 rc:     i con                       "{i}"
 adr:    AddrL(#a)                   "rbp+{a}"
 adr:    AddrG(#a)                   "{a}"
-//adr:    Add p(AddrL(#a),Cvp s32(Mul(r %ireg,i scale)))  "{a}+{i}*{r}"
-//adr:    Add p(AddrG(#a),Cvp s32(Mul(r %ireg,i scale)))  "{a}+{i}*{r}"
 adr:    Add p(a %ireg,  Mul s64(r %ireg,i scale))  "{a:.64}+{i}*{r:.64}"
 mem:    Load(a adr)                 "[{a}]"
 mem:    Load(r %ireg)               "[{r:.64}]"
