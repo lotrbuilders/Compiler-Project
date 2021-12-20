@@ -1,11 +1,12 @@
 use super::r#type::TypeNode;
 use super::{recovery::RecoveryStrategy, Parser, Type};
-use crate::expect;
 use crate::token::TokenType;
+use crate::{error, expect};
 
 impl Parser {
     pub(super) fn parse_declaration(&mut self) -> Result<Type, ()> {
         let base_type = self.parse_declaration_specifiers()?;
+        self.check_declaration_specifiers(&base_type);
         let declarator = self.parse_declarator()?;
         Ok(Type::combine(base_type, declarator))
     }
@@ -72,5 +73,20 @@ impl Parser {
             }
         }
         Ok(arguments)
+    }
+
+    fn check_declaration_specifiers(&mut self, typ: &Type) {
+        let mut type_specifier_count = 0;
+        for node in &typ.nodes {
+            match node {
+                TypeNode::Char | TypeNode::Int => type_specifier_count += 1,
+                TypeNode::Function(..) | TypeNode::Name(..) | TypeNode::Pointer => unreachable!(),
+            }
+        }
+        let span = self.peek_span();
+        if type_specifier_count != 1 {
+            self.errors
+                .push(error!(span, "Multiple type specifiers provided in {}", typ));
+        }
     }
 }

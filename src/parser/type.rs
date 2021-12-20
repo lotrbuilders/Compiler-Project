@@ -43,7 +43,7 @@ impl PartialEq for Type {
                 }
             }
         }
-        true
+        lhs.next().is_none() && rhs.next().is_none()
     }
 }
 
