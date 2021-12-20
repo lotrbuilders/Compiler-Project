@@ -205,8 +205,22 @@ impl Evaluate for Expression {
                 };
 
                 let right_size = context.get_size(&right.ast_type);
+                let int_ptr_size = context.int_ptr(true);
                 let left_vreg = left.eval(result, context);
                 let mut right = right.eval(result, context);
+
+                //Conversions are only inserted if right is not a pointer(subtraction only)
+                //And sizeof(right) != sizeof(pointer) This means that on ILP32 and IP16 environments convert is not inserted
+                if right_size != IRSize::P && right_size != int_ptr_size {
+                    let vreg = context.next_vreg();
+                    result.push(IRInstruction::Cvs(
+                        context.int_ptr(true),
+                        vreg,
+                        right_size,
+                        right,
+                    ));
+                    right = vreg
+                }
 
                 // If the right is not pointer we must multiply it with sizeof(*left)
                 // The constant will always be added on the right side
@@ -214,16 +228,8 @@ impl Evaluate for Expression {
                     let constant = context.next_vreg();
                     let vreg = context.next_vreg();
                     let size = context.sizeof(context.get_size(&left.ast_type.clone().deref()));
-                    result.push(IRInstruction::Imm(right_size, constant, size as i128));
-                    result.push(IRInstruction::Mul(right_size, vreg, right, constant));
-                    right = vreg
-                }
-
-                //Conversions are only inserted if right is not a pointer(subtraction only)
-                //And sizeof(right) != sizeof(pointer) This means that on ILP32 and IP16 environments convert is not inserted
-                if right_size != IRSize::P && right_size != context.int_ptr(true) {
-                    let vreg = context.next_vreg();
-                    result.push(IRInstruction::Cvp(IRSize::P, vreg, right_size, right));
+                    result.push(IRInstruction::Imm(int_ptr_size, constant, size as i128));
+                    result.push(IRInstruction::Mul(int_ptr_size, vreg, right, constant));
                     right = vreg
                 }
 

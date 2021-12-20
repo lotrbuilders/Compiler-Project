@@ -140,9 +140,9 @@ impl<'a> EvaluationContext<'a> {
     pub fn int_ptr(&self, signed: bool) -> IRSize {
         assert!(signed); //Unsigned integers are currently unsupported
         match self.backend.sizeof_pointer() {
-            8 => IRSize::S16,
+            8 => IRSize::S64,
             4 => IRSize::S32,
-            2 => IRSize::S64,
+            2 => IRSize::S16,
             _ => unreachable!(),
         }
     }

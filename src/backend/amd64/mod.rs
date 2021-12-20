@@ -32,14 +32,14 @@ rburg::rburg_main! {
 :       Jnc p(r %ireg,#l)           "test {r:.64},{r:.64}\n\tjz .L{l}\n"  {2}
 
 
-scale:  Imm(#i)                     "{i}" {self.scale(index)}
+scale:  Imm i32i64(#i)              "{i}" {self.scale(index)}
 con:    Imm(#i)                     "{i}"
 rc:     i con                       "{i}"
 adr:    AddrL(#a)                   "rbp+{a}"
 adr:    AddrG(#a)                   "{a}"
 //adr:    Add p(AddrL(#a),Cvp s32(Mul(r %ireg,i scale)))  "{a}+{i}*{r}"
 //adr:    Add p(AddrG(#a),Cvp s32(Mul(r %ireg,i scale)))  "{a}+{i}*{r}"
-adr:    Add p(a %ireg,  Cvp s32(Mul(r %ireg,i scale)))  "{a}+{i}*{r}"
+adr:    Add p(a %ireg,  Mul s64(r %ireg,i scale))  "{a:.64}+{i}*{r:.64}"
 mem:    Load(a adr)                 "[{a}]"
 mem:    Load(r %ireg)               "[{r:.64}]"
 acon:   i con                       "{i}"
@@ -48,11 +48,12 @@ mcon:   i con                       "{i}"
 mcon:   m mem                       "{m}"
 
 
-%ireg:  i rc                        "mov {res}, {i}\n"       {1}
+%ireg:  i rc                        "mov {res}, {i}\n"          {1}
 %ireg:  a adr                       "lea {res:.64}, [{a}]\n"    {1}
-%ireg:  m mem                       "mov {res}, {m}\n"       {1}
-%ireg:  Load P(a adr)               "mov {res:.64}, [{a}]\n" {1}
-%ireg:  Load P(r %ireg)             "mov {res:.64}, [{r}]\n"   {1}
+%ireg:  m mem                       "mov {res}, {m}\n"          {1}
+%ireg:  Load Pi64(a adr)            "mov {res:.64}, [{a}]\n"    {1}
+%ireg:  Load Pi64(r %ireg)          "mov {res:.64}, [{r}]\n"    {1}
+%ireg:  Imm pi64(#i)                "mov {res:.64}, {i}\n"
 
 %ireg:  Add(a %ireg , b %ireg)      ?"add {res}, {b} ; {res} = {a} + {b}\n"   {1}
 
@@ -88,6 +89,7 @@ mcon:   m mem                       "{m}"
 %ireg:  Gt p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tseta {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"      {3}
 %ireg:  Ge p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetae {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"     {3}
 %ireg:  Cvp s32(r %ireg)            "movsx {res:.64},{r}\n" {2}
+%ireg:  Cvs s32(_r %ireg)            "#extend/truncuate" {2}
 
 :       Arg pi32(r %ireg)           "push {r:.64}\n" {1}
 %eax:   Call pi32(#name)            "call {name}; {res} = {name}()\n" {20}
@@ -378,6 +380,17 @@ impl BackendAMD64 {
                     }
                 }),
                 true,
+            ),
+            Cvs(to_s, to_r, from_s, from_r) => (
+                match (to_s, from_s) {
+                    (IRSize::S64, IRSize::S32) => Some(format!(
+                        "\tmovsx {:.64},{}\n",
+                        self.allocation[*to_r as usize][index].unwrap(),
+                        self.allocation[*from_r as usize][index].unwrap()
+                    )),
+                    _ => unreachable!(),
+                },
+                false,
             ),
 
             _ => (None, true),
