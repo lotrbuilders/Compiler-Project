@@ -105,19 +105,23 @@ impl Expression {
 
             Ternary(cond, left, right) => {
                 use TypeClass::*;
-                analyzer.assert_in(&self.span, &cond.ast_type, Scalar);
-                if left.ast_type.is_in(Pointer) && right.ast_type.is_in(Pointer) {
-                    analyzer.assert_compatible(&self.span, &left.ast_type, &right.ast_type);
+                let cond_type = cond.ast_type.promote();
+                let left_type = left.ast_type.promote();
+                let right_type = right.ast_type.promote();
+                analyzer.assert_in(&self.span, &cond_type, Scalar);
+                if left_type.is_in(Pointer) && right_type.is_in(Pointer) {
+                    analyzer.assert_compatible(&self.span, &left_type, &right_type);
                 } else {
-                    analyzer.assert_both_in(&self.span, &left.ast_type, &right.ast_type, Arithmetic)
+                    analyzer.assert_both_in(&self.span, &left_type, &right_type, Arithmetic)
                 }
-                left.ast_type.clone()
+                (left_type, right_type).promote()
             }
 
             Assign(left, right) => {
                 use TypeClass::*;
-                if left.ast_type.is_in(Pointer) && right.ast_type.is_in(Pointer) {
-                    analyzer.assert_compatible(&self.span, &left.ast_type, &right.ast_type);
+                let right_type = right.ast_type.promote();
+                if left.ast_type.is_in(Pointer) && right_type.is_in(Pointer) {
+                    analyzer.assert_compatible(&self.span, &left.ast_type, &right_type);
                 } else {
                     analyzer.assert_both_in(
                         &self.span,
@@ -136,25 +140,24 @@ impl UnaryExpressionType {
     fn get_type(&self, analyzer: &mut SemanticAnalyzer, exp: &Expression) -> Type {
         use TypeClass::*;
         use UnaryExpressionType::*;
-        {
-            let span = &exp.span;
-            let exp_type = exp.ast_type.clone();
-            let typ = &exp_type;
-            match self {
-                Identity | Negate | BinNot => {
-                    analyzer.assert_in(span, typ, self.get_type_class());
-                    exp_type
-                }
-                LogNot => {
-                    analyzer.assert_in(span, typ, self.get_type_class());
-                    Type::int()
-                }
-                Deref => {
-                    analyzer.assert_in(span, typ, Pointer);
-                    exp_type.deref()
-                }
-                Address => unreachable!(),
+
+        let span = &exp.span;
+        let exp_type = exp.ast_type.promote();
+        let typ = &exp_type;
+        match self {
+            Identity | Negate | BinNot => {
+                analyzer.assert_in(span, typ, self.get_type_class());
+                exp_type
             }
+            LogNot => {
+                analyzer.assert_in(span, typ, self.get_type_class());
+                Type::int()
+            }
+            Deref => {
+                analyzer.assert_in(span, typ, Pointer);
+                exp_type.deref()
+            }
+            Address => unreachable!(),
         }
     }
 

@@ -77,7 +77,9 @@ impl Type {
 
     fn is_compatible2(lhs: &[TypeNode], rhs: &[TypeNode]) -> bool {
         use TypeNode::*;
-        if let (Some(Pointer), Some(Pointer)) = (lhs.get(0), rhs.get(0)) {
+        if lhs.get(0).is_none() || rhs.get(0).is_none() {
+            true
+        } else if let (Some(Pointer), Some(Pointer)) = (lhs.get(0), rhs.get(0)) {
             lhs[1..] == rhs[1..]
         } else if Type::is_in2(lhs, TypeClass::Arithmetic)
             && Type::is_in2(rhs, TypeClass::Arithmetic)
