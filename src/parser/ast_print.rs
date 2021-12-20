@@ -152,6 +152,7 @@ impl Display for Expression {
         use ExpressionVariant::*;
         match &self.variant {
             ConstI(value) => write!(f, "{}", value)?,
+            CString(value) => write!(f, "\"{}\"", value)?,
             Ident(name, ..) => write!(f, "{}", name)?,
 
             Function(func, arguments) => {

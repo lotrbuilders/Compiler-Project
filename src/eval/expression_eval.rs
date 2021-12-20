@@ -15,6 +15,10 @@ impl Evaluate for Expression {
                 vreg
             }
 
+            CString(_value) => {
+                todo!();
+            }
+
             Ident(..) => {
                 let size = context.get_size(&self.ast_type);
                 let addr = self.eval_lvalue(result, context);

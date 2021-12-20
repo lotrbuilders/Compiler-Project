@@ -97,6 +97,7 @@ pub enum ExpressionVariant {
     Function(Box<Expression>, Vec<Expression>),
 
     ConstI(i128),
+    CString(String),
     Ident(String, u32, bool),
 }
 

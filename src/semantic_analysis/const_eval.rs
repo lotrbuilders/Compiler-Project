@@ -13,7 +13,8 @@ impl Expression {
             ExpressionVariant::ConstI(_) => self,
             ExpressionVariant::Assign(..)
             | ExpressionVariant::Function(..)
-            | ExpressionVariant::Ident(..) => self,
+            | ExpressionVariant::Ident(..)
+            | ExpressionVariant::CString(..) => self,
             ExpressionVariant::Unary(
                 UnaryExpressionType::Deref | UnaryExpressionType::Address,
                 ..,

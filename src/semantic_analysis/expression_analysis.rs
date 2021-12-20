@@ -15,6 +15,10 @@ impl Analysis for Expression {
                 return;
             }
 
+            CString(_) => {
+                todo!();
+            }
+
             Ident(name, symbol_number, global) => {
                 if let Some(symbol) = analyzer.symbol_table.get(name) {
                     self.ast_type = symbol.symbol_type.clone();
@@ -84,7 +88,7 @@ impl Expression {
         use ExpressionVariant::*;
 
         match &mut self.variant {
-            Ident(..) | ConstI(_) => unreachable!(),
+            Ident(..) | ConstI(_) | CString(..) => unreachable!(),
 
             Function(func, _) => func
                 .ast_type

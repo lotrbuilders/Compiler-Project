@@ -196,6 +196,12 @@ impl Graph for Expression {
                 writeln!(buffer, "n{} [label=\"int {}\"]", number, value)?;
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
             }
+
+            CString(value) => {
+                writeln!(buffer, "n{} [label=\"string \\\"{}\\\"\"]", number, value)?;
+                writeln!(buffer, "n{} -- n{}", parent, number)?;
+            }
+
             Ident(name, ..) => {
                 writeln!(buffer, "n{} [label=\"identifier {}\"]", number, name)?;
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
