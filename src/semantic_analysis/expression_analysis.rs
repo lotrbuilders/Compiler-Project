@@ -4,6 +4,7 @@ use super::SemanticAnalyzer;
 use crate::error;
 use crate::parser::{ast::*, Type};
 use crate::semantic_analysis::type_checking::check_arguments_function;
+use crate::semantic_analysis::type_promotion::TypePromotion;
 
 // The analysis for expressions
 impl Analysis for Expression {
@@ -137,11 +138,12 @@ impl UnaryExpressionType {
         use UnaryExpressionType::*;
         {
             let span = &exp.span;
-            let typ = &exp.ast_type;
+            let exp_type = exp.ast_type.clone();
+            let typ = &exp_type;
             match self {
                 Identity | Negate | BinNot => {
                     analyzer.assert_in(span, typ, self.get_type_class());
-                    exp.ast_type.clone()
+                    exp_type
                 }
                 LogNot => {
                     analyzer.assert_in(span, typ, self.get_type_class());
@@ -149,7 +151,7 @@ impl UnaryExpressionType {
                 }
                 Deref => {
                     analyzer.assert_in(span, typ, Pointer);
-                    exp.ast_type.clone().deref()
+                    exp_type.deref()
                 }
                 Address => unreachable!(),
             }
@@ -179,75 +181,67 @@ impl BinaryExpressionType {
         use TypeClass::*;
         let span = left.span.to(&right.span);
         let span = &span;
+        let left_type = left.ast_type.promote();
+        let right_type = right.ast_type.promote();
         {
             match self {
                 Add => {
-                    if left.ast_type.is_in(Pointer) && right.ast_type.is_in(Integer) {
-                        left.ast_type.clone()
-                    } else if left.ast_type.is_in(Integer) && right.ast_type.is_in(Pointer) {
-                        right.ast_type.clone()
+                    if left_type.is_in(Pointer) && right_type.is_in(Integer) {
+                        left_type
+                    } else if left_type.is_in(Integer) && right_type.is_in(Pointer) {
+                        right_type
                     } else {
                         analyzer.assert_both_in(
                             span,
-                            &left.ast_type,
-                            &right.ast_type,
+                            &left_type,
+                            &right_type,
                             self.get_type_class(),
                         );
-                        left.ast_type.clone()
+                        (left_type, right_type).promote()
                     }
                 }
                 Subtract => {
-                    if left.ast_type.is_in(Pointer) && right.ast_type.is_in(Integer) {
-                        left.ast_type.clone()
-                    } else if left.ast_type.is_in(Pointer) && right.ast_type.is_in(Pointer) {
-                        analyzer.assert_compatible(span, &left.ast_type, &right.ast_type);
-                        right.ast_type.clone()
+                    if left_type.is_in(Pointer) && right_type.is_in(Integer) {
+                        left_type
+                    } else if left_type.is_in(Pointer) && right_type.is_in(Pointer) {
+                        analyzer.assert_compatible(span, &left_type, &right_type);
+                        right_type
                     } else {
                         analyzer.assert_both_in(
                             span,
-                            &left.ast_type,
-                            &right.ast_type,
+                            &left_type,
+                            &right_type,
                             self.get_type_class(),
                         );
-                        left.ast_type.clone()
+                        (left_type, right_type).promote()
                     }
                 }
 
                 Equal | Inequal | Less | LessEqual | Greater | GreaterEqual => {
-                    if left.ast_type.is_in(Pointer) && right.ast_type.is_in(Pointer) {
-                        analyzer.assert_compatible(span, &left.ast_type, &right.ast_type);
+                    if left_type.is_in(Pointer) && right_type.is_in(Pointer) {
+                        analyzer.assert_compatible(span, &left_type, &right_type);
                         Type::int()
                     } else {
                         analyzer.assert_both_in(
                             span,
-                            &left.ast_type,
-                            &right.ast_type,
+                            &left_type,
+                            &right_type,
                             self.get_type_class(),
                         );
-                        left.ast_type.clone()
+                        (left_type, right_type).promote()
                     }
                 }
                 Multiply | Divide | BinOr | BinAnd => {
-                    analyzer.assert_both_in(
-                        span,
-                        &left.ast_type,
-                        &right.ast_type,
-                        self.get_type_class(),
-                    );
-                    left.ast_type.clone()
+                    analyzer.assert_both_in(span, &left_type, &right_type, self.get_type_class());
+                    (left_type, right_type).promote()
                 }
 
                 LogOr | LogAnd => {
-                    analyzer.assert_both_in(
-                        span,
-                        &left.ast_type,
-                        &right.ast_type,
-                        self.get_type_class(),
-                    );
+                    analyzer.assert_both_in(span, &left_type, &right_type, self.get_type_class());
                     Type::int()
                 }
 
-                Comma => right.ast_type.clone(),
+                Comma => right_type,
             }
         }
     }

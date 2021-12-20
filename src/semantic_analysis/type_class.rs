@@ -61,11 +61,11 @@ impl Type {
     fn is_in2(&self, class: TypeClass) -> bool {
         use TypeClass::*;
         match class {
-            StandardSignedInteger => self.nodes[0] == TypeNode::Int,
+            StandardSignedInteger => matches!(self.nodes[0], TypeNode::Int),
             Function => matches!(self.nodes[0], TypeNode::Function(_)),
-            Pointer => self.nodes[0] == TypeNode::Pointer,
+            Pointer => matches!(self.nodes[0], TypeNode::Pointer),
             StandardInteger => self.is_in2(StandardSignedInteger),
-            Integer => self.is_in2(StandardInteger),
+            Integer => self.is_in2(StandardInteger) | matches!(self.nodes[0], TypeNode::Char),
             Arithmetic => self.is_in2(Integer),
             Scalar => self.is_in2(Arithmetic) | self.is_in2(Pointer),
         }
