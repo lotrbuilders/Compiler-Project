@@ -8,20 +8,21 @@ use self::registers::*;
 
 rburg::rburg_main! {
     BackendAMD64,
-:       Ret i32(_a %eax)            "#\n"
-:       Store(r %ireg, a adr)       "mov [{a}],{r}\n"
+:       Ret i32(_a %eax)            #"return\n"
+:       Store s8(r %ireg, a %ireg)  "mov [{a}],{r:.8}\n"
+:       Store s8(r %ireg, a adr)    "mov [{a}],{r:.8}\n"
 :       Store P(r %ireg, a adr)     "mov [{a}],{r:.64}\n"
-:       Store(Imm(#i),a adr)     "mov dword[{a}],{i}\n"
-:       Store P(Imm(#i),a adr)     "mov qword[{a}],{i}\n"
-:       Store(Imm(#i),a %ireg)     "mov dword[{a}],{i}\n"
-:       Store P(Imm(#i),a %ireg)     "mov qword[{a}],{i}\n"
+:       Store(Imm(#i),a adr)        "mov dword[{a}],{i}\n"
+:       Store P(Imm(#i),a adr)      "mov qword[{a}],{i}\n"
+:       Store(Imm(#i),a %ireg)      "mov dword[{a}],{i}\n"
+:       Store P(Imm(#i),a %ireg)    "mov qword[{a}],{i}\n"
 :       Label(#i)                   ".L{i}:\n"
 %ireg:  Label(#i)                   ".L{i}:\n"
 :       Jmp(#i)                     "jmp .L{i}\n"
 :       Jcc(r %ireg,#l)             "test {r},{r}\n\tjnz .L{l}\n" {2}
 :       Jnc(r %ireg,#l)             "test {r},{r}\n\tjz .L{l}\n"  {2}
-:       Jcc p(r %ireg,#l)           "test {r:.64},{r:.64}\n\tjnz .L{l}\n" {2}
-:       Jnc p(r %ireg,#l)           "test {r:.64},{r:.64}\n\tjz .L{l}\n"  {2}
+:       Jcc pi64(r %ireg,#l)        "test {r:.64},{r:.64}\n\tjnz .L{l}\n" {2}
+:       Jnc pi64(r %ireg,#l)        "test {r:.64},{r:.64}\n\tjz .L{l}\n"  {2}
 
 
 scale:  Imm i32i64(#i)              "{i}" {self.scale(index)}
@@ -44,6 +45,9 @@ mcon:   m mem                       "{m}"
 %ireg:  Load Pi64(a adr)            "mov {res:.64}, [{a}]\n"    {1}
 %ireg:  Load Pi64(r %ireg)          "mov {res:.64}, [{r}]\n"    {1}
 %ireg:  Imm pi64(#i)                "mov {res:.64}, {i}\n"
+
+%ireg:  Cvs s32(Load s8(a adr))     "movsx {res:.32}, byte [{a}]\n"
+%ireg:  Cvs s32(Load s8(r %ireg))   "movsx {res:.32}, byte [{r}]\n"
 
 %ireg:  Add(a %ireg , b %ireg)      ?"add {res}, {b} ; {res} = {a} + {b}\n"   {1}
 
@@ -78,11 +82,11 @@ mcon:   m mem                       "{m}"
 %ireg:  Le p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetbe {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"     {3}
 %ireg:  Gt p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tseta {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"      {3}
 %ireg:  Ge p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetae {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"     {3}
-%ireg:  Cvp s32(r %ireg)            "movsx {res:.64},{r}\n" {2}
-%ireg:  Cvs s32(_r %ireg)            "#extend/truncuate" {2}
+%ireg:  Cvp (_r %ireg)              #"#extend/truncuate" {2}
+%ireg:  Cvs s32(_r %ireg)           #"#extend/truncuate" {2}
 
-:       Arg pi32(r %ireg)           "push {r:.64}\n" {1}
-%eax:   Call pi32(#name)            "call {name}; {res} = {name}()\n" {20}
+:       Arg pi32(r %ireg)           #"push {r:.64}\n" {1}
+%eax:   Call pi32(#name)            #"#call {name}\n" {20}
 }
 
 impl Backend for BackendAMD64 {
@@ -175,6 +179,7 @@ impl Backend for BackendAMD64 {
     fn get_size(&self, typ: &crate::parser::TypeNode) -> IRSize {
         use crate::parser::TypeNode::*;
         match typ {
+            Char => IRSize::S8,
             Int => IRSize::S32,
             Pointer => IRSize::P,
             _ => unreachable!(),
@@ -283,12 +288,16 @@ impl BackendAMD64 {
                     _ => unimplemented!(),
                 }
             }
-            let (handwritten, procede) = self.emit_asm2(instruction);
-            if let Some(assembly) = handwritten {
-                result.push_str(&assembly);
-            }
-            if procede {
-                if self.is_instruction(self.rules[instruction]) {
+            let rule = self.rules[instruction];
+            if self.is_instruction(rule) {
+                let procede = if self.custom_print[rule as usize] {
+                    let (handwritten, procede) = self.emit_asm2(instruction);
+                    result.push_str(&handwritten);
+                    procede
+                } else {
+                    true
+                };
+                if procede {
                     result.push_str(&self.gen_asm(instruction));
                 }
             }
@@ -318,21 +327,21 @@ impl BackendAMD64 {
     // Might use a macro to generate parts
     // Emits handwritten assembly for instruction that are too complex to process normally
     // The boolean specifies wether the normal assembly should also be generated
-    fn emit_asm2(&self, index: usize) -> (Option<String>, bool) {
+    fn emit_asm2(&self, index: usize) -> (String, bool) {
         let instruction = &self.instructions[index];
         let _rule = self.rules[index];
         use IRInstruction::*;
         match instruction {
             Ret(_size, _vreg) => (
-                Some(if !self.is_last_instruction(index) {
+                if !self.is_last_instruction(index) {
                     format!("\tjmp .end\n")
                 } else {
                     String::new()
-                }),
+                },
                 false,
             ),
             Call(_size, _vreg, name, arguments) => (
-                Some({
+                {
                     let length = arguments.count;
                     let alignment = self.get_stack_alignment(arguments);
                     let alignment_instruction = if length <= 6 {
@@ -355,11 +364,11 @@ impl BackendAMD64 {
                             format!("\tcall {}\n", name)
                         }
                     )
-                }),
+                },
                 false,
             ),
             Arg(_size, _vreg, Some(index)) => (
-                Some({
+                {
                     if let IRInstruction::Call(_size, _result, _name, arguments) =
                         &self.instructions[*index]
                     {
@@ -368,22 +377,22 @@ impl BackendAMD64 {
                     } else {
                         String::new()
                     }
-                }),
+                },
                 true,
             ),
             Cvs(to_s, to_r, from_s, from_r) => (
                 match (to_s, from_s) {
-                    (IRSize::S64, IRSize::S32) => Some(format!(
+                    (IRSize::S64, IRSize::S32) => format!(
                         "\tmovsx {:.64},{}\n",
                         self.allocation[*to_r as usize][index].unwrap(),
                         self.allocation[*from_r as usize][index].unwrap()
-                    )),
+                    ),
                     _ => unreachable!(),
                 },
                 false,
             ),
 
-            _ => (None, true),
+            _ => (String::new(), true),
         }
     }
 
