@@ -276,8 +276,8 @@ impl IRInstruction {
             | Self::Call(size, ..) => size.clone(),
 
             Self::Cvs(to, _, from, _) | Self::Cvu(to, _, from, _) | Self::Cvp(to, _, from, _) => {
-                let _ = to;
-                from.clone()
+                let _ = from;
+                *to
             }
 
             Self::Jmp(_) | Self::Label(..) | Self::PhiSrc(..) | Self::Phi(..) => IRSize::P,
