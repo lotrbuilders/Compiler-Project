@@ -6,6 +6,7 @@ use crate::span::Span;
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum TokenType {
     //Type keywords
+    Char,
     Int,
 
     //Control flow keywords
@@ -142,6 +143,7 @@ impl Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use TokenType::*;
         match self {
+            Char => write!(f, "'char'"),
             Int => write!(f, "'int'"),
 
             If => write!(f, "'if'"),
