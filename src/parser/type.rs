@@ -62,6 +62,13 @@ impl Type {
         }
     }
 
+    pub fn is_char(&self) -> bool {
+        match self.nodes.get(0) {
+            Some(TypeNode::Char) => true,
+            _ => false,
+        }
+    }
+
     pub fn is_declaration(&self) -> bool {
         self.get_function_arguments()
             .map(|args| args.len() == 0)

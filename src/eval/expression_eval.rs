@@ -1,6 +1,6 @@
 use super::{Evaluate, EvaluationContext};
 use crate::backend::ir::*;
-use crate::parser::ast::*;
+use crate::parser::{ast::*, Type};
 
 impl Evaluate for Expression {
     fn eval(&self, result: &mut Vec<IRInstruction>, context: &mut EvaluationContext) -> u32 {
@@ -19,7 +19,7 @@ impl Evaluate for Expression {
                 let addr = self.eval_lvalue(result, context);
                 let vreg = context.next_vreg();
                 result.push(IRInstruction::Load(size, vreg, addr));
-                vreg
+                insert_promotion(vreg, &self.ast_type, result, context)
             }
 
             Function(func, arguments) => {
@@ -283,7 +283,7 @@ impl Evaluate for Expression {
                 let addr = self.eval_lvalue(result, context);
                 let vreg = context.next_vreg();
                 result.push(IRInstruction::Load(size, vreg, addr));
-                vreg
+                insert_promotion(vreg, &self.ast_type, result, context)
             }
 
             Unary(op, exp) => {
@@ -335,5 +335,20 @@ impl Expression {
                 unreachable!()
             }
         }
+    }
+}
+
+fn insert_promotion(
+    vreg: u32,
+    ast_type: &Type,
+    result: &mut Vec<IRInstruction>,
+    context: &mut EvaluationContext,
+) -> u32 {
+    if ast_type.is_char() {
+        let next = context.next_vreg();
+        result.push(IRInstruction::Cvs(IRSize::S32, next, IRSize::S8, vreg));
+        next
+    } else {
+        vreg
     }
 }
