@@ -69,6 +69,7 @@ impl Parser {
         use TokenType::*;
         match token.token() {
             Int => true,
+            Char => true,
             _ => false,
         }
     }
