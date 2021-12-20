@@ -1,6 +1,7 @@
 use super::{Evaluate, EvaluationContext};
 use crate::backend::ir::*;
 use crate::parser::ast::*;
+use crate::semantic_analysis::type_promotion::TypePromotion;
 
 impl Evaluate for Statement {
     fn eval(&self, result: &mut Vec<IRInstruction>, context: &mut EvaluationContext) -> u32 {
@@ -130,7 +131,7 @@ impl Evaluate for Statement {
                 span: _,
                 expression,
             } => {
-                let size = context.get_size(&expression.ast_type);
+                let size = context.get_size(&expression.ast_type.promote());
                 let vreg = expression.eval(result, context);
                 result.push(IRInstruction::Ret(size, vreg))
             }
