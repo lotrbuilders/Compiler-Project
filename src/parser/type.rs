@@ -10,6 +10,7 @@ pub enum DeclarationType {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypeNode {
+    Char,
     Int,
     Pointer,
     Name(String),
@@ -148,6 +149,7 @@ impl From<Token> for TypeNode {
     fn from(token: Token) -> TypeNode {
         use TokenType::*;
         match token.token() {
+            Char => TypeNode::Char,
             Int => TypeNode::Int,
             Asterisk => TypeNode::Pointer,
             Ident(name) => TypeNode::Name(name),
@@ -186,6 +188,7 @@ fn format_type(typ: &[TypeNode], f: &mut std::fmt::Formatter<'_>) -> std::fmt::R
     for i in (0..=(typ.len() - 1)).rev() {
         use TypeNode::*;
         match &typ[i] {
+            Char => write!(f, "char ")?,
             Int => write!(f, "int ")?,
             Pointer => write!(f, "* ")?,
             Name(name) => write!(f, "{}", name)?,
