@@ -8,14 +8,17 @@ use self::registers::*;
 
 rburg::rburg_main! {
     BackendAMD64,
-:       Ret i32(_a %eax)            #"return\n"
-:       Store s8(r %ireg, a %ireg)  "mov [{a}],{r:.8}\n"
-:       Store s8(r %ireg, a adr)    "mov [{a}],{r:.8}\n"
+:       Ret pi32(_a %eax)            #"return\n"
+:       Store i8(r %ireg, a %ireg)  "mov [{a:.64}],{r:.8}\n"
+:       Store i8(r %ireg, a adr)    "mov [{a}],{r:.8}\n"
+:       Store i32(r %ireg, a %ireg)  "mov [{a:.64}],{r}\n"
+:       Store i32(r %ireg, a adr)    "mov [{a}],{r}\n"
+:       Store P(r %ireg, a %ireg)     "mov [{a}],{r:.64}\n"
 :       Store P(r %ireg, a adr)     "mov [{a}],{r:.64}\n"
+:       Store(Imm(#i),a %ireg)      "mov dword[{a:.64}],{i}\n"
 :       Store(Imm(#i),a adr)        "mov dword[{a}],{i}\n"
 :       Store P(Imm(#i),a adr)      "mov qword[{a}],{i}\n"
-:       Store(Imm(#i),a %ireg)      "mov dword[{a}],{i}\n"
-:       Store P(Imm(#i),a %ireg)    "mov qword[{a}],{i}\n"
+:       Store P(Imm(#i),a %ireg)    "mov qword[{a:.64}],{i}\n"
 :       Label(#i)                   ".L{i}:\n"
 %ireg:  Label(#i)                   ".L{i}:\n"
 :       Jmp(#i)                     "jmp .L{i}\n"
@@ -31,6 +34,7 @@ rc:     i con                       "{i}"
 adr:    AddrL(#a)                   "rbp+{a}"
 adr:    AddrG(#a)                   "{a}"
 adr:    Add p(a %ireg,  Mul s64(r %ireg,i scale))  "{a:.64}+{i}*{r:.64}"
+adr:    Add p(a %ireg,  r %ireg)    "{a:.64}+{r:.64}"
 mem:    Load(a adr)                 "[{a}]"
 mem:    Load(r %ireg)               "[{r:.64}]"
 acon:   i con                       "{i}"
@@ -83,7 +87,7 @@ mcon:   m mem                       "{m}"
 %ireg:  Gt p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tseta {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"      {3}
 %ireg:  Ge p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetae {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"     {3}
 %ireg:  Cvp (_r %ireg)              #"#extend/truncuate" {2}
-%ireg:  Cvs s32(_r %ireg)           #"#extend/truncuate" {2}
+%ireg:  Cvs s64s32(_r %ireg)        #"#extend/truncuate" {2}
 
 :       Arg pi32(r %ireg)           #"push {r:.64}\n" {1}
 %eax:   Call pi32(#name)            #"#call {name}\n" {20}
@@ -241,10 +245,11 @@ impl BackendAMD64 {
         let rule = state.rule[non_terminal];
         if rule == 0xffff {
             log::warn!(
-                "No valid rule for instruction {} with non_terminal {}",
+                "No valid rule for instruction{} with non_terminal {}:",
                 index,
                 non_terminal
             );
+            log::warn!("{}", self.instructions[index as usize],);
         }
         rule
     }
@@ -309,7 +314,7 @@ impl BackendAMD64 {
     fn get_stack_alignment(&self, arguments: &IRArguments) -> i32 {
         let length = arguments.count as i32;
         let extra_stack_size = (std::cmp::max(length, 6) - 6) * 8;
-        let next_alignment = self.stack_size + extra_stack_size as i32;
+        let next_alignment = self.stack_size + extra_stack_size as i32 + 8;
         match next_alignment % 16 {
             0 => 0,
             i => 16 - i,
