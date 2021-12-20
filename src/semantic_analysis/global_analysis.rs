@@ -92,6 +92,7 @@ impl Analysis for ExternalDeclaration {
         }
 
         if let Some(statements) = &mut self.function_body {
+            analyzer.function_return_type = self.ast_type.get_return_type().unwrap().into();
             analyzer.symbol_table.enter_scope();
             if let Some(arguments) = self.ast_type.get_function_arguments() {
                 for arg in arguments {

@@ -12,7 +12,7 @@ use std::collections::HashMap;
 
 use self::analysis::Analysis;
 use self::symbol_table::{Symbol, SymbolTable};
-use crate::parser::ast::*;
+use crate::parser::{ast::*, Type};
 
 // The semantic analyzer checks the entire syntax tree for problems
 // The semantic analyzer is passed as a member and modified using traits
@@ -22,6 +22,7 @@ pub struct SemanticAnalyzer {
     errors: Vec<String>,
     symbol_table: SymbolTable,
     loop_depth: u32,
+    function_return_type: Type,
 }
 
 impl SemanticAnalyzer {
@@ -30,6 +31,7 @@ impl SemanticAnalyzer {
             errors: Vec::new(),
             symbol_table: SymbolTable::new(),
             loop_depth: 0,
+            function_return_type: Type::empty(),
         }
     }
 

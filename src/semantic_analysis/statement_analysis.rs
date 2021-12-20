@@ -23,10 +23,20 @@ impl Analysis for Statement {
                 self.analyze_control_flow(analyzer)
             }
 
-            Return {
-                span: _,
-                expression,
-            } => expression.analyze(analyzer),
+            Return { span, expression } => {
+                expression.analyze(analyzer);
+                if !expression
+                    .ast_type
+                    .is_compatible(&analyzer.function_return_type)
+                {
+                    analyzer.errors.push(error!(
+                        span,
+                        "Incompatible return types: function returns {}, but {} is returned",
+                        expression.ast_type,
+                        analyzer.function_return_type
+                    ));
+                }
+            }
 
             Expression {
                 span: _,
