@@ -325,7 +325,8 @@ impl Evaluate for Expression {
                 let left = left.eval(result, context);
                 let right = right.eval(result, context);
                 let left = context.promote(result, size, left_size, left);
-                let vreg = context.promote(result, size, right_size, right);
+                let right = context.promote(result, size, right_size, right);
+                let vreg = context.next_vreg();
 
                 result.push(match op {
                     Equal => IRInstruction::Eq(size, vreg, left, right),
