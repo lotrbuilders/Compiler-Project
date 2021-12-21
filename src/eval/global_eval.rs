@@ -58,7 +58,11 @@ impl ExternalDeclaration {
         context.vreg_counter += vreg_count * 2;
         let mut vregs = Vec::new();
         for arg in 0..arguments.len() {
-            context.variables.push(ir_arguments[arg].clone());
+            let variable = IRVariable {
+                size: ir_arguments[arg].clone(),
+                count: 1,
+            };
+            context.variables.push(variable);
             if in_register[arg] {
                 let argument = arg as u32;
                 let addr = vreg_count + argument;

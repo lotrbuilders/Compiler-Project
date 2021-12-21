@@ -32,7 +32,11 @@ impl Display for IRFunction {
         fmt_argument(&self.arguments, f)?;
         writeln!(f, ") [")?;
         for (local, i) in self.variables.iter().zip(0usize..) {
-            writeln!(f, "\t${}: {}", i, local)?;
+            if local.count == 1 {
+                writeln!(f, "\t${}: {}", i, local.size)?;
+            } else {
+                writeln!(f, "\t${}: [{}:{}]", i, local.size, local.count)?;
+            }
         }
         writeln!(f, "] {{")?;
 

@@ -7,8 +7,14 @@ pub struct IRFunction {
     pub return_size: IRSize,
     pub instructions: Vec<IRInstruction>,
     pub arguments: IRArguments,
-    pub variables: Vec<IRSize>,
+    pub variables: Vec<IRVariable>,
     pub strings: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct IRVariable {
+    pub size: IRSize,
+    pub count: usize,
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -32,8 +32,13 @@ impl Evaluate for Statement {
                 init,
             } => {
                 let index = context.variables.len();
-                let size = context.get_size(decl_type);
-                context.variables.push(size.clone());
+                let (array_type, array_count) = decl_type.deconstruct();
+                let size = context.get_size(&array_type);
+                let variable = IRVariable {
+                    size,
+                    count: array_count,
+                };
+                context.variables.push(variable);
                 if let Some(exp) = init {
                     let vreg = exp.eval(result, context);
                     let addr = context.next_vreg();

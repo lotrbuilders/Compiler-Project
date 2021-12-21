@@ -160,6 +160,10 @@ impl Type {
             self
         }
     }
+
+    pub fn deconstruct(&self) -> (Type, usize) {
+        todo!()
+    }
 }
 
 impl From<Token> for TypeNode {

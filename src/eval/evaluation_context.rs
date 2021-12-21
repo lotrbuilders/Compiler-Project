@@ -6,7 +6,7 @@ use crate::{
 pub struct EvaluationContext<'a> {
     pub vreg_counter: u32,
     pub label_counter: u32,
-    pub variables: Vec<IRSize>,
+    pub variables: Vec<IRVariable>,
     pub strings: Vec<String>,
     pub unfixed_continue: Vec<(usize, u32)>,
     pub unfixed_break: Vec<(usize, u32)>,

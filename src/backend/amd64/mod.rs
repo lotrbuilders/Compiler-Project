@@ -552,7 +552,7 @@ impl BackendAMD64 {
     // Should depend on sizes and allignment as given by the backend
     // Is currently handwritten for x86-64
     fn find_local_offsets(
-        variable_types: &Vec<IRSize>,
+        variable_types: &Vec<IRVariable>,
         arguments: &IRArguments,
     ) -> (Vec<i32>, i32) {
         let mut arg_offset = 8;
@@ -562,7 +562,7 @@ impl BackendAMD64 {
         for i in 0..variable_types.len() {
             result.push(match arguments.arguments.get(i) {
                 // Either a normal variable or an argument passed via register
-                None | Some(Some(..)) => match variable_types[i] {
+                None | Some(Some(..)) => match variable_types[i].size {
                     IRSize::S32 | IRSize::S8 | IRSize::S16 => {
                         offset += -4;
                         offset
