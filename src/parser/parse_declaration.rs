@@ -1,3 +1,4 @@
+use super::ast::ExpressionVariant;
 use super::r#type::TypeNode;
 use super::{recovery::RecoveryStrategy, Parser, Type};
 use crate::token::TokenType;
@@ -56,6 +57,19 @@ impl Parser {
         if let Some(TokenType::LParenthesis) = self.peek_type() {
             let arguments = self.parse_braced('(', Parser::parse_parameter_type_list)?;
             result.push(TypeNode::Function(arguments))
+        } else if let Some(TokenType::LSquare) = self.peek_type() {
+            let expression = self.parse_braced('[', Parser::parse_conditional)?;
+            let expression = expression.const_eval();
+            let number = if let ExpressionVariant::ConstI(value) = &expression.variant {
+                *value
+            } else {
+                self.errors.push(error!(
+                    expression.span,
+                    "Expected a constant expression in array declaration"
+                ));
+                1
+            };
+            result.push(TypeNode::Array(number as usize));
         }
         result.append(&mut pointers);
         Ok(result.into())
