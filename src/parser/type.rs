@@ -162,7 +162,18 @@ impl Type {
     }
 
     pub fn deconstruct(&self) -> (Type, usize) {
-        todo!()
+        Type::deconstruct2(&self.nodes)
+    }
+
+    fn deconstruct2(typ: &[TypeNode]) -> (Type, usize) {
+        match typ.get(0) {
+            Some(TypeNode::Array(size)) => {
+                let (t, s) = Type::deconstruct2(&typ[1..]);
+                (t, s * size)
+            }
+            Some(..) => (typ.into(), 0),
+            None => unreachable!(),
+        }
     }
 }
 
