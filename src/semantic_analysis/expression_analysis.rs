@@ -70,6 +70,7 @@ impl Expression {
         match &mut self.variant {
             Ident(..) => self.analyze(analyzer),
             Unary(UnaryExpressionType::Deref, _) => self.analyze(analyzer),
+            Binary(BinaryExpressionType::Index, ..) => self.analyze(analyzer),
             _ => {
                 analyzer
                     .errors

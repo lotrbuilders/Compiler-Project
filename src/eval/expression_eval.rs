@@ -272,45 +272,7 @@ impl Evaluate for Expression {
             Binary(op @ (Subtract | Add | Index), left, right)
                 if left.ast_type.is_pointer() || right.ast_type.is_pointer() =>
             {
-                // Swap pointers such that left is always a pointer
-                // This also ensures that matching only needs to consider left side
-                let (left, right) = if right.ast_type.is_pointer() {
-                    (right, left)
-                } else {
-                    (left, right)
-                };
-
-                let right_size = context.get_size(&right.ast_type);
-                let int_ptr_size = context.int_ptr(true);
-                let left_vreg = left.eval(result, context);
-                let mut right = right.eval(result, context);
-
-                //Conversions are only inserted if right is not a pointer(subtraction only)
-                //And sizeof(right) != sizeof(pointer) This means that on ILP32 and IP16 environments convert is not inserted
-                if right_size != IRSize::P && right_size != int_ptr_size {
-                    let vreg = context.next_vreg();
-                    result.push(IRInstruction::Cvs(
-                        context.int_ptr(true),
-                        vreg,
-                        right_size,
-                        right,
-                    ));
-                    right = vreg
-                }
-
-                // If the right is not pointer we must multiply it with sizeof(*left)
-                // The constant will always be added on the right side
-                if right_size != IRSize::P {
-                    let size = context.sizeof(context.get_size(&left.ast_type.clone().deref()));
-                    if size != 1 {
-                        let constant = context.next_vreg();
-                        let vreg = context.next_vreg();
-                        result.push(IRInstruction::Imm(int_ptr_size, constant, size as i128));
-                        result.push(IRInstruction::Mul(int_ptr_size, vreg, right, constant));
-                        right = vreg
-                    }
-                }
-
+                let (left_vreg, right) = self.eval_pointer_addition(result, context);
                 let vreg = context.next_vreg();
                 match op {
                     Add => {
@@ -445,6 +407,7 @@ impl Evaluate for Expression {
 
 impl Expression {
     fn eval_lvalue(&self, result: &mut Vec<IRInstruction>, context: &mut EvaluationContext) -> u32 {
+        use BinaryExpressionType::*;
         use ExpressionVariant::*;
         use UnaryExpressionType::*;
         match &self.variant {
@@ -463,6 +426,13 @@ impl Expression {
                 addr
             }
             Unary(Deref, exp) => exp.eval(result, context),
+            Binary(Index, ..) => {
+                let (left, right) = self.eval_pointer_addition(result, context);
+                let addr = context.next_vreg();
+                result.push(IRInstruction::Add(IRSize::P, addr, left, right));
+                addr
+            }
+
             _ => {
                 unreachable!()
             }
@@ -470,18 +440,52 @@ impl Expression {
     }
 }
 
-/*
-fn insert_promotion(
-    vreg: u32,
-    ast_type: &Type,
-    result: &mut Vec<IRInstruction>,
-    context: &mut EvaluationContext,
-) -> u32 {
-    if ast_type.is_char() {
-        let next = context.next_vreg();
-        result.push(IRInstruction::Cvs(IRSize::S32, next, IRSize::S8, vreg));
-        next
-    } else {
-        vreg
+impl Expression {
+    fn eval_pointer_addition(
+        &self,
+        result: &mut Vec<IRInstruction>,
+        context: &mut EvaluationContext,
+    ) -> (u32, u32) {
+        let (_, left, right) = match &self.variant {
+            ExpressionVariant::Binary(op, left, right) => (op, left, right),
+            _ => unreachable!(),
+        };
+        // Swap pointers such that left is always a pointer
+        // This also ensures that matching only needs to consider left side
+        let (left, right) = if right.ast_type.is_pointer() {
+            (right, left)
+        } else {
+            (left, right)
+        };
+
+        let right_size = context.get_size(&right.ast_type);
+        let int_ptr_size = context.int_ptr(true);
+        let left_vreg = left.eval(result, context);
+        let mut right = right.eval(result, context);
+
+        //Conversions are only inserted if sizeof(right) != sizeof(pointer)
+        //This means that on ILP32 and IP16 environments convert is often not inserted
+        if right_size != IRSize::P && right_size != int_ptr_size {
+            let vreg = context.next_vreg();
+            result.push(IRInstruction::Cvs(
+                context.int_ptr(true),
+                vreg,
+                right_size,
+                right,
+            ));
+            right = vreg
+        }
+
+        // We must multiply the right side with sizeof(*left)
+        // The constant will always be added on the right side
+        let size = context.sizeof(context.get_size(&left.ast_type.clone().deref()));
+        if size != 1 {
+            let constant = context.next_vreg();
+            let vreg = context.next_vreg();
+            result.push(IRInstruction::Imm(int_ptr_size, constant, size as i128));
+            result.push(IRInstruction::Mul(int_ptr_size, vreg, right, constant));
+            right = vreg
+        }
+        (left_vreg, right)
     }
-}*/
+}
