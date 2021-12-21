@@ -125,13 +125,14 @@ fn test_valid_full_scale(path: PathBuf, failures: &mut Vec<String>, fail_count: 
         Ok(()) => (),
     }
 
-    let output = Command::new(&format!("{}.exe", options.output)).output();
+    let output = Command::new(&format!("{}", options.output)).output();
     let status = match output {
         Err(error) => {
             failures.push(format!(
-                "{}: Running file unsuccesfull {}",
+                "{}: Running file unsuccesfull {}\n{}",
                 options.input[0].clone(),
-                error
+                error,
+                options.output
             ));
             *fail_count += 1;
             return;
@@ -143,7 +144,7 @@ fn test_valid_full_scale(path: PathBuf, failures: &mut Vec<String>, fail_count: 
         .args(["-o", &options.output, &options.input[0]])
         .output()
         .expect("gcc failed on test");
-    let output = Command::new(&format!("{}.exe", options.output)).output();
+    let output = Command::new(&format!("{}", options.output)).output();
     match output {
         Err(_) => {
             eprintln!("Error when running gcc version");
@@ -152,10 +153,11 @@ fn test_valid_full_scale(path: PathBuf, failures: &mut Vec<String>, fail_count: 
         Ok(output) => {
             if output != status {
                 failures.push(format!(
-                    "{}: output {:?} does not match status {:?}",
+                    "{}: output {:?} does not match expected output {:?} {}",
                     options.input[0].clone(),
+                    status,
                     output,
-                    status
+                    options.output
                 ));
                 *fail_count += 1;
                 return;
@@ -223,7 +225,8 @@ tests! {
     full_scale_stage_11: ("src/stage_11",test_valid_full_scale,test_invalid_full_scale)
     full_scale_stage_12: ("src/stage_12",test_valid_full_scale,test_invalid_full_scale)
     full_scale_stage_13: ("src/stage_13",test_valid_full_scale,test_invalid_full_scale)
-    full_scale_stage_14: ("src/stage_13",test_valid_full_scale,test_invalid_full_scale)
+    full_scale_stage_14: ("src/stage_14",test_valid_full_scale,test_invalid_full_scale)
+    full_scale_stage_15: ("src/stage_15",test_valid_full_scale,test_invalid_full_scale)
 }
 
 fn test_valid_parser(path: PathBuf, failures: &mut Vec<String>, fail_count: &mut i32) {
