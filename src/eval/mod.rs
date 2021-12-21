@@ -25,10 +25,12 @@ pub fn evaluate(
     ast: &TranslationUnit,
     map: &HashMap<String, Symbol>,
     backend: &mut dyn Backend,
-) -> (Vec<IRFunction>, Vec<IRGlobal>) {
+) -> (Vec<IRFunction>, Vec<IRGlobal>, HashSet<String>) {
     let mut functions = Vec::<IRFunction>::new();
+    let mut function_names = HashSet::<String>::new();
     for global in &ast.global_declarations {
         if let Some(declaration) = global.eval(backend) {
+            function_names.insert(declaration.name.clone());
             functions.push(declaration);
         }
     }
@@ -41,5 +43,5 @@ pub fn evaluate(
             globals.push(declaration);
         }
     }
-    (functions, globals)
+    (functions, globals, function_names)
 }

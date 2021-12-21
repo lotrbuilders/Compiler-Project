@@ -1,6 +1,7 @@
 use super::ir::*;
 use super::Backend;
-use std::vec;
+use std::collections::HashSet;
+
 mod register_allocation;
 mod registers;
 use self::register_allocation::*;
@@ -100,7 +101,7 @@ impl Backend for BackendAMD64 {
 
     // Generates assembly for a single function
     // Modifies the storage for the backend to allow for this
-    fn generate(&mut self, function: &IRFunction) -> String {
+    fn generate(&mut self, function: &IRFunction, function_names: &HashSet<String>) -> String {
         self.function_name = function.name.clone();
         self.instructions = function.instructions.clone();
         self.definition_index = get_definition_indices(&function);
@@ -108,6 +109,7 @@ impl Backend for BackendAMD64 {
         self.instruction_states = vec![State::new(); self.instructions.len()];
         self.rules = vec![0xffff; self.instructions.len()];
         self.arguments = function.arguments.clone();
+        self.function_names = function_names.clone();
 
         let (local_offsets, stack_size) =
             BackendAMD64::find_local_offsets(&function.variables, &function.arguments);
@@ -160,6 +162,7 @@ impl Backend for BackendAMD64 {
 
     fn generate_global_prologue(&mut self) -> String {
         format!("default rel\nsection .text\n")
+        //String::new()
     }
 
     fn argument_evaluation_direction_registers(&self) -> super::Direction {
@@ -355,6 +358,11 @@ impl BackendAMD64 {
                     } else {
                         String::new()
                     };
+                    let outside_file = if !self.function_names.contains(name) {
+                        "wrt ..plt"
+                    } else {
+                        ""
+                    };
 
                     format!(
                         "{}{}",
@@ -362,12 +370,13 @@ impl BackendAMD64 {
                         if length > 6 || alignment != 0 {
                             // Only hold for integer and pointer arguments
                             format!(
-                                "\tcall {}\n\tadd rsp,{}\n",
+                                "\tcall {} {}\n\tadd rsp,{}\n",
                                 name,
+                                outside_file,
                                 8 * (std::cmp::max(6, length) - 6) + alignment as usize
                             )
                         } else {
-                            format!("\tcall {}\n", name)
+                            format!("\tcall {} {}\n", name, outside_file,)
                         }
                     )
                 },
@@ -445,9 +454,9 @@ impl BackendAMD64 {
     }
 
     fn emit_strings(&self, strings: &Vec<String>) -> String {
-        let mut result = String::new();
+        let mut result = String::from("section .data\n");
         for (string, i) in strings.iter().zip(0..) {
-            result.push_str(&format!("__string{}:\n\tdb \"{}\",0\n", i, string));
+            result.push_str(&format!("__string{}:\n\tdb '{}',0\n", i, string));
         }
         result
     }

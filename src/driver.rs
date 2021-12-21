@@ -156,7 +156,7 @@ pub fn drive(options: Options) -> Result<(), ()> {
             log::info!("Linker started -o {} {}", result, linker_filename);
 
             let output = Command::new("gcc")
-                .args(["-m64", "-o", &result, &linker_filename])
+                .args(["-m64", "-fPIC", "-o", &result, &linker_filename])
                 .output()
                 .expect("failed to run linker");
 

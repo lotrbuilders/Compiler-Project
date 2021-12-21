@@ -1,6 +1,8 @@
 mod amd64;
 pub mod ir;
 
+use std::collections::HashSet;
+
 use crate::parser::TypeNode;
 
 use self::ir::*;
@@ -8,14 +10,15 @@ use self::ir::*;
 // Generates all functions for the specific backend specified
 
 pub fn generate_code(
+    backend: &mut dyn Backend,
     functions: Vec<IRFunction>,
     globals: Vec<IRGlobal>,
-    backend: &mut dyn Backend,
+    function_names: HashSet<String>,
 ) -> Result<String, String> {
     let mut assembly = backend.generate_global_prologue();
 
     for function in &functions {
-        assembly.push_str(&backend.generate(&function));
+        assembly.push_str(&backend.generate(&function, &function_names));
     }
     assembly.push_str(&backend.generate_globals(&globals));
 
@@ -52,7 +55,8 @@ pub trait Backend {
     }
 
     // Generates the assembly for a function
-    fn generate(&mut self, function: &IRFunction) -> String {
+    fn generate(&mut self, function: &IRFunction, function_names: &HashSet<String>) -> String {
+        let _ = function_names;
         log::error!("Generate is not implemented for this backend");
         format!(
             "/*This is not a properly implemented backend. Cannot implement {}*/",
