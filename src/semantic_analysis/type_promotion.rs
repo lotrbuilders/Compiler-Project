@@ -11,7 +11,7 @@ impl TypePromotion for &Type {
         match self.nodes[0] {
             Char => Type::int(),
             Short => Type::int(),
-            _ => self.clone(),
+            _ => self.array_promotion(),
         }
     }
 }
@@ -33,5 +33,15 @@ impl TypePromotion for (Type, Type) {
 impl Type {
     pub fn promote2(self, rhs: Type) -> Type {
         (self, rhs).promote()
+    }
+    pub fn array_promotion(&self) -> Type {
+        match self.nodes[0] {
+            TypeNode::Array(..) => {
+                let mut result = self.clone();
+                result.nodes[0] = TypeNode::Pointer;
+                result
+            }
+            _ => self.clone(),
+        }
     }
 }

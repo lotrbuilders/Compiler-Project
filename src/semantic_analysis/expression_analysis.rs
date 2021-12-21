@@ -68,7 +68,9 @@ impl Expression {
     fn analyze_lvalue(&mut self, analyzer: &mut SemanticAnalyzer) -> () {
         use ExpressionVariant::*;
         match &mut self.variant {
-            Ident(..) => self.analyze(analyzer),
+            Ident(..) => {
+                self.analyze(analyzer);
+            }
             Unary(UnaryExpressionType::Deref, _) => self.analyze(analyzer),
             Binary(BinaryExpressionType::Index, ..) => self.analyze(analyzer),
             _ => {
@@ -76,6 +78,11 @@ impl Expression {
                     .errors
                     .push(error!(self.span, "Expected lvalue not '{}'", self));
             }
+        }
+        if self.ast_type.is_array() {
+            analyzer
+                .errors
+                .push(error!(self.span, "An array cannot be an lvalue"));
         }
     }
 }

@@ -1,6 +1,7 @@
 use super::analysis::Analysis;
 use super::SemanticAnalyzer;
 use crate::parser::ast::ExternalDeclaration;
+use crate::parser::Type;
 use crate::semantic_analysis::type_checking::{compare_arguments, compare_return_types};
 use crate::{error, parser::r#type::DeclarationType};
 
@@ -91,13 +92,22 @@ impl Analysis for ExternalDeclaration {
             }
         }
 
+        if self.ast_type.is_function() {
+            let return_type: Type = self.ast_type.get_return_type().unwrap().into();
+            if return_type.is_array() {
+                analyzer
+                    .errors
+                    .push(error!(self.span, "Cannot return an array"));
+            }
+        }
+
         if let Some(statements) = &mut self.function_body {
             analyzer.function_return_type = self.ast_type.get_return_type().unwrap().into();
             analyzer.symbol_table.enter_scope();
             if let Some(arguments) = self.ast_type.get_function_arguments() {
                 for arg in arguments {
                     if let Some(name) = arg.get_name() {
-                        let symbol_type = arg.clone().remove_name();
+                        let symbol_type = arg.clone().remove_name().array_promotion();
                         if let Err(()) = analyzer.symbol_table.try_insert(
                             &name,
                             &symbol_type,
