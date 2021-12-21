@@ -171,7 +171,7 @@ impl Type {
                 let (t, s) = Type::deconstruct2(&typ[1..]);
                 (t, s * size)
             }
-            Some(..) => (typ.into(), 0),
+            Some(..) => (typ.into(), 1),
             None => unreachable!(),
         }
     }
