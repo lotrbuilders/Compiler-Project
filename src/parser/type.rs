@@ -201,8 +201,8 @@ fn format_type(typ: &[TypeNode], f: &mut std::fmt::Formatter<'_>) -> std::fmt::R
         match &typ[i] {
             Char => write!(f, "char ")?,
             Int => write!(f, "int ")?,
-            Long => write!(f, "long")?,
-            Short => write!(f, "short")?,
+            Long => write!(f, "long ")?,
+            Short => write!(f, "short ")?,
             Pointer => write!(f, "* ")?,
             Name(name) => write!(f, "{}", name)?,
             Function(arguments) => {

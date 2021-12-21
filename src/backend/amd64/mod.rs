@@ -9,29 +9,30 @@ use self::registers::*;
 
 rburg::rburg_main! {
     BackendAMD64,
-:       Ret pi32(_a %eax)            #"return\n"
-:       Store i8(r %ireg, a %ireg)  "mov [{a:.64}],{r:.8}\n"
-:       Store i8(r %ireg, a adr)    "mov [{a}],{r:.8}\n"
+:       Ret pi32i64(_a %eax)        #"return\n"
+:       Store i8(r %ireg, a %ireg)   "mov [{a:.64}],{r:.8}\n"
+:       Store i8(r %ireg, a adr)     "mov [{a}],{r:.8}\n"
+:       Store i16(r %ireg, a %ireg)  "mov [{a:.64}],{r:.16}\n"
+:       Store i16(r %ireg, a adr)    "mov [{a}],{r:.16}\n"
 :       Store i32(r %ireg, a %ireg)  "mov [{a:.64}],{r}\n"
 :       Store i32(r %ireg, a adr)    "mov [{a}],{r}\n"
-:       Store P(r %ireg, a %ireg)     "mov [{a}],{r:.64}\n"
-:       Store P(r %ireg, a adr)     "mov [{a}],{r:.64}\n"
-:       Store(Imm(#i),a %ireg)      "mov dword[{a:.64}],{i}\n"
-:       Store(Imm(#i),a adr)        "mov dword[{a}],{i}\n"
-:       Store P(Imm(#i),a adr)      "mov qword[{a}],{i}\n"
-:       Store P(Imm(#i),a %ireg)    "mov qword[{a:.64}],{i}\n"
-:       Label(#i)                   ".L{i}:\n"
-%ireg:  Label(#i)                   ".L{i}:\n"
-:       Jmp(#i)                     "jmp .L{i}\n"
-:       Jcc(r %ireg,#l)             "test {r},{r}\n\tjnz .L{l}\n" {2}
-:       Jnc(r %ireg,#l)             "test {r},{r}\n\tjz .L{l}\n"  {2}
-:       Jcc pi64(r %ireg,#l)        "test {r:.64},{r:.64}\n\tjnz .L{l}\n" {2}
-:       Jnc pi64(r %ireg,#l)        "test {r:.64},{r:.64}\n\tjz .L{l}\n"  {2}
+:       Store Pi64(r %ireg, a %ireg) "mov [{a}],{r:.64}\n"
+:       Store Pi64(r %ireg, a adr)   "mov [{a}],{r:.64}\n"
+:       Store(Imm(#i),a %ireg)       "mov dword[{a:.64}],{i}\n"
+:       Store(Imm(#i),a adr)         "mov dword[{a}],{i}\n"
+:       Store Pi64(Imm(#i),a adr)    "mov qword[{a}],{i}\n"
+:       Store Pi64(Imm(#i),a %ireg)  "mov qword[{a:.64}],{i}\n"
+:       Label(#i)                    ".L{i}:\n"
+%ireg:  Label(#i)                    ".L{i}:\n"
+:       Jmp(#i)                      "jmp .L{i}\n"
+:       Jcc(r %ireg,#l)              "test {r},{r}\n\tjnz .L{l}\n" {2}
+:       Jnc(r %ireg,#l)              "test {r},{r}\n\tjz .L{l}\n"  {2}
+:       Jcc pi64(r %ireg,#l)         "test {r:.64},{r:.64}\n\tjnz .L{l}\n" {2}
+:       Jnc pi64(r %ireg,#l)         "test {r:.64},{r:.64}\n\tjz .L{l}\n"  {2}
 
 
 scale:  Imm i32i64(#i)              "{i}" {self.scale(index)}
-con:    Imm(#i)                     "{i}"
-rc:     i con                       "{i}"
+con:    Imm i32i64(#i)              "{i}"
 adr:    AddrL(#a)                   "rbp+{a}"
 adr:    AddrG(#a)                   "{a}"
 adr:    Add p(a %ireg,  Mul s64(r %ireg,i scale))  "{a:.64}+{i}*{r:.64}"
@@ -43,55 +44,83 @@ acon:   a adr                       "{a}"
 mcon:   i con                       "{i}"
 mcon:   m mem                       "{m}"
 
+mem64:  Load pi64(a adr)            "[{a}]"
+mem64:  Load pi64(r %ireg)          "[{r:.64}]"
+mcon64:  i con                      "{i}"
+mcon64:  m mem64                    "{m}"
 
-%ireg:  i rc                        "mov {res}, {i}\n"          {1}
+%ireg:  m mcon                      "mov {res}, {m}\n"          {1}
+%ireg:  m mcon64                    "mov {res:.64}, {m}\n"      {1}
 %ireg:  a adr                       "lea {res:.64}, [{a}]\n"    {1}
-%ireg:  m mem                       "mov {res}, {m}\n"          {1}
+
 %ireg:  Load Pi64(a adr)            "mov {res:.64}, [{a}]\n"    {1}
 %ireg:  Load Pi64(r %ireg)          "mov {res:.64}, [{r}]\n"    {1}
 %ireg:  Imm pi64(#i)                "mov {res:.64}, {i}\n"
 
 %ireg:  Cvs s32(Load s8(a adr))     "movsx {res:.32}, byte [{a}]\n"
 %ireg:  Cvs s32(Load s8(r %ireg))   "movsx {res:.32}, byte [{r}]\n"
+%ireg:  Cvs s32(Load s16(a adr))     "movsx {res:.32}, word [{a}]\n"
+%ireg:  Cvs s32(Load s16(r %ireg))   "movsx {res:.32}, word [{r}]\n"
+%ireg:  Cvs s64(Load s8(a adr))     "movsx {res:.64}, byte [{a}]\n"
+%ireg:  Cvs s64(Load s8(r %ireg))   "movsx {res:.64}, byte [{r}]\n"
+%ireg:  Cvs s64(Load s16(a adr))     "movsx {res:.64}, word [{a}]\n"
+%ireg:  Cvs s64(Load s16(r %ireg))   "movsx {res:.64}, word [{r}]\n"
+%ireg:  Cvs s64(Load s32(a adr))     "movsx {res:.64}, dword [{a}]\n"
+%ireg:  Cvs s64(Load s32(r %ireg))   "movsx {res:.64}, dword [{r}]\n"
 
 %ireg:  Add(a %ireg , b %ireg)      ?"add {res}, {b} ; {res} = {a} + {b}\n"   {1}
+%ireg:  Add pi64(a %ireg , b %ireg) ?"add {res:.64}, {b:.64} ; {res:.64} = {a:.64} + {b:.64}\n"   {1}
 
-%ireg:  Sub(a %ireg , b %ireg)      ?"sub {res}, {b} ; {res} = {a} - {b}\n"   {1}
-%ireg:  Sub p(a %ireg , b %ireg)    ?"sub {res:.64}, {b:.64} ; {res} = {a} - {b}\n"   {1}
-%ireg:  Sub(Imm(#_i), b %ireg)      ?"neg {res} ; {res} = -{b}\n"             {self.range(self.get_left_index(index),0,0)+1}
+%ireg:  Sub(a %ireg , b %ireg)          ?"sub {res}, {b} ; {res} = {a} - {b}\n"         {1}
+%ireg:  Sub pi64(a %ireg , b %ireg)     ?"sub {res:.64}, {b:.64} ; {res} = {a} - {b}\n" {1}
+%ireg:  Sub(Imm(#_i), b %ireg)          ?"neg {res} ; {res} = -{b}\n"   {self.range(self.get_left_index(index),0,0)+1}
+%ireg:  Sub s64(Imm s64(#_i), b %ireg)  ?"neg {res} ; {res} = -{b}\n"   {self.range(self.get_left_index(index),0,0)+1}
 
 %ireg:  Mul s32(a %ireg , b %ireg)  ?"imul {res}, {b} ; {res} = {a} * {b}\n"  {1}
 %eax:   Div s32(a %eax  , b %ireg)  ?"cdq\n\tidiv {b} ; {res} = {a} / {b}\n"  {1}
+%ireg:  Mul s64(a %ireg , b %ireg)  ?"imul {res:.64}, {b:.64} ; {res:.64} = {a:.64} * {b:.64}\n"  {1}
+%eax:   Div s64(a %eax  , b %ireg)  ?"cdq\n\tidiv {b:.64}     ; {res:.64} = {a:.64} / {b:.64}\n"  {1}
 
 %ireg:  And(a %ireg , b %ireg)      ?"and {res}, {b} ; {res} = {a} & {b}\n"   {1}
 %ireg:  Or(a %ireg , b %ireg)       ?"or  {res}, {b} ; {res} = {a} | {b}\n"   {1}
 %ireg:  Xor(a %ireg , b %ireg)      ?"xor {res}, {b} ; {res} = {a} ^ {b}\n"   {1}
 %ireg:  Xor(a %ireg , Imm(#_i))     ?"not {res} ; {res} = ~{a}\n"             {self.range(self.get_right_index(index),-1,-1)+1}
 
-%ireg:  Eq (a %ireg , b %ireg)      "cmp {a}, {b}\n\tsete {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"              {3}
-%ireg:  Ne (a %ireg , b %ireg)      "cmp {a}, {b}\n\tsetne {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"             {3}
-%ireg:  Eq (a %ireg , Imm(#i))      "test {a}, {a}\n\tsetz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n"             {self.range(self.get_right_index(index),0,0)+2}
-%ireg:  Ne (a %ireg , Imm(#i))      "test {a}, {a}\n\tsetnz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n"            {self.range(self.get_right_index(index),0,0)+2}
+%ireg:  And i64(a %ireg , b %ireg)  ?"and {res:.64}, {b:.64} ; {res:.64} = {a:.64} & {b:.64}\n"   {1}
+%ireg:  Or  i64(a %ireg , b %ireg)  ?"or  {res:.64}, {b:.64} ; {res:.64} = {a:.64} | {b:.64}\n"   {1}
+%ireg:  Xor i64(a %ireg , b %ireg)  ?"xor {res:.64}, {b:.64} ; {res:.64} = {a:.64} ^ {b:.64}\n"   {1}
+%ireg:  Xor i64(a %ireg , Imm(#_i)) ?"not {res:.64} ; {res:.64} = ~{a:.64}\n"   {self.range(self.get_right_index(index),-1,-1)+1}
 
-%ireg:  Lt s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetl {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"              {3}
-%ireg:  Le s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetle {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"             {3}
-%ireg:  Gt s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetg {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"              {3}
-%ireg:  Ge s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetge {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"             {3}
+%ireg:  Eq i32(a %ireg , b %ireg)      "cmp {a}, {b}\n\tsete {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"    {3}
+%ireg:  Ne i32(a %ireg , b %ireg)      "cmp {a}, {b}\n\tsetne {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"   {3}
+%ireg:  Eq i32(a %ireg , Imm(#i))      "test {a}, {a}\n\tsetz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n"   {self.range(self.get_right_index(index),0,0)+2}
+%ireg:  Ne i32(a %ireg , Imm(#i))      "test {a}, {a}\n\tsetnz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n"  {self.range(self.get_right_index(index),0,0)+2}
 
-%ireg:  Eq p (a %ireg , b %ireg)    "cmp {a:.64}, {b:.64}\n\tsete {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"      {3}
-%ireg:  Ne p (a %ireg , b %ireg)    "cmp {a:.64}, {b:.64}\n\tsetne {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"     {3}
-%ireg:  Eq p (a %ireg , Imm p (#i)) "test {a:.64}, {a:.64}\n\tsetz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n"     {self.range(self.get_right_index(index),0,0)+2}
-%ireg:  Ne p (a %ireg , Imm p (#i)) "test {a:.64}, {a:.64}\n\tsetnz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n"    {self.range(self.get_right_index(index),0,0)+2}
+%ireg:  Lt s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetl {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"       {3}
+%ireg:  Le s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetle {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"      {3}
+%ireg:  Gt s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetg {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"       {3}
+%ireg:  Ge s32 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetge {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"      {3}
 
-%ireg:  Lt p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetb {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"      {3}
-%ireg:  Le p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetbe {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"     {3}
-%ireg:  Gt p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tseta {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"      {3}
-%ireg:  Ge p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetae {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"     {3}
+%ireg:  Eq pi64 (a %ireg , b %ireg)    "cmp {a:.64}, {b:.64}\n\tsete {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"    {3}
+%ireg:  Ne pi64 (a %ireg , b %ireg)    "cmp {a:.64}, {b:.64}\n\tsetne {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"   {3}
+%ireg:  Eq pi64 (a %ireg , Imm p (#i)) "test {a:.64}, {a:.64}\n\tsetz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n"   {self.range(self.get_right_index(index),0,0)+2}
+%ireg:  Ne pi64 (a %ireg , Imm p (#i)) "test {a:.64}, {a:.64}\n\tsetnz {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {i}\n"  {self.range(self.get_right_index(index),0,0)+2}
+
+%ireg:  Lt p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetb {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"       {3}
+%ireg:  Le p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetbe {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"      {3}
+%ireg:  Gt p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tseta {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"       {3}
+%ireg:  Ge p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetae {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"      {3}
+
+%ireg:  Lt s64 (a %ireg , b %ireg)  "cmp {a:.64}, {b:.64}\n\tsetl  {res:.8}\n\tmovsx {res:.64},{res:.8}; {res:.64} = {a:.64} == {b:.64}\n"      {3}
+%ireg:  Le s64 (a %ireg , b %ireg)  "cmp {a:.64}, {b:.64}\n\tsetle {res:.8}\n\tmovsx {res:.64},{res:.8}; {res:.64} = {a:.64} == {b:.64}\n"      {3}
+%ireg:  Gt s64 (a %ireg , b %ireg)  "cmp {a:.64}, {b:.64}\n\tsetg  {res:.8}\n\tmovsx {res:.64},{res:.8}; {res:.64} = {a:.64} == {b:.64}\n"      {3}
+%ireg:  Ge s64 (a %ireg , b %ireg)  "cmp {a:.64}, {b:.64}\n\tsetge {res:.8}\n\tmovsx {res:.64},{res:.8}; {res:.64} = {a:.64} == {b:.64}\n"      {3}
+
 %ireg:  Cvp (_r %ireg)              #"#extend/truncuate" {2}
-%ireg:  Cvs s64s32(_r %ireg)        #"#extend/truncuate" {2}
+%ireg:  Cvs s64s32s16s8(_r %ireg)   #"#extend/truncuate" {2}
 
-:       Arg pi32(r %ireg)           #"push {r:.64}\n" {1}
-%eax:   Call pi32(#name)            #"#call {name}\n" {20}
+:       Arg pi32i64(r %ireg)        #"push {r:.64}\n" {1}
+%eax:   Call pi32i64(#name)         #"#call {name}\n" {20}
 }
 
 impl Backend for BackendAMD64 {
@@ -187,7 +216,9 @@ impl Backend for BackendAMD64 {
         use crate::parser::TypeNode::*;
         match typ {
             Char => IRSize::S8,
+            Short => IRSize::S16,
             Int => IRSize::S32,
+            Long => IRSize::S64,
             Pointer => IRSize::P,
             _ => unreachable!(),
         }
@@ -233,7 +264,7 @@ impl BackendAMD64 {
                 _ => 0xfff,
             },
             _ => {
-                log::error!("range called on unsupported instruction");
+                log::error!("scale called on unsupported instruction");
                 0xfff
             }
         }
@@ -395,17 +426,30 @@ impl BackendAMD64 {
                 },
                 true,
             ),
-            Cvs(to_s, to_r, from_s, from_r) => (
-                match (to_s, from_s) {
-                    (IRSize::S64, IRSize::S32) => format!(
-                        "\tmovsx {:.64},{}\n",
-                        self.allocation[*to_r as usize][index].unwrap(),
-                        self.allocation[*from_r as usize][index].unwrap()
-                    ),
-                    _ => unreachable!(),
-                },
+            Cvs(
+                to_s @ (IRSize::S64 | IRSize::S32 | IRSize::S16 | IRSize::S8),
+                to_r,
+                from_s @ (IRSize::S64 | IRSize::S32 | IRSize::S16 | IRSize::S8),
+                from_r,
+            ) if to_s > from_s => (
+                format!(
+                    "\tmovsx {:.to_w$},{:.from_w$}\n",
+                    self.allocation[*to_r as usize][index].unwrap(),
+                    self.allocation[*from_r as usize][index].unwrap(),
+                    from_w = from_s.to_bit_width(),
+                    to_w = to_s.to_bit_width()
+                ),
                 false,
             ),
+            Cvs(
+                to_s @ (IRSize::S64 | IRSize::S32 | IRSize::S16 | IRSize::S8),
+                to_r,
+                from_s @ (IRSize::S64 | IRSize::S32 | IRSize::S16 | IRSize::S8),
+                from_r,
+            ) => {
+                let _ = (to_s, to_r, from_s, from_r);
+                (String::new(), false)
+            }
 
             _ => (String::new(), true),
         }

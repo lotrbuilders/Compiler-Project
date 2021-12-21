@@ -37,9 +37,12 @@ impl Evaluate for Expression {
 
             Function(func, arguments) => {
                 let size = context.get_size(&func.ast_type.get_return_type().unwrap().into());
-                let sizes = arguments
+                let sizes = func
+                    .ast_type
+                    .get_function_arguments()
                     .iter()
-                    .map(|exp| context.get_size(&exp.ast_type))
+                    .flat_map(|&v| v.iter())
+                    .map(|t| context.get_size(&t.clone().remove_name()))
                     .collect();
 
                 let in_registers = context.backend.get_arguments_in_registers(&sizes);

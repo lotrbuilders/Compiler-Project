@@ -118,13 +118,25 @@ pub type IRReg = u32;
 pub type IRLabel = u32;
 
 // Stores the size of a particular operation
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum IRSize {
     S8,
     S16,
     S32,
     S64,
     P,
+}
+
+impl IRSize {
+    pub fn to_bit_width(&self) -> usize {
+        match self {
+            IRSize::S8 => 8,
+            IRSize::S16 => 16,
+            IRSize::S32 => 32,
+            IRSize::S64 => 64,
+            IRSize::P => unreachable!(),
+        }
+    }
 }
 
 impl IRInstruction {
