@@ -125,7 +125,11 @@ impl Parser {
                 //Expression is unwrapped here to first parse semicolon first
                 let expression = expression?;
                 let span = begin.to(&self.peek_span());
-                Ok(Statement::Return { span, expression })
+                Ok(Statement::Return {
+                    span,
+                    expression,
+                    ast_type: Type::empty(),
+                })
             }
 
             Some(Semicolon) => {

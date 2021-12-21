@@ -23,7 +23,11 @@ impl Analysis for Statement {
                 self.analyze_control_flow(analyzer)
             }
 
-            Return { span, expression } => {
+            Return {
+                span,
+                expression,
+                ast_type,
+            } => {
                 expression.analyze(analyzer);
                 if !expression
                     .ast_type
@@ -36,6 +40,7 @@ impl Analysis for Statement {
                         expression.ast_type
                     ));
                 }
+                *ast_type = analyzer.function_return_type.clone();
             }
 
             Expression {

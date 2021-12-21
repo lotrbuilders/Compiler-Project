@@ -160,6 +160,8 @@ impl From<Token> for TypeNode {
         match token.token() {
             Char => TypeNode::Char,
             Int => TypeNode::Int,
+            Long => TypeNode::Long,
+            Short => TypeNode::Short,
             Asterisk => TypeNode::Pointer,
             Ident(name) => TypeNode::Name(name),
             _ => {

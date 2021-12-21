@@ -139,7 +139,9 @@ impl Evaluate for Expression {
 
             Assign(left, right) => {
                 let size = context.get_size(&self.ast_type);
+                let right_size = context.get_size(&right.ast_type);
                 let vreg = right.eval(result, context);
+                let vreg = context.promote(result, size, right_size, vreg);
                 let addr = left.eval_lvalue(result, context);
 
                 result.push(IRInstruction::Store(size, vreg, addr));

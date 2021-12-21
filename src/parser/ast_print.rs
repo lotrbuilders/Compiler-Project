@@ -120,6 +120,7 @@ impl Display for Statement {
 
             Return {
                 span: _,
+                ast_type: _,
                 expression,
             } => writeln!(f, "return {};", expression)?,
 

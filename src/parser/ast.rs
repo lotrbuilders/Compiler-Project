@@ -24,6 +24,7 @@ pub struct ExternalDeclaration {
 pub enum Statement {
     Return {
         span: Span,
+        ast_type: Type,
         expression: Expression,
     },
 

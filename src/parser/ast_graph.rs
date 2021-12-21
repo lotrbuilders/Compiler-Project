@@ -157,6 +157,7 @@ impl Graph for Statement {
             Return {
                 span: _,
                 expression,
+                ast_type: _,
             } => {
                 writeln!(buffer, "n{} [label=\"return\"]", number)?;
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
