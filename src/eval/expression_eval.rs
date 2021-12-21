@@ -8,6 +8,7 @@ impl Evaluate for Expression {
         use BinaryExpressionType::*;
         use ExpressionVariant::*;
         use UnaryExpressionType::*;
+        log::trace!("Eval expression {} with type {}", self, self.ast_type);
         match &self.variant {
             &ConstI(value) => {
                 let vreg = context.next_vreg();
@@ -244,7 +245,8 @@ impl Evaluate for Expression {
             }
 
             Binary(Subtract, left, right)
-                if left.ast_type.is_pointer() && right.ast_type.is_pointer() =>
+                if (left.ast_type.is_pointer() || left.ast_type.is_array())
+                    && (right.ast_type.is_pointer() || left.ast_type.is_array()) =>
             {
                 let int_ptr_size = context.int_ptr(true);
                 let left_vreg = left.eval(result, context);
@@ -266,7 +268,10 @@ impl Evaluate for Expression {
             }
 
             Binary(op @ (Subtract | Add | Index), left, right)
-                if left.ast_type.is_pointer() || right.ast_type.is_pointer() =>
+                if left.ast_type.is_pointer()
+                    || right.ast_type.is_pointer()
+                    || left.ast_type.is_array()
+                    || right.ast_type.is_array() =>
             {
                 let (left_vreg, right) = self.eval_pointer_addition(result, context);
                 let vreg = context.next_vreg();
@@ -326,12 +331,15 @@ impl Evaluate for Expression {
             // Or add conversion from integer in int* +/- int
             // Adding/subtracting pointer does not currently lead to correct behaviour
             Binary(op, left, right) => {
+                let left_type = &left.ast_type;
+                let right_type = &right.ast_type;
                 let size = context.get_size(&self.ast_type);
-                let left_size = context.get_size(&left.ast_type);
-                let right_size = context.get_size(&right.ast_type);
 
                 let left = left.eval(result, context);
                 let right = right.eval(result, context);
+
+                let left_size = context.get_size(&left_type); //
+                let right_size = context.get_size(&right_type);
 
                 let left = context.promote(result, size, left_size, left);
                 let right = context.promote(result, size, right_size, right);
@@ -436,7 +444,7 @@ impl Expression {
         context: &mut EvaluationContext,
         addr: u32,
     ) -> u32 {
-        if self.ast_type.is_array() {
+        if !self.ast_type.is_array() {
             let size = context.get_size(&self.ast_type);
             let vreg = context.next_vreg();
             result.push(IRInstruction::Load(size, vreg, addr));
