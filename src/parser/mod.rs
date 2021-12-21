@@ -68,8 +68,7 @@ impl Parser {
     fn is_type_qualifier(token: &Token) -> bool {
         use TokenType::*;
         match token.token() {
-            Int => true,
-            Char => true,
+            Char | Int | Long | Short => true,
             _ => false,
         }
     }
