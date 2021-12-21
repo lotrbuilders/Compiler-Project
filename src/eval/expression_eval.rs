@@ -27,16 +27,12 @@ impl Evaluate for Expression {
             }
 
             Ident(..) => {
-                let size = context.get_size(&self.ast_type);
                 let addr = self.eval_lvalue(result, context);
-                let vreg = context.next_vreg();
-                result.push(IRInstruction::Load(size, vreg, addr));
-                //insert_promotion(vreg, &self.ast_type, result, context)
-                vreg
+                self.optional_load(result, context, addr)
             }
 
             Function(func, arguments) => {
-                let size = context.get_size(&func.ast_type.get_return_type().unwrap().into());
+                let size = context.get_size(&self.ast_type);
                 let count = arguments.len();
                 let empty = vec![Type::empty(); count];
                 let sizes = func.ast_type.get_function_arguments().unwrap_or(&empty);
@@ -285,11 +281,8 @@ impl Evaluate for Expression {
                     }
                     Index => {
                         let addr = vreg;
-                        let vreg = context.next_vreg();
-                        let size = context.get_size(&self.ast_type);
                         result.push(IRInstruction::Add(IRSize::P, addr, left_vreg, right));
-                        result.push(IRInstruction::Load(size, vreg, addr));
-                        vreg
+                        self.optional_load(result, context, addr)
                     }
                     _ => unreachable!(),
                 }
@@ -362,12 +355,8 @@ impl Evaluate for Expression {
             Unary(Identity, exp) => exp.eval(result, context),
             Unary(Address, exp) => exp.eval_lvalue(result, context),
             Unary(Deref, _exp) => {
-                let size = context.get_size(&self.ast_type);
                 let addr = self.eval_lvalue(result, context);
-                let vreg = context.next_vreg();
-                result.push(IRInstruction::Load(size, vreg, addr));
-                //insert_promotion(vreg, &self.ast_type, result, context)
-                vreg
+                self.optional_load(result, context, addr)
             }
 
             Unary(LogNot, exp) => {
@@ -441,6 +430,22 @@ impl Expression {
 }
 
 impl Expression {
+    fn optional_load(
+        &self,
+        result: &mut Vec<IRInstruction>,
+        context: &mut EvaluationContext,
+        addr: u32,
+    ) -> u32 {
+        if self.ast_type.is_array() {
+            let size = context.get_size(&self.ast_type);
+            let vreg = context.next_vreg();
+            result.push(IRInstruction::Load(size, vreg, addr));
+            vreg
+        } else {
+            addr
+        }
+    }
+
     fn eval_pointer_addition(
         &self,
         result: &mut Vec<IRInstruction>,
