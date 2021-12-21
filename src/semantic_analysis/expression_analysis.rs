@@ -220,7 +220,19 @@ impl BinaryExpressionType {
                     }
                 }
                 Index => {
-                    todo!();
+                    if left_type.is_in(Pointer) && right_type.is_in(Integer) {
+                        left_type.deref()
+                    } else if left_type.is_in(Integer) && right_type.is_in(Pointer) {
+                        right_type.deref()
+                    } else {
+                        analyzer.errors.push(error!(
+                            span,
+                            "Incompatible types {} and {}, whilst providing an index",
+                            left_type,
+                            right_type
+                        ));
+                        Type::int()
+                    }
                 }
 
                 Equal | Inequal | Less | LessEqual | Greater | GreaterEqual => {
