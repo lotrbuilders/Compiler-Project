@@ -8,6 +8,8 @@ pub enum TokenType {
     //Type keywords
     Char,
     Int,
+    Long,
+    Short,
 
     //Control flow keywords
     If,
@@ -146,6 +148,8 @@ impl Display for TokenType {
         match self {
             Char => write!(f, "'char'"),
             Int => write!(f, "'int'"),
+            Long => write!(f, "'long'"),
+            Short => write!(f, "'short'"),
 
             If => write!(f, "'if'"),
             Else => write!(f, "'else'"),
