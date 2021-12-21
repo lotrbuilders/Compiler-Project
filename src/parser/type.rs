@@ -15,6 +15,7 @@ pub enum TypeNode {
     Long,
     Short,
     Pointer,
+    Array(usize),
     Name(String),
     Function(Vec<Type>),
 }
@@ -80,6 +81,13 @@ impl Type {
     pub fn is_pointer(&self) -> bool {
         match self.nodes.get(0) {
             Some(TypeNode::Pointer) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_array(&self) -> bool {
+        match self.nodes.get(0) {
+            Some(TypeNode::Array(..)) => true,
             _ => false,
         }
     }
@@ -216,6 +224,12 @@ fn format_type(typ: &[TypeNode], f: &mut std::fmt::Formatter<'_>) -> std::fmt::R
                     write!(f, ", {}", arg)?;
                 }
                 write!(f, ")")?;
+                break;
+            }
+            Array(size) => {
+                //Extend later when functions are fully implemented
+                format_type(&typ[0..i], f)?;
+                write!(f, "[{}]", size)?;
                 break;
             }
         };

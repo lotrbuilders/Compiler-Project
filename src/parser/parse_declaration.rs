@@ -106,7 +106,10 @@ impl Parser {
                         self.invalid_type(&typ);
                     }
                 }
-                TypeNode::Function(..) | TypeNode::Name(..) | TypeNode::Pointer => unreachable!(),
+                TypeNode::Function(..)
+                | TypeNode::Name(..)
+                | TypeNode::Array(..)
+                | TypeNode::Pointer => unreachable!(),
             }
         }
         vec![type_specifier.expect("failure to check for type specifer")].into()
