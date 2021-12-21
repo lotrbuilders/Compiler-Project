@@ -269,7 +269,7 @@ impl Evaluate for Expression {
                 vreg
             }
 
-            Binary(op @ (Subtract | Add), left, right)
+            Binary(op @ (Subtract | Add | Index), left, right)
                 if left.ast_type.is_pointer() || right.ast_type.is_pointer() =>
             {
                 // Swap pointers such that left is always a pointer
@@ -315,6 +315,7 @@ impl Evaluate for Expression {
                 result.push(match op {
                     Add => IRInstruction::Add(IRSize::P, vreg, left_vreg, right),
                     Subtract => IRInstruction::Sub(IRSize::P, vreg, left_vreg, right),
+                    Index => todo!(),
                     _ => unreachable!(),
                 });
                 vreg
@@ -379,7 +380,7 @@ impl Evaluate for Expression {
                     BinAnd => IRInstruction::And(size, vreg, left, right),
 
                     Comma | LogOr | LogAnd | Equal | Inequal | Less | LessEqual | Greater
-                    | GreaterEqual => unreachable!(),
+                    | GreaterEqual | Index => unreachable!(),
                 });
                 vreg
             }

@@ -104,6 +104,7 @@ pub enum ExpressionVariant {
 
 #[derive(Debug, Clone)]
 pub enum BinaryExpressionType {
+    Index,
     Add,
     Subtract,
     Multiply,

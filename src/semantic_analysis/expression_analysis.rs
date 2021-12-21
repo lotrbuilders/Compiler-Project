@@ -219,6 +219,9 @@ impl BinaryExpressionType {
                         (left_type, right_type).promote()
                     }
                 }
+                Index => {
+                    todo!();
+                }
 
                 Equal | Inequal | Less | LessEqual | Greater | GreaterEqual => {
                     if left_type.is_in(Pointer) && right_type.is_in(Pointer) {
@@ -258,7 +261,7 @@ impl BinaryExpressionType {
                 | Greater | GreaterEqual => Arithmetic,
                 BinOr | BinAnd => Integer,
                 LogOr | LogAnd => Scalar,
-                Comma => unreachable!(),
+                Comma | Index => unreachable!(),
             }
         }
     }

@@ -14,8 +14,9 @@ impl Expression {
             ExpressionVariant::Assign(..)
             | ExpressionVariant::Function(..)
             | ExpressionVariant::Ident(..)
-            | ExpressionVariant::CString(..) => self,
-            ExpressionVariant::Unary(
+            | ExpressionVariant::CString(..)
+            | ExpressionVariant::Binary(BinaryExpressionType::Index, ..)
+            | ExpressionVariant::Unary(
                 UnaryExpressionType::Deref | UnaryExpressionType::Address,
                 ..,
             ) => self,
@@ -110,6 +111,7 @@ impl BinaryExpressionType {
             LogOr => (left != 0 || right != 0) as i128,
             LogAnd => (left != 0 && right != 0) as i128,
             Comma => right,
+            Index => unreachable!(),
         }
     }
 }

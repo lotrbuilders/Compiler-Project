@@ -171,6 +171,10 @@ impl Display for Expression {
                 write!(f, "({} {})", op, exp)?;
             }
 
+            Binary(BinaryExpressionType::Index, left, right) => {
+                write!(f, "({}[{}])", left, right)?;
+            }
+
             Binary(op, left, right) => {
                 write!(f, "({} {} {})", left, op, right)?;
             }
@@ -194,6 +198,7 @@ impl Display for BinaryExpressionType {
             f,
             "{}",
             match self {
+                Index => "[]",
                 Add => "+",
                 Subtract => "-",
                 Multiply => "*",
