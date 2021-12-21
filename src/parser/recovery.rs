@@ -94,7 +94,7 @@ pub fn get_braces(c: char) -> (TokenType, TokenType) {
     match c {
         '{' | '}' => (LBrace, RBrace),
         '(' | ')' => (LParenthesis, RParenthesis),
-        //'[' | ']' => ('[', ']'),
+        '[' | ']' => (LSquare, RSquare),
         _ => {
             log::error!("Brace recovery on non brace character {}", c);
             (LBrace, RBrace)

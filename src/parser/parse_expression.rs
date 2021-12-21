@@ -66,6 +66,11 @@ impl Parser {
         let mut exp = self.parse_primary()?;
         loop {
             match self.peek_type() {
+                Some(LSquare) => {
+                    let token = self.peek().unwrap();
+                    let right = self.parse_braced('[', Parser::parse_expression)?;
+                    exp = new_binary_expression(&token, exp, right);
+                }
                 Some(LParenthesis) => {
                     let arguments = self.parse_braced('(', Parser::parse_argument_list)?;
                     let span = begin.to(&self.peek_span());
@@ -256,6 +261,7 @@ fn new_binary_expression(token: &Token, left: Expression, right: Expression) -> 
         TokenType::Or => BinOr,
         TokenType::And => BinAnd,
         TokenType::Comma => Comma,
+        TokenType::LSquare => Index,
         _ => unreachable!(),
     };
     Expression {
