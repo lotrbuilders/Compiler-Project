@@ -29,6 +29,8 @@ pub enum TokenType {
     LParenthesis,
     RParenthesis,
     Semicolon,
+    LSquare,
+    RSquare,
 
     //Operators symbols
     Assign,
@@ -94,6 +96,8 @@ impl From<char> for TokenType {
             '}' => RBrace,
             '(' => LParenthesis,
             ')' => RParenthesis,
+            '[' => LSquare,
+            ']' => RSquare,
             ';' => Semicolon,
             '=' => Assign,
             '+' => Plus,
@@ -165,6 +169,8 @@ impl Display for TokenType {
             RBrace => write!(f, "'}}'"),
             LParenthesis => write!(f, "'('"),
             RParenthesis => write!(f, "')'"),
+            LSquare => write!(f, "'['"),
+            RSquare => write!(f, "']'"),
             Semicolon => write!(f, "';'"),
 
             Assign => write!(f, "'='"),
