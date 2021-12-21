@@ -14,4 +14,4 @@ tests/src/stage_*/valid/*         #ignore all files in each directory
 !tests/src/stage_*/valid/*.h      #unignore .h header files in each directory
 
 tests/src/stage_*/valid/*
-!tests/src/stage_*/valid*.c
+!tests/src/stage_*/valid/*.c
