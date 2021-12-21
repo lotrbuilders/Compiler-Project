@@ -16,9 +16,6 @@ pub struct Lexer {
 
 impl Lexer {
     pub fn new(filename: &String) -> Lexer {
-        unsafe {
-            file_table::reset();
-        }
         file_table::add_sourcefile(filename);
         Lexer {
             file_index: 0,
@@ -165,6 +162,8 @@ impl Lexer {
         match identifier.as_str() {
             "char" => Token::new(Char, span),
             "int" => Token::new(Int, span),
+            "long" => Token::new(Long, span),
+            "short" => Token::new(Short, span),
             "if" => Token::new(If, span),
             "else" => Token::new(Else, span),
             "while" => Token::new(While, span),
