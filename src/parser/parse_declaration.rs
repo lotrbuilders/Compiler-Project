@@ -54,23 +54,30 @@ impl Parser {
             )
         )?;
         result.push(name.into());
-        if let Some(TokenType::LParenthesis) = self.peek_type() {
-            let arguments = self.parse_braced('(', Parser::parse_parameter_type_list)?;
-            result.push(TypeNode::Function(arguments))
-        } else if let Some(TokenType::LSquare) = self.peek_type() {
-            let expression = self.parse_braced('[', Parser::parse_conditional)?;
-            let expression = expression.const_eval();
-            let number = if let ExpressionVariant::ConstI(value) = &expression.variant {
-                *value
-            } else {
-                self.errors.push(error!(
-                    expression.span,
-                    "Expected a constant expression in array declaration"
-                ));
-                1
-            };
-            result.push(TypeNode::Array(number as usize));
+        loop {
+            match self.peek_type() {
+                Some(TokenType::LParenthesis) => {
+                    let arguments = self.parse_braced('(', Parser::parse_parameter_type_list)?;
+                    result.push(TypeNode::Function(arguments))
+                }
+                Some(TokenType::LSquare) => {
+                    let expression = self.parse_braced('[', Parser::parse_conditional)?;
+                    let expression = expression.const_eval();
+                    let number = if let ExpressionVariant::ConstI(value) = &expression.variant {
+                        *value
+                    } else {
+                        self.errors.push(error!(
+                            expression.span,
+                            "Expected a constant expression in array declaration"
+                        ));
+                        1
+                    };
+                    result.push(TypeNode::Array(number as usize));
+                }
+                _ => break,
+            }
         }
+
         result.append(&mut pointers);
         Ok(result.into())
     }
