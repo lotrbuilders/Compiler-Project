@@ -6,7 +6,7 @@ use crate::{error, expect};
 impl Parser {
     pub(super) fn parse_declaration(&mut self) -> Result<Type, ()> {
         let base_type = self.parse_declaration_specifiers()?;
-        self.check_declaration_specifiers(&base_type);
+        let base_type = self.check_declaration_specifiers(base_type);
         let declarator = self.parse_declarator()?;
         Ok(Type::combine(base_type, declarator))
     }
@@ -75,20 +75,45 @@ impl Parser {
         Ok(arguments)
     }
 
-    fn check_declaration_specifiers(&mut self, typ: &Type) {
-        let mut type_specifier_count = 0;
+    fn check_declaration_specifiers(&mut self, typ: Type) -> Type {
+        use TypeNode::*;
+        let mut type_specifier = None;
+        let mut int_seen = false;
         for node in &typ.nodes {
             match node {
-                TypeNode::Char | TypeNode::Int | TypeNode::Long | TypeNode::Short => {
-                    type_specifier_count += 1
+                TypeNode::Char => {
+                    if let Some(_) = type_specifier {
+                        self.invalid_type(&typ);
+                    }
+                    type_specifier = Some(Char);
+                }
+                TypeNode::Int => {
+                    if let Some(TypeNode::Char) = type_specifier {
+                        self.invalid_type(&typ);
+                    } else if int_seen {
+                        self.invalid_type(&typ);
+                    } else {
+                        if let None = type_specifier {
+                            type_specifier = Some(Int)
+                        }
+                        int_seen = true;
+                    }
+                }
+                t @ (TypeNode::Long | TypeNode::Short) => {
+                    if let Some(TypeNode::Int) | None = type_specifier {
+                        type_specifier = Some(t.clone());
+                    } else {
+                        self.invalid_type(&typ);
+                    }
                 }
                 TypeNode::Function(..) | TypeNode::Name(..) | TypeNode::Pointer => unreachable!(),
             }
         }
+        vec![type_specifier.expect("failure to check for type specifer")].into()
+    }
+    fn invalid_type(&mut self, typ: &Type) {
         let span = self.peek_span();
-        if type_specifier_count != 1 {
-            self.errors
-                .push(error!(span, "Multiple type specifiers provided in {}", typ));
-        }
+        self.errors
+            .push(error!(span, "Invalid type specifiers provided: {}", typ));
     }
 }
