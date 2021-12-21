@@ -564,11 +564,11 @@ impl BackendAMD64 {
                 // Either a normal variable or an argument passed via register
                 None | Some(Some(..)) => match variable_types[i].size {
                     IRSize::S32 | IRSize::S8 | IRSize::S16 => {
-                        offset += -4;
+                        offset += -4 * variable_types[i].count as i32; // Wrong for types smaller then S32 at the moment
                         offset
                     }
                     IRSize::P | IRSize::S64 => {
-                        offset += -8;
+                        offset += -8 * variable_types[i].count as i32;
                         offset
                     }
                 },
