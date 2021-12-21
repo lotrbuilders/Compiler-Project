@@ -79,7 +79,9 @@ impl Parser {
         let mut type_specifier_count = 0;
         for node in &typ.nodes {
             match node {
-                TypeNode::Char | TypeNode::Int => type_specifier_count += 1,
+                TypeNode::Char | TypeNode::Int | TypeNode::Long | TypeNode::Short => {
+                    type_specifier_count += 1
+                }
                 TypeNode::Function(..) | TypeNode::Name(..) | TypeNode::Pointer => unreachable!(),
             }
         }
