@@ -61,7 +61,9 @@ impl Type {
     fn is_in2(typ: &[TypeNode], class: TypeClass) -> bool {
         use TypeClass::*;
         match class {
-            StandardSignedInteger => matches!(typ[0], TypeNode::Int),
+            StandardSignedInteger => {
+                matches!(typ[0], TypeNode::Int | TypeNode::Long | TypeNode::Short)
+            }
             Function => matches!(typ[0], TypeNode::Function(_)),
             Pointer => matches!(typ[0], TypeNode::Pointer),
             StandardInteger => Type::is_in2(typ, StandardSignedInteger),
