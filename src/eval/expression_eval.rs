@@ -1,6 +1,6 @@
 use super::{Evaluate, EvaluationContext};
 use crate::backend::ir::*;
-use crate::parser::ast::*;
+use crate::parser::{ast::*, Type};
 use crate::semantic_analysis::type_promotion::TypePromotion;
 
 impl Evaluate for Expression {
@@ -37,14 +37,28 @@ impl Evaluate for Expression {
 
             Function(func, arguments) => {
                 let size = context.get_size(&func.ast_type.get_return_type().unwrap().into());
-                let sizes = func
-                    .ast_type
-                    .get_function_arguments()
+                let count = arguments.len();
+                let empty = vec![Type::empty(); count];
+                let sizes = func.ast_type.get_function_arguments().unwrap_or(&empty);
+                let argument_sizes: Vec<IRSize> = arguments
                     .iter()
-                    .flat_map(|&v| v.iter())
-                    .map(|t| context.get_size(&t.clone().remove_name()))
+                    .map(|e| context.get_size(&e.ast_type))
                     .collect();
 
+                let sizes = if !sizes.is_empty() {
+                    sizes
+                        .iter()
+                        .map(|t| context.get_size(&t.clone().remove_name()))
+                        .collect()
+                } else {
+                    argument_sizes.clone()
+                };
+
+                log::debug!(
+                    "Evaluating call {} with arguments {:?}",
+                    func.ast_type,
+                    sizes
+                );
                 let in_registers = context.backend.get_arguments_in_registers(&sizes);
                 let count = arguments.len();
                 use crate::backend::Direction;
