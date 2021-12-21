@@ -1,3 +1,3 @@
-*/*/*         #ignore all files in each directory
-!*/*/*.c      #unignore .c files in each directory
-!*/*/*.h      #unignore .h header files in each directory
+/*/*/*         #ignore all files in each directory
+!/*/*/*.c      #unignore .c files in each directory
+!/*/*/*.h      #unignore .h header files in each directory
