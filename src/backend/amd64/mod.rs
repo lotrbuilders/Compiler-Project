@@ -9,14 +9,14 @@ use self::registers::*;
 
 rburg::rburg_main! {
     BackendAMD64,
-:       Ret pi32i64(_a %eax)        #"return\n"
+:       Ret pi64i32i16i8(_a %eax)    #"return\n"
 :       Store i8(r %ireg, a %ireg)   "mov [{a:.64}],{r:.8}\n"
 :       Store i8(r %ireg, a adr)     "mov [{a}],{r:.8}\n"
 :       Store i16(r %ireg, a %ireg)  "mov [{a:.64}],{r:.16}\n"
 :       Store i16(r %ireg, a adr)    "mov [{a}],{r:.16}\n"
 :       Store i32(r %ireg, a %ireg)  "mov [{a:.64}],{r}\n"
 :       Store i32(r %ireg, a adr)    "mov [{a}],{r}\n"
-:       Store Pi64(r %ireg, a %ireg) "mov [{a}],{r:.64}\n"
+:       Store Pi64(r %ireg, a %ireg) "mov [{a:.64}],{r:.64}\n"
 :       Store Pi64(r %ireg, a adr)   "mov [{a}],{r:.64}\n"
 :       Store(Imm(#i),a %ireg)       "mov dword[{a:.64}],{i}\n"
 :       Store(Imm(#i),a adr)         "mov dword[{a}],{i}\n"
@@ -53,20 +53,23 @@ mcon64:  m mem64                    "{m}"
 %ireg:  m mcon64                    "mov {res:.64}, {m}\n"      {1}
 %ireg:  a adr                       "lea {res:.64}, [{a}]\n"    {1}
 
-%ireg:  Load Pi64(a adr)            "mov {res:.64}, [{a}]\n"    {1}
-%ireg:  Load Pi64(r %ireg)          "mov {res:.64}, [{r}]\n"    {1}
 %ireg:  Imm pi64(#i)                "mov {res:.64}, {i}\n"
 
+%ireg: Load i8(a adr)               "mov {res:.8}, [{a}]\n"
+%ireg: Load i8(a %ireg)             "mov {res:.8}, [{a:.64}]\n"
+%ireg: Load i16(a adr)              "mov {res:.16}, [{a}]\n"
+%ireg: Load i16(a %ireg)            "mov {res:.16}, [{a:.64}]\n"
+
 %ireg:  Cvs s32(Load s8(a adr))     "movsx {res:.32}, byte [{a}]\n"
-%ireg:  Cvs s32(Load s8(r %ireg))   "movsx {res:.32}, byte [{r}]\n"
-%ireg:  Cvs s32(Load s16(a adr))     "movsx {res:.32}, word [{a}]\n"
-%ireg:  Cvs s32(Load s16(r %ireg))   "movsx {res:.32}, word [{r}]\n"
+%ireg:  Cvs s32(Load s8(r %ireg))   "movsx {res:.32}, byte [{r:.64}]\n"
+%ireg:  Cvs s32(Load s16(a adr))    "movsx {res:.32}, word [{a}]\n"
+%ireg:  Cvs s32(Load s16(r %ireg))  "movsx {res:.32}, word [{r:.64}]\n"
 %ireg:  Cvs s64(Load s8(a adr))     "movsx {res:.64}, byte [{a}]\n"
-%ireg:  Cvs s64(Load s8(r %ireg))   "movsx {res:.64}, byte [{r}]\n"
+%ireg:  Cvs s64(Load s8(r %ireg))   "movsx {res:.64}, byte [{r:.64}]\n"
 %ireg:  Cvs s64(Load s16(a adr))     "movsx {res:.64}, word [{a}]\n"
-%ireg:  Cvs s64(Load s16(r %ireg))   "movsx {res:.64}, word [{r}]\n"
+%ireg:  Cvs s64(Load s16(r %ireg))   "movsx {res:.64}, word [{r:.64}]\n"
 %ireg:  Cvs s64(Load s32(a adr))     "movsx {res:.64}, dword [{a}]\n"
-%ireg:  Cvs s64(Load s32(r %ireg))   "movsx {res:.64}, dword [{r}]\n"
+%ireg:  Cvs s64(Load s32(r %ireg))   "movsx {res:.64}, dword [{r:.64}]\n"
 
 %ireg:  Add(a %ireg , b %ireg)      ?"add {res}, {b} ; {res} = {a} + {b}\n"   {1}
 %ireg:  Add pi64(a %ireg , b %ireg) ?"add {res:.64}, {b:.64} ; {res:.64} = {a:.64} + {b:.64}\n"   {1}
@@ -120,7 +123,7 @@ mcon64:  m mem64                    "{m}"
 %ireg:  Cvs s64s32s16s8(_r %ireg)   #"#extend/truncuate" {2}
 
 :       Arg pi32i64(r %ireg)        #"push {r:.64}\n" {1}
-%eax:   Call pi32i64(#name)         #"#call {name}\n" {20}
+%eax:   Call pi64i32i16i8(#name)    #"#call {name}\n" {20}
 }
 
 impl Backend for BackendAMD64 {
