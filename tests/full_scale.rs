@@ -207,11 +207,6 @@ macro_rules! tests {
         )*
     };
 }
-/*
-#[test]
-fn full_scale_test() {
-
-}*/
 
 tests! {
     full_scale_stage_1: ("src/stage_1",test_valid_full_scale,test_invalid_full_scale)

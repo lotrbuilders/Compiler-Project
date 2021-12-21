@@ -456,7 +456,7 @@ impl BackendAMD64 {
     fn emit_strings(&self, strings: &Vec<String>) -> String {
         let mut result = String::from("section .data\n");
         for (string, i) in strings.iter().zip(0..) {
-            result.push_str(&format!("__string{}:\n\tdb '{}',0\n", i, string));
+            result.push_str(&format!("__string{}:\n\tdb {:?},0\n", i, string));
         }
         result
     }

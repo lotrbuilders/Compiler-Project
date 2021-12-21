@@ -231,7 +231,7 @@ impl Lexer {
             }
         }
 
-        let err = if string.is_empty() {
+        let err = if !errors.is_empty() {
             Err(errors)
         } else {
             Ok(())
@@ -289,14 +289,14 @@ impl Lexer {
                 Some('r') => ('\r', Ok(())),
                 Some('t') => ('\t', Ok(())),
                 Some('v') => ('\x0b', Ok(())),
-                Some(c) => (
+                Some(c) if c != '\n' => (
                     '_',
                     Err(error!(
                         start,
                         "Expected an escape sequence in string/character, but found '\\{}'", c
                     )),
                 ),
-                None => (
+                _ => (
                     '_',
                     Err(error!(
                         start,
@@ -305,12 +305,12 @@ impl Lexer {
                 ),
             },
             //   \' \" \? \\ \a \b \f \n \r \t \v
-            Some(c) if c.is_ascii() => (c, Ok(())),
+            Some(c) if c.is_ascii() && c != '\n' => (c, Ok(())),
             Some(c) => (
                 '_',
                 Err(error!(
                     start,
-                    "Expected an ascii character in string/character, but found '{}'", c
+                    "Expected an ascii character in string/character, but found {:?}", c
                 )),
             ),
             None => (
