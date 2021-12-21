@@ -312,13 +312,25 @@ impl Evaluate for Expression {
                 }
 
                 let vreg = context.next_vreg();
-                result.push(match op {
-                    Add => IRInstruction::Add(IRSize::P, vreg, left_vreg, right),
-                    Subtract => IRInstruction::Sub(IRSize::P, vreg, left_vreg, right),
-                    Index => todo!(),
+                match op {
+                    Add => {
+                        result.push(IRInstruction::Add(IRSize::P, vreg, left_vreg, right));
+                        vreg
+                    }
+                    Subtract => {
+                        result.push(IRInstruction::Sub(IRSize::P, vreg, left_vreg, right));
+                        vreg
+                    }
+                    Index => {
+                        let addr = vreg;
+                        let vreg = context.next_vreg();
+                        let size = context.get_size(&self.ast_type);
+                        result.push(IRInstruction::Add(IRSize::P, addr, left_vreg, right));
+                        result.push(IRInstruction::Load(size, vreg, addr));
+                        vreg
+                    }
                     _ => unreachable!(),
-                });
-                vreg
+                }
             }
 
             Binary(Comma, left, right) => {
