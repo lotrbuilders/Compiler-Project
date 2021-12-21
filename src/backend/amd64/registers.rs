@@ -132,6 +132,25 @@ impl Register {
         }
     }
 
+    pub fn to_string_i16(&self) -> &'static str {
+        match self {
+            Self::Rax => "ax",
+            Self::Rcx => "cx",
+            Self::Rdx => "dx",
+            Self::Rdi => "di",
+            Self::Rsi => "si",
+            Self::R8 => "r8w",
+            Self::R9 => "r9w",
+            Self::R10 => "r10w",
+            Self::R11 => "r11w",
+            Self::Rbx => "bx",
+            Self::R12 => "r12w",
+            Self::R13 => "r13w",
+            Self::R14 => "r14w",
+            Self::R15 => "r15w",
+        }
+    }
+
     pub fn to_string_i8(&self) -> &'static str {
         match self {
             Self::Rax => "al",
@@ -156,6 +175,7 @@ impl Display for Register {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match f.precision() {
             Some(8) => write!(f, "{}", self.to_string_i8())?,
+            Some(16) => write!(f, "{}", self.to_string_i16())?,
             Some(32) => write!(f, "{}", self.to_string_i32())?,
             Some(64) => write!(f, "{}", self.to_string_i64())?,
             Some(s) => log::error!("Unsupported precision {}", s),
