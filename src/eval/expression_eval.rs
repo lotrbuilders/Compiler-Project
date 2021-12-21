@@ -1,6 +1,6 @@
 use super::{Evaluate, EvaluationContext};
 use crate::backend::ir::*;
-use crate::parser::{ast::*, Type};
+use crate::parser::ast::*;
 use crate::semantic_analysis::type_promotion::TypePromotion;
 
 impl Evaluate for Expression {
@@ -31,7 +31,8 @@ impl Evaluate for Expression {
                 let addr = self.eval_lvalue(result, context);
                 let vreg = context.next_vreg();
                 result.push(IRInstruction::Load(size, vreg, addr));
-                insert_promotion(vreg, &self.ast_type, result, context)
+                //insert_promotion(vreg, &self.ast_type, result, context)
+                vreg
             }
 
             Function(func, arguments) => {
@@ -50,7 +51,10 @@ impl Evaluate for Expression {
                     Direction::Left2Right => {
                         for arg in 0..arguments.len() {
                             if !in_registers[arg] {
+                                let arg_size = context.get_size(&arguments[arg].ast_type);
                                 let vreg = arguments[arg].eval(result, context);
+                                let vreg = context.promote(result, sizes[arg], arg_size, vreg);
+
                                 if first {
                                     arg_index = Some(result.len());
                                     result.push(IRInstruction::Arg(
@@ -68,7 +72,9 @@ impl Evaluate for Expression {
                     Direction::Right2Left => {
                         for arg in (0..arguments.len()).rev() {
                             if !in_registers[arg] {
+                                let arg_size = context.get_size(&arguments[arg].ast_type);
                                 let vreg = arguments[arg].eval(result, context);
+                                let vreg = context.promote(result, sizes[arg], arg_size, vreg);
                                 if first {
                                     arg_index = Some(result.len());
                                     result.push(IRInstruction::Arg(
@@ -88,12 +94,24 @@ impl Evaluate for Expression {
                 let arguments = match context.backend.argument_evaluation_direction_registers() {
                     Direction::Left2Right => (0..arguments.len())
                         .filter(|&arg| in_registers[arg])
-                        .map(|arg| Some(arguments[arg].eval(result, context)))
+                        .map(|arg| {
+                            Some({
+                                let arg_size = context.get_size(&arguments[arg].ast_type);
+                                let vreg = arguments[arg].eval(result, context);
+                                context.promote(result, sizes[arg], arg_size, vreg)
+                            })
+                        })
                         .collect(),
                     Direction::Right2Left => (0..arguments.len())
                         .rev()
                         .filter(|&arg| in_registers[arg])
-                        .map(|arg| Some(arguments[arg].eval(result, context)))
+                        .map(|arg| {
+                            Some({
+                                let arg_size = context.get_size(&arguments[arg].ast_type);
+                                let vreg = arguments[arg].eval(result, context);
+                                context.promote(result, sizes[arg], arg_size, vreg)
+                            })
+                        })
                         .collect(),
                 };
 
@@ -132,15 +150,20 @@ impl Evaluate for Expression {
             Ternary(cond, left, right) => {
                 let cond_size = context.get_size(&cond.ast_type);
                 let size = context.get_size(&self.ast_type);
+                let left_size = context.get_size(&left.ast_type);
+                let right_size = context.get_size(&right.ast_type);
+
                 let cond = cond.eval(result, context);
 
                 let (if_index, _) = context.insert_place_holder_jump(result);
                 let left = left.eval(result, context);
+                let left = context.promote(result, size, left_size, left);
 
                 let if_label = context.get_current_label();
                 let (else_index, _) = context.insert_place_holder_jump(result);
 
                 let right = right.eval(result, context);
+                let right = context.promote(result, size, right_size, right);
 
                 let vreg = context.next_vreg();
                 let else_label = context.get_current_label();
@@ -289,11 +312,16 @@ impl Evaluate for Expression {
                 left,
                 right,
             ) => {
-                let size =
-                    op.get_size(context, &left.ast_type.promote(), &right.ast_type.promote());
+                let size = context
+                    .get_size(&(left.ast_type.promote(), right.ast_type.promote()).promote());
+                let left_size = context.get_size(&left.ast_type);
+                let right_size = context.get_size(&right.ast_type);
+
                 let left = left.eval(result, context);
                 let right = right.eval(result, context);
-                let vreg = context.next_vreg();
+                let left = context.promote(result, size, left_size, left);
+                let vreg = context.promote(result, size, right_size, right);
+
                 result.push(match op {
                     Equal => IRInstruction::Eq(size, vreg, left, right),
                     Inequal => IRInstruction::Ne(size, vreg, left, right),
@@ -311,9 +339,16 @@ impl Evaluate for Expression {
             // Adding/subtracting pointer does not currently lead to correct behaviour
             Binary(op, left, right) => {
                 let size = context.get_size(&self.ast_type);
+                let left_size = context.get_size(&left.ast_type);
+                let right_size = context.get_size(&right.ast_type);
+
                 let left = left.eval(result, context);
                 let right = right.eval(result, context);
+
+                let left = context.promote(result, size, left_size, left);
+                let right = context.promote(result, size, right_size, right);
                 let vreg = context.next_vreg();
+
                 result.push(match op {
                     Add => IRInstruction::Add(size, vreg, left, right),
                     Subtract => IRInstruction::Sub(size, vreg, left, right),
@@ -336,27 +371,38 @@ impl Evaluate for Expression {
                 let addr = self.eval_lvalue(result, context);
                 let vreg = context.next_vreg();
                 result.push(IRInstruction::Load(size, vreg, addr));
-                insert_promotion(vreg, &self.ast_type, result, context)
+                //insert_promotion(vreg, &self.ast_type, result, context)
+                vreg
+            }
+
+            Unary(LogNot, exp) => {
+                let size = context.get_size(&exp.ast_type);
+                let left = exp.eval(result, context);
+                let right = context.next_vreg();
+                let vreg = context.next_vreg();
+                result.push(IRInstruction::Imm(size, right, 0));
+                result.push(IRInstruction::Eq(size, vreg, left, right));
+                vreg
             }
 
             Unary(op, exp) => {
                 let size = context.get_size(&self.ast_type);
                 let exp_size = context.get_size(&exp.ast_type);
+
                 let left = exp.eval(result, context);
+                let left = context.promote(result, size, exp_size, left);
                 let right = context.next_vreg();
                 let vreg = context.next_vreg();
 
                 match op {
                     Negate => result.push(IRInstruction::Imm(size, right, 0)),
-                    LogNot => result.push(IRInstruction::Imm(exp_size, right, 0)),
                     BinNot => result.push(IRInstruction::Imm(size, right, -1)),
                     _ => (),
                 }
                 result.push(match op {
                     Negate => IRInstruction::Sub(size, vreg, right, left),
                     BinNot => IRInstruction::Xor(size, vreg, left, right),
-                    LogNot => IRInstruction::Eq(exp_size, vreg, left, right),
-                    Identity | Address | Deref => unreachable!(),
+                    LogNot | Identity | Address | Deref => unreachable!(),
                 });
                 vreg
             }
@@ -391,6 +437,7 @@ impl Expression {
     }
 }
 
+/*
 fn insert_promotion(
     vreg: u32,
     ast_type: &Type,
@@ -404,4 +451,4 @@ fn insert_promotion(
     } else {
         vreg
     }
-}
+}*/

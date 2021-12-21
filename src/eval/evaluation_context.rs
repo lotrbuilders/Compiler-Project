@@ -152,6 +152,20 @@ impl<'a> EvaluationContext<'a> {
             _ => unreachable!(),
         }
     }
+    pub fn promote(
+        &mut self,
+        result: &mut Vec<IRInstruction>,
+        size: IRSize,
+        from: IRSize,
+        vreg: u32,
+    ) -> u32 {
+        if size == from {
+            return vreg;
+        }
+        let temp = self.next_vreg();
+        result.push(IRInstruction::Cvs(size, temp, from, vreg));
+        temp
+    }
 }
 
 impl BinaryExpressionType {
