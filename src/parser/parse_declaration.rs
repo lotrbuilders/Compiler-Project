@@ -45,15 +45,12 @@ impl<'a> Parser<'a> {
         }
 
         let mut result = Vec::<TypeNode>::new();
-        let name = expect!(
-            self,
-            TokenType::Ident(_),
-            RecoveryStrategy::or(
-                RecoveryStrategy::Until(';'),
-                RecoveryStrategy::UntilBraced('{')
-            )
-        )?;
-        result.push(name.into());
+        if let Some(TokenType::Ident(_)) = self.peek_type() {
+            let name = self.peek().unwrap();
+            self.next();
+            result.push(name.into());
+        }
+
         loop {
             match self.peek_type() {
                 Some(TokenType::LParenthesis) => {

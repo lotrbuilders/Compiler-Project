@@ -21,7 +21,7 @@ impl Parser<'_> {
     // <expression> ::= <unary-expression> | <expression> <bin-op> <expression>
     // <bin-op> ::= '+' | '-' | '*' | '/' | '==' | '!=' | '<' | '<=' | '>' | '>=' | '||' | '&&'
     fn pratt_parse(&mut self, min_bp: u8) -> Result<Expression, ()> {
-        let mut left = self.parse_unary()?;
+        let mut left = self.parse_cast()?;
         while let Some(token) = is_binary_operator(self.peek()) {
             let (l_bp, r_bp) = binding_power(&token);
             if l_bp < min_bp {
@@ -50,7 +50,6 @@ impl Parser<'_> {
         let exp = match (self.peek_type(), some_type) {
             (Some(LParenthesis), Some(true)) => {
                 let ast_type = self.parse_braced('(', Parser::parse_declaration)?;
-                self.next();
                 let exp = self.parse_cast()?;
                 let span = begin.to(&self.peek_span());
                 new_cast_expression(span, ast_type, exp)
