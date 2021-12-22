@@ -86,7 +86,7 @@ impl Lexer {
                     }
                 },
                 ';' | '{' | '}' | '(' | ')' | '[' | ']' | '+' | '*' | '/' | '~' | '?' | ':'
-                | ',' => {
+                | ',' | '.' => {
                     self.next(input);
                     output.push(Token::new(token::punct(c), self.here()));
                 }
