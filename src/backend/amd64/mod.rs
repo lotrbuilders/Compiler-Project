@@ -503,7 +503,7 @@ impl BackendAMD64 {
     fn emit_strings(&self, strings: &Vec<String>) -> String {
         let mut result = String::from("section .data\n");
         for (string, i) in strings.iter().zip(0..) {
-            result.push_str(&format!("__string{}:\n\tdb {:?},0\n", i, string));
+            result.push_str(&format!(".__string{}:\n\tdb {:?},0\n", i, string));
         }
         result
     }
@@ -560,16 +560,17 @@ impl BackendAMD64 {
         let mut result = Vec::new();
 
         for i in 0..variable_types.len() {
+            let count = variable_types[i].count as i32;
             result.push(match arguments.arguments.get(i) {
                 // Either a normal variable or an argument passed via register
                 None | Some(Some(..)) => match variable_types[i].size {
                     IRSize::S32 | IRSize::S8 | IRSize::S16 => {
-                        offset += -4 * variable_types[i].count as i32; // Wrong for types smaller then S32 at the moment
-                        offset
+                        offset += -4 * count; // Wrong for types smaller then S32 at the moment
+                        offset //+ 4 * (count - 1)
                     }
                     IRSize::P | IRSize::S64 => {
-                        offset += -8 * variable_types[i].count as i32;
-                        offset
+                        offset += -8 * count;
+                        offset //+ 4 * (count - 1)
                     }
                 },
                 // Stack argument
