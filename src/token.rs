@@ -55,6 +55,7 @@ pub enum TokenType {
     Or,
     And,
     Comma,
+    Period,
     Arrow,
 
     //Types with a value
@@ -115,6 +116,7 @@ impl From<char> for TokenType {
             ':' => Colon,
             '|' => Or,
             '&' => And,
+            '.' => Period,
             ',' => Comma,
             _ => {
                 log::warn!(
@@ -199,6 +201,7 @@ impl Display for TokenType {
             Or => write!(f, "'|'"),
             And => write!(f, "'&'"),
             Comma => write!(f, "','"),
+            Period => write!(f, "'.'"),
             Arrow => write!(f, "'->'"),
 
             Ident(val) => write!(f, "'{}'", val),
