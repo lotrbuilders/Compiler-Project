@@ -173,6 +173,7 @@ impl Lexer {
             "break" => Token::new(Break, span),
             "continue" => Token::new(Continue, span),
             "return" => Token::new(Return, span),
+            "sizeof" => Token::new(Sizeof, span),
             _ => Token::new(Ident(identifier), span),
         }
     }
