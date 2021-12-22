@@ -55,6 +55,7 @@ pub enum TokenType {
     Or,
     And,
     Comma,
+    Arrow,
 
     //Types with a value
     ConstI(u64),
@@ -137,6 +138,7 @@ impl From<&str> for TokenType {
             ">=" => GreaterEqual,
             "||" => LogicalOr,
             "&&" => LogicalAnd,
+            "->" => Arrow,
             _ => {
                 log::warn!(
                     "&str to TokenType conversion with unimplemented string {}",
@@ -197,6 +199,7 @@ impl Display for TokenType {
             Or => write!(f, "'|'"),
             And => write!(f, "'&'"),
             Comma => write!(f, "','"),
+            Arrow => write!(f, "'->'"),
 
             Ident(val) => write!(f, "'{}'", val),
             ConstI(val) => write!(f, "'{}'", val),
