@@ -3,7 +3,7 @@ use super::{Parser, Type};
 
 use crate::token::{Token, TokenType};
 
-impl Parser {
+impl<'a> Parser<'a> {
     // The public parser function used by the compiler
     // Parses global declarations until the end of the file
     // <translation-unit> ::= <external-declaration>*

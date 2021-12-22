@@ -7,7 +7,7 @@ use crate::token::{Token, TokenType};
 
 // Expression parsing is done using Pratt parsing
 // Everything that is hard to parse, starting from cast expression is handwritten
-impl Parser {
+impl Parser<'_> {
     pub(super) fn parse_expression(&mut self) -> Result<Expression, ()> {
         self.pratt_parse(0)
     }

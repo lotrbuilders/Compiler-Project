@@ -1,4 +1,4 @@
-use crate::parser::ast::*;
+use crate::{backend::Backend, parser::ast::*};
 
 impl Expression {
     pub fn is_constant(&self) -> bool {
@@ -7,7 +7,7 @@ impl Expression {
             _ => false,
         }
     }
-    pub fn const_eval(self) -> Expression {
+    pub fn const_eval(self, backend: &dyn Backend) -> Expression {
         use ExpressionVariant::ConstI;
         match self.variant {
             ExpressionVariant::ConstI(_) => self,
@@ -21,12 +21,24 @@ impl Expression {
                 ..,
             ) => self,
 
-            ExpressionVariant::Sizeof(_typ) => todo!(),
+            ExpressionVariant::Sizeof(typ) => {
+                let ast_type = match typ {
+                    SizeofType::Type(typ) => typ,
+                    SizeofType::Expression(exp) => exp.ast_type,
+                };
+                let size = backend.sizeof(ast_type);
+
+                Expression {
+                    span: self.span,
+                    ast_type: self.ast_type,
+                    variant: ConstI(size as i128),
+                }
+            }
 
             ExpressionVariant::Ternary(cond, left, right) => {
-                let cond = cond.const_eval();
-                let left = left.const_eval();
-                let right = right.const_eval();
+                let cond = cond.const_eval(backend);
+                let left = left.const_eval(backend);
+                let right = right.const_eval(backend);
 
                 match (&cond.variant, &left.variant, &right.variant) {
                     (ConstI(cond), ConstI(left), ConstI(right)) => Expression {
@@ -48,8 +60,8 @@ impl Expression {
                 }
             }
             ExpressionVariant::Binary(op, left, right) => {
-                let left = left.const_eval();
-                let right = right.const_eval();
+                let left = left.const_eval(backend);
+                let right = right.const_eval(backend);
 
                 match (&left.variant, &right.variant) {
                     (ConstI(left), ConstI(right)) => Expression {
@@ -67,7 +79,7 @@ impl Expression {
                 }
             }
             ExpressionVariant::Unary(op, exp) => {
-                let exp = exp.const_eval();
+                let exp = exp.const_eval(backend);
 
                 match &exp.variant {
                     ConstI(exp) => Expression {

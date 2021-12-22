@@ -130,9 +130,44 @@ impl<'a> EvaluationContext<'a> {
     }
 }
 
+impl<'a> (dyn Backend + 'a) {
+    pub fn get_size2(&self, typ: &Type) -> IRSize {
+        Backend::get_size(self, &typ.nodes[0])
+    }
+    pub fn sizeof(&self, typ: Type) -> u32 {
+        if typ.is_array() {
+            let (array_type, array_size) = typ.deconstruct();
+            self.sizeof2(self.get_size2(&array_type)) * (array_size as u32)
+        } else {
+            self.sizeof2(self.get_size2(&typ))
+        }
+    }
+    fn sizeof2(&self, size: IRSize) -> u32 {
+        match size {
+            IRSize::S8 => 1,
+            IRSize::S16 => 2,
+            IRSize::S32 => 4,
+            IRSize::S64 => 8,
+            IRSize::P => self.sizeof_pointer(),
+        }
+    }
+    pub fn int_ptr(&self, signed: bool) -> IRSize {
+        assert!(signed); //Unsigned integers are currently unsupported
+        match self.sizeof_pointer() {
+            8 => IRSize::S64,
+            4 => IRSize::S32,
+            2 => IRSize::S16,
+            _ => unreachable!(),
+        }
+    }
+    pub fn size_t(&self) -> Type {
+        vec![self.typeof_size_t()].into()
+    }
+}
+
 impl<'a> EvaluationContext<'a> {
-    pub fn get_size(&self, typ: &Type) -> IRSize {
-        self.backend.get_size(&typ.nodes[0])
+    pub fn get_size(&'a self, typ: &Type) -> IRSize {
+        self.backend.get_size2(typ)
     }
     pub fn sizeof(&self, typ: Type) -> u32 {
         if typ.is_array() {
@@ -160,6 +195,9 @@ impl<'a> EvaluationContext<'a> {
             _ => unreachable!(),
         }
     }
+}
+
+impl<'a> EvaluationContext<'a> {
     pub fn promote(
         &mut self,
         result: &mut Vec<IRInstruction>,

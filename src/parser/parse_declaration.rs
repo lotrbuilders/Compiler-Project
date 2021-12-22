@@ -4,7 +4,7 @@ use super::{recovery::RecoveryStrategy, Parser, Type};
 use crate::token::TokenType;
 use crate::{error, expect};
 
-impl Parser {
+impl<'a> Parser<'a> {
     pub(super) fn parse_declaration(&mut self) -> Result<Type, ()> {
         let base_type = self.parse_declaration_specifiers()?;
         let base_type = self.check_declaration_specifiers(base_type);
@@ -62,7 +62,7 @@ impl Parser {
                 }
                 Some(TokenType::LSquare) => {
                     let expression = self.parse_braced('[', Parser::parse_conditional)?;
-                    let expression = expression.const_eval();
+                    let expression = expression.const_eval(self.backend);
                     let number = if let ExpressionVariant::ConstI(value) = &expression.variant {
                         *value
                     } else {

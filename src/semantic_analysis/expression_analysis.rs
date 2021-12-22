@@ -15,8 +15,16 @@ impl Analysis for Expression {
                 return;
             }
 
-            Sizeof(..) => {
-                todo!();
+            Sizeof(typ) => {
+                match typ {
+                    SizeofType::Type(typ) => {
+                        analyzer.assert_no_name(&self.span, typ);
+                    }
+                    SizeofType::Expression(exp) => {
+                        exp.analyze(analyzer);
+                    }
+                }
+                self.ast_type = analyzer.backend.size_t();
             }
 
             Ident(name, symbol_number, global) => {
@@ -111,7 +119,7 @@ impl Expression {
 
             Unary(UnaryExpressionType::Address, exp) => Type::pointer().append(&exp.ast_type),
 
-            Unary(op, exp) => op.get_type(analyzer, exp),
+            Unary(op, exp) => op.get_type(analyzer, exp, &mut self.ast_type),
 
             Binary(op, left, right) => op.get_type(analyzer, left, right),
 
@@ -149,7 +157,12 @@ impl Expression {
 }
 
 impl UnaryExpressionType {
-    fn get_type(&self, analyzer: &mut SemanticAnalyzer, exp: &Expression) -> Type {
+    fn get_type(
+        &self,
+        analyzer: &mut SemanticAnalyzer,
+        exp: &Expression,
+        ast_type: &mut Type,
+    ) -> Type {
         use TypeClass::*;
         use UnaryExpressionType::*;
 
@@ -169,7 +182,12 @@ impl UnaryExpressionType {
                 analyzer.assert_in(span, typ, Pointer);
                 exp_type.deref()
             }
-            Cast => todo!(),
+            Cast => {
+                analyzer.assert_no_name(span, ast_type);
+                analyzer.assert_in(span, typ, self.get_type_class());
+                analyzer.assert_in(span, ast_type, self.get_type_class());
+                ast_type.clone()
+            }
             Address => unreachable!(),
         }
     }
@@ -180,8 +198,8 @@ impl UnaryExpressionType {
         match self {
             Identity | Negate => Arithmetic,
             BinNot => Integer,
-            LogNot => Scalar,
-            Cast => todo!(),
+            Cast | LogNot => Scalar,
+
             Deref | Address => unreachable!(),
         }
     }

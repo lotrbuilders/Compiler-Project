@@ -68,9 +68,11 @@ pub fn compile(filename: String, output: String) -> Result<(), String> {
     let (tokens, lexer_errors) = lexer.lex(&mut file.chars());
     log::trace!(target: "lexer","Lexed tokens: {:?}", tokens);
 
-    log::info!("Parser started");
-    let mut parser = Parser::new();
-    let (mut ast, parse_errors) = parser.parse(tokens);
+    let (mut ast, parse_errors) = {
+        log::info!("Parser started");
+        let mut parser = Parser::new(&*backend);
+        parser.parse(tokens)
+    };
     log::debug!("Parser result:\n{}", ast);
     let _ = crate::parser::ast_graph::print_graph("graph.gv", &ast);
 

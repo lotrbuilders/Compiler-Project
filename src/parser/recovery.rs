@@ -29,7 +29,7 @@ impl RecoveryStrategy {
     }
 }
 
-impl Parser {
+impl Parser<'_> {
     pub(super) fn recover(&mut self, strategy: &RecoveryStrategy) {
         log::debug!("Recovering from parsing error");
         log::debug!("Strategy: {}", strategy);

@@ -11,22 +11,25 @@ mod recovery;
 
 pub use self::r#type::{Type, TypeNode};
 use self::recovery::RecoveryStrategy;
+use crate::backend::Backend;
 use crate::span::Span;
 use crate::token::{Token, TokenType};
 use crate::{error, expect};
 
 #[allow(dead_code)]
-pub struct Parser {
+pub struct Parser<'a> {
     errors: Vec<String>,
     tokens: Vec<Token>,
+    backend: &'a dyn Backend,
     token_index: usize,
 }
 
-impl Parser {
-    pub fn new() -> Parser {
+impl Parser<'_> {
+    pub fn new<'a>(backend: &'a dyn Backend) -> Parser<'a> {
         Parser {
             errors: Vec::new(),
             tokens: Vec::new(),
+            backend,
             token_index: 0,
         }
     }

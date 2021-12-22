@@ -116,6 +116,9 @@ impl Type {
         }
     }
 
+    pub fn has_name(&self) -> bool {
+        matches!(self.nodes.get(0), Some(TypeNode::Name(..)))
+    }
     pub fn get_name(&self) -> Option<String> {
         match self.nodes.get(0) {
             Some(TypeNode::Name(name)) => Some(name.clone()),

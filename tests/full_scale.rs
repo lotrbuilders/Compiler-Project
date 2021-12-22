@@ -233,6 +233,7 @@ tests! {
 }
 
 fn test_valid_parser(path: PathBuf, failures: &mut Vec<String>, fail_count: &mut i32) {
+    use utcc_lib::backend;
     use utcc_lib::compiler::open;
     use utcc_lib::lexer::Lexer;
     use utcc_lib::parser::Parser;
@@ -240,9 +241,12 @@ fn test_valid_parser(path: PathBuf, failures: &mut Vec<String>, fail_count: &mut
     let mut lexer = Lexer::new(&filename);
     let file = open(filename.clone()).expect("opening file failed");
 
+    log::info!("Getting backend");
+    let backend = backend::get_backend("amd64".to_string()).expect("getting backend");
+
     let (tokens, lexer_errors) = lexer.lex(&mut file.chars());
 
-    let mut parser = Parser::new();
+    let mut parser = Parser::new(&*backend);
     let (ast1, parse_errors) = parser.parse(tokens);
     let ast1_string = format!("{}", ast1);
     if lexer_errors.is_err() || parse_errors.is_err() {
@@ -264,7 +268,7 @@ fn test_valid_parser(path: PathBuf, failures: &mut Vec<String>, fail_count: &mut
     }
     lexer = Lexer::new(&filename);
     let (tokens, lexer_errors) = lexer.lex(&mut ast1_string.chars());
-    parser = Parser::new();
+    parser = Parser::new(&*backend);
     let (ast2, parse_errors) = parser.parse(tokens);
     if lexer_errors.is_err() || parse_errors.is_err() {
         if let Err(err) = lexer_errors {

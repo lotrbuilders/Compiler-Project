@@ -230,6 +230,10 @@ impl Backend for BackendAMD64 {
     fn sizeof_pointer(&self) -> u32 {
         return 8;
     }
+
+    fn typeof_size_t(&self) -> crate::parser::TypeNode {
+        return crate::parser::TypeNode::Long;
+    }
 }
 
 impl BackendAMD64 {

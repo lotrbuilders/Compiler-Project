@@ -40,6 +40,14 @@ impl<'a> SemanticAnalyzer<'a> {
             ))
         }
     }
+
+    pub fn assert_no_name(&mut self, span: &Span, ast_type: &mut Type) {
+        if ast_type.has_name() {
+            self.errors
+                .push(error!(span, "Variable name not allowed in sizeof/cast"));
+            *ast_type = ast_type.clone().remove_name();
+        }
+    }
 }
 
 impl Type {

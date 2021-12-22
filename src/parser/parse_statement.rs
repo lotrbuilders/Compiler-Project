@@ -6,7 +6,7 @@ use crate::error;
 use crate::expect;
 use crate::token::TokenType;
 
-impl Parser {
+impl<'a> Parser<'a> {
     // Compound statements can contain a lot of other statements.
     // All statements within the brace are parsed
     // <compound-statement> ::= '{' <statement>* '}'

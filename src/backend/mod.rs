@@ -84,4 +84,5 @@ pub trait Backend {
 
     fn get_size(&self, typ: &TypeNode) -> IRSize;
     fn sizeof_pointer(&self) -> u32;
+    fn typeof_size_t(&self) -> TypeNode;
 }
