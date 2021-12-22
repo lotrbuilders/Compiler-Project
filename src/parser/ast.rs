@@ -97,9 +97,16 @@ pub enum ExpressionVariant {
 
     Function(Box<Expression>, Vec<Expression>),
 
+    Sizeof(SizeofType),
     ConstI(i128),
     CString(String),
     Ident(String, u32, bool),
+}
+
+#[derive(Debug, Clone)]
+pub enum SizeofType {
+    Type(Type),
+    Expression(Box<Expression>),
 }
 
 #[derive(Debug, Clone)]
@@ -130,4 +137,5 @@ pub enum UnaryExpressionType {
     LogNot,
     Deref,
     Address,
+    Cast,
 }

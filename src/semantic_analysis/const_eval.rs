@@ -21,6 +21,8 @@ impl Expression {
                 ..,
             ) => self,
 
+            ExpressionVariant::Sizeof(_typ) => todo!(),
+
             ExpressionVariant::Ternary(cond, left, right) => {
                 let cond = cond.const_eval();
                 let left = left.const_eval();
@@ -124,6 +126,7 @@ impl UnaryExpressionType {
             Negate => -exp,
             BinNot => !exp,
             LogNot => (exp == 0) as i128,
+            Cast => todo!(),
             Deref | Address => unreachable!(),
         }
     }

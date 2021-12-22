@@ -32,6 +32,8 @@ impl Evaluate for Expression {
                 self.optional_load(result, context, addr)
             }
 
+            Sizeof(..) => todo!(),
+
             Function(func, arguments) => {
                 let size = context.get_size(&self.ast_type);
                 let count = arguments.len();
@@ -395,6 +397,7 @@ impl Evaluate for Expression {
                     Negate => IRInstruction::Sub(size, vreg, right, left),
                     BinNot => IRInstruction::Xor(size, vreg, left, right),
                     LogNot | Identity | Address | Deref => unreachable!(),
+                    Cast => todo!(),
                 });
                 vreg
             }

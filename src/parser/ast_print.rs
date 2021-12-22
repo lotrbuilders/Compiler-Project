@@ -155,6 +155,7 @@ impl Display for Expression {
             ConstI(value) => write!(f, "{}", value)?,
             CString(value) => write!(f, "\"{}\"", value)?,
             Ident(name, ..) => write!(f, "{}", name)?,
+            Sizeof(typ) => write!(f, "sizeof {}", typ)?,
 
             Function(func, arguments) => {
                 write!(f, "({}(", func)?;
@@ -165,6 +166,10 @@ impl Display for Expression {
                     write!(f, ",{}", arg)?;
                 }
                 write!(f, "))")?;
+            }
+
+            Unary(UnaryExpressionType::Cast, exp) => {
+                write!(f, "(({}){})", self.ast_type, exp)?;
             }
 
             Unary(op, exp) => {
@@ -226,13 +231,23 @@ impl Display for UnaryExpressionType {
             f,
             "{}",
             match self {
-                Identity => '+',
-                Negate => '-',
-                BinNot => '~',
-                LogNot => '!',
-                Deref => '*',
-                Address => '&',
+                Identity => "+",
+                Negate => "-",
+                BinNot => "~",
+                LogNot => "!",
+                Deref => "*",
+                Address => "&",
+                Cast => "cast",
             }
         )
+    }
+}
+
+impl Display for SizeofType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SizeofType::Type(typ) => write!(f, "({})", typ),
+            SizeofType::Expression(exp) => write!(f, "{}", exp),
+        }
     }
 }

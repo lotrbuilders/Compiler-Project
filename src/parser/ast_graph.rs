@@ -208,6 +208,11 @@ impl Graph for Expression {
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
             }
 
+            Sizeof(_) => {
+                writeln!(buffer, "n{} [label=\"sizeof\"]", number)?;
+                writeln!(buffer, "n{} -- n{}", parent, number)?;
+            }
+
             Function(func, arguments) => {
                 writeln!(buffer, "n{} [label=\"<function-call>\"]", number)?;
                 writeln!(buffer, "n{} -- n{}", parent, number)?;

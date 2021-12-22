@@ -15,6 +15,10 @@ impl Analysis for Expression {
                 return;
             }
 
+            Sizeof(..) => {
+                todo!();
+            }
+
             Ident(name, symbol_number, global) => {
                 if let Some(symbol) = analyzer.symbol_table.get(name) {
                     self.ast_type = symbol.symbol_type.clone();
@@ -92,7 +96,7 @@ impl Expression {
         use ExpressionVariant::*;
 
         match &mut self.variant {
-            Ident(..) | ConstI(_) | CString(..) => unreachable!(),
+            Ident(..) | ConstI(_) | CString(..) | Sizeof(..) => unreachable!(),
 
             Function(func, _) => func
                 .ast_type
@@ -165,6 +169,7 @@ impl UnaryExpressionType {
                 analyzer.assert_in(span, typ, Pointer);
                 exp_type.deref()
             }
+            Cast => todo!(),
             Address => unreachable!(),
         }
     }
@@ -176,6 +181,7 @@ impl UnaryExpressionType {
             Identity | Negate => Arithmetic,
             BinNot => Integer,
             LogNot => Scalar,
+            Cast => todo!(),
             Deref | Address => unreachable!(),
         }
     }
