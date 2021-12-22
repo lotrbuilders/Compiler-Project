@@ -32,7 +32,13 @@ impl Evaluate for Expression {
                 self.optional_load(result, context, addr)
             }
 
-            Sizeof(..) => todo!(),
+            Sizeof(typ) => {
+                let size = context.backend.eval_sizeof(typ) as i128;
+                let size_t = context.get_size(&context.backend.size_t());
+                let vreg = context.next_vreg();
+                result.push(IRInstruction::Imm(size_t, vreg, size));
+                vreg
+            }
 
             Function(func, arguments) => {
                 let size = context.get_size(&self.ast_type);
@@ -369,6 +375,13 @@ impl Evaluate for Expression {
                 self.optional_load(result, context, addr)
             }
 
+            Unary(Cast, exp) => {
+                let exp_size = context.get_size(&exp.ast_type);
+                let size = context.get_size(&self.ast_type);
+                let vreg = exp.eval(result, context);
+                context.promote(result, size, exp_size, vreg)
+            }
+
             Unary(LogNot, exp) => {
                 let size = context.get_size(&exp.ast_type);
                 let left = exp.eval(result, context);
@@ -396,8 +409,7 @@ impl Evaluate for Expression {
                 result.push(match op {
                     Negate => IRInstruction::Sub(size, vreg, right, left),
                     BinNot => IRInstruction::Xor(size, vreg, left, right),
-                    LogNot | Identity | Address | Deref => unreachable!(),
-                    Cast => todo!(),
+                    LogNot | Identity | Address | Deref | Cast => unreachable!(),
                 });
                 vreg
             }

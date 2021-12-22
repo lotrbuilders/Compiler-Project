@@ -25,12 +25,7 @@ impl Expression {
             ) => self,
 
             ExpressionVariant::Sizeof(typ) => {
-                let ast_type = match typ {
-                    SizeofType::Type(typ) => typ,
-                    SizeofType::Expression(exp) => exp.ast_type,
-                };
-                let size = backend.sizeof(ast_type);
-
+                let size = backend.eval_sizeof(&typ);
                 Expression {
                     span: self.span,
                     ast_type: self.ast_type,

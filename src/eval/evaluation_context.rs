@@ -1,6 +1,9 @@
 use crate::{
     backend::{ir::*, Backend},
-    parser::{ast::BinaryExpressionType, Type},
+    parser::{
+        ast::{BinaryExpressionType, SizeofType},
+        Type,
+    },
 };
 
 pub struct EvaluationContext<'a> {
@@ -131,6 +134,13 @@ impl<'a> EvaluationContext<'a> {
 }
 
 impl<'a> (dyn Backend + 'a) {
+    pub fn eval_sizeof(&self, typ: &SizeofType) -> u32 {
+        let ast_type = match typ {
+            SizeofType::Type(typ) => typ,
+            SizeofType::Expression(exp) => &exp.ast_type,
+        };
+        self.sizeof(ast_type.clone())
+    }
     pub fn get_size2(&self, typ: &Type) -> IRSize {
         Backend::get_size(self, &typ.nodes[0])
     }
