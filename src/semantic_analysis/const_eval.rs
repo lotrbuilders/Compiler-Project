@@ -1,4 +1,7 @@
-use crate::{backend::Backend, parser::ast::*};
+use crate::{
+    backend::Backend,
+    parser::{ast::*, Type},
+};
 
 impl Expression {
     pub fn is_constant(&self) -> bool {
@@ -84,9 +87,9 @@ impl Expression {
                 match &exp.variant {
                     ConstI(exp) => Expression {
                         span: self.span,
-                        ast_type: self.ast_type,
+                        ast_type: self.ast_type.clone(),
 
-                        variant: ConstI(op.const_eval(exp)),
+                        variant: ConstI(op.const_eval(backend, exp, self.ast_type)),
                     },
                     _ => Expression {
                         span: self.span,
@@ -131,14 +134,17 @@ impl BinaryExpressionType {
 }
 
 impl UnaryExpressionType {
-    fn const_eval(&self, &exp: &i128) -> i128 {
+    fn const_eval(&self, backend: &dyn Backend, &exp: &i128, ast_type: Type) -> i128 {
         use UnaryExpressionType::*;
         match self {
             Identity => exp,
             Negate => -exp,
             BinNot => !exp,
             LogNot => (exp == 0) as i128,
-            Cast => todo!(),
+            Cast => {
+                let size = (backend.sizeof(ast_type) * 8) as i128;
+                exp % (1 << size)
+            }
             Deref | Address => unreachable!(),
         }
     }
