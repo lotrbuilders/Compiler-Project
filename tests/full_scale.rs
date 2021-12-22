@@ -230,6 +230,7 @@ tests! {
     full_scale_stage_16: ("src/stage_16",test_valid_full_scale,test_invalid_full_scale)
 
     full_scale_stage_19: ("src/stage_19",test_valid_full_scale,test_invalid_full_scale)
+    full_scale_stage_21: ("src/stage_21",test_valid_full_scale,test_invalid_full_scale)
 }
 
 fn test_valid_parser(path: PathBuf, failures: &mut Vec<String>, fail_count: &mut i32) {
