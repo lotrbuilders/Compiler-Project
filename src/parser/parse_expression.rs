@@ -119,6 +119,28 @@ impl Parser<'_> {
                         variant: ExpressionVariant::Function(Box::new(exp), arguments),
                     };
                 }
+                Some(t @ (Arrow | Period)) => {
+                    self.next();
+                    let token = expect!(
+                        self,
+                        TokenType::Ident(..),
+                        &RecoveryStrategy::or(
+                            RecoveryStrategy::UpTo(')'),
+                            RecoveryStrategy::UpTo(';'),
+                        )
+                    )?;
+                    let name = match token.token() {
+                        Ident(name) => name,
+                        _ => unreachable!(),
+                    };
+                    let indirect = t == Arrow;
+                    let span = begin.to(&self.peek_span());
+                    exp = Expression {
+                        span,
+                        ast_type: Type::empty(),
+                        variant: ExpressionVariant::Member(Box::new(exp), name, indirect),
+                    }
+                }
                 _ => break,
             }
         }
