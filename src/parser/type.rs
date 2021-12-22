@@ -9,9 +9,8 @@ pub enum DeclarationType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct StructDeclaration {
-    name: Option<String>,
-    members: Option<Vec<Type>>,
+pub struct StructType {
+    pub members: Vec<(String, Type)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
