@@ -61,6 +61,9 @@ pub fn compile(filename: String, output: String) -> Result<(), String> {
     let mut lexer = Lexer::new(&filename);
     let file = open(filename)?;
 
+    log::info!("Getting backend");
+    let mut backend = backend::get_backend("amd64".to_string())?;
+
     log::info!("Lexer started");
     let (tokens, lexer_errors) = lexer.lex(&mut file.chars());
     log::trace!(target: "lexer","Lexed tokens: {:?}", tokens);
@@ -71,22 +74,20 @@ pub fn compile(filename: String, output: String) -> Result<(), String> {
     log::debug!("Parser result:\n{}", ast);
     let _ = crate::parser::ast_graph::print_graph("graph.gv", &ast);
 
-    log::info!("Analyzer started");
-    let mut analyzer = SemanticAnalyzer::new();
-    let analysis_errors = analyzer.analyze(&mut ast);
+    let (analysis_errors, global_table) = {
+        log::info!("Analyzer started");
+        let mut analyzer = SemanticAnalyzer::new(&*backend);
+        (analyzer.analyze(&mut ast), analyzer.get_global_table())
+    };
 
     if lexer_errors.is_err() || parse_errors.is_err() || analysis_errors.is_err() {
         log::info!("Exited due to errors");
         return Err("Error in lexing parsing or analysis".to_string());
     }
 
-    log::info!("Getting backend");
-    let mut backend = backend::get_backend("amd64".to_string())?;
-
     log::info!("Evaluation started");
     log::debug!("\n{}", ast);
-    let (ir_functions, ir_globals, function_names) =
-        evaluate(&ast, analyzer.get_global_table(), &mut *backend);
+    let (ir_functions, ir_globals, function_names) = evaluate(&ast, &global_table, &mut *backend);
     for ir in &ir_functions {
         log::debug!("Evaluation result:\n{}", ir);
     }

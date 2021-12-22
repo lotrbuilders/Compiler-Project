@@ -13,31 +13,34 @@ use std::collections::HashMap;
 
 use self::analysis::Analysis;
 use self::symbol_table::{Symbol, SymbolTable};
+use crate::backend::Backend;
 use crate::parser::{ast::*, Type};
 
 // The semantic analyzer checks the entire syntax tree for problems
 // The semantic analyzer is passed as a member and modified using traits
 
-#[derive(Clone, Debug)]
-pub struct SemanticAnalyzer {
+#[derive(Clone)]
+pub struct SemanticAnalyzer<'a> {
     errors: Vec<String>,
     symbol_table: SymbolTable,
-    loop_depth: u32,
     function_return_type: Type,
+    backend: &'a dyn Backend,
+    loop_depth: u32,
 }
 
-impl SemanticAnalyzer {
-    pub fn new() -> SemanticAnalyzer {
+impl<'a> SemanticAnalyzer<'a> {
+    pub fn new(backend: &'a dyn Backend) -> SemanticAnalyzer<'a> {
         SemanticAnalyzer {
             errors: Vec::new(),
             symbol_table: SymbolTable::new(),
             loop_depth: 0,
             function_return_type: Type::empty(),
+            backend,
         }
     }
 
-    pub fn get_global_table<'a>(&'a self) -> &'a HashMap<String, Symbol> {
-        &self.symbol_table.global_table
+    pub fn get_global_table(&self) -> HashMap<String, Symbol> {
+        self.symbol_table.global_table.clone()
     }
 
     pub fn analyze(&mut self, translation_unit: &mut TranslationUnit) -> Result<(), Vec<String>> {
