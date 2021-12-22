@@ -2,6 +2,7 @@ use super::ast::*;
 use super::r#type::TypeNode;
 use super::{recovery::RecoveryStrategy, Parser, Type};
 use crate::expect;
+use crate::span::Span;
 use crate::token::{Token, TokenType};
 
 // Expression parsing is done using Pratt parsing
@@ -41,17 +42,56 @@ impl Parser {
         Ok(left)
     }
 
+    // <cast-expression> ::= (<type-name>)* <unary-expression>
+    fn parse_cast(&mut self) -> Result<Expression, ()> {
+        use TokenType::*;
+        let begin = self.peek_span();
+        let some_type = self.peek2().as_ref().map(Parser::is_type_qualifier);
+        let exp = match (self.peek_type(), some_type) {
+            (Some(LParenthesis), Some(true)) => {
+                let ast_type = self.parse_braced('(', Parser::parse_declaration)?;
+                self.next();
+                let exp = self.parse_cast()?;
+                let span = begin.to(&self.peek_span());
+                new_cast_expression(span, ast_type, exp)
+            }
+            _ => self.parse_unary()?,
+        };
+        Ok(exp)
+    }
+
     // <unary-expression> ::= (<unary-op>)* <postfix-expression>
+    //                      | Sizeof ('('<type-name>')'| <unary-expresion>)
     // <unary-op> ::= '+' | '-' | '~' | '!'
     fn parse_unary(&mut self) -> Result<Expression, ()> {
         use TokenType::*;
         let token = self.peek();
+        let begin = self.peek_span();
         let exp = match self.peek_type() {
             Some(Plus) | Some(Minus) | Some(Tilde) | Some(Exclamation) | Some(Asterisk)
             | Some(And) => {
                 self.next();
-                let exp = self.parse_unary()?;
+                let exp = self.parse_cast()?;
                 new_unary_expression(&token.unwrap(), exp)
+            }
+            Some(Sizeof) => {
+                self.next();
+                let some_type = self.peek2().as_ref().map(Parser::is_type_qualifier);
+                let typ = if matches!(
+                    (self.peek_type(), some_type),
+                    (Some(LParenthesis), Some(true))
+                ) {
+                    let sizeof_type = self.parse_braced('(', Parser::parse_declaration)?;
+                    SizeofType::Type(sizeof_type)
+                } else {
+                    SizeofType::Expression(Box::new(self.parse_expression()?))
+                };
+                let span = begin.to(&self.peek_span());
+                Expression {
+                    span,
+                    ast_type: Type::empty(),
+                    variant: ExpressionVariant::Sizeof(typ),
+                }
             }
             _ => self.parse_postfix()?,
         };
@@ -288,5 +328,13 @@ fn new_unary_expression(token: &Token, exp: Expression) -> Expression {
         span,
         ast_type: Type::empty(),
         variant: ExpressionVariant::Unary(variant, exp),
+    }
+}
+
+fn new_cast_expression(span: Span, ast_type: Type, exp: Expression) -> Expression {
+    Expression {
+        span,
+        ast_type,
+        variant: ExpressionVariant::Unary(UnaryExpressionType::Cast, Box::new(exp)),
     }
 }

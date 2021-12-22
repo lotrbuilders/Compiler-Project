@@ -38,6 +38,13 @@ impl Parser {
         }
     }
 
+    fn peek2(&self) -> Option<Token> {
+        match self.tokens.get(self.token_index + 1) {
+            Some(token) => Some(token.clone()),
+            None => None,
+        }
+    }
+
     fn next(&mut self) -> Option<Token> {
         self.token_index += 1;
         self.peek()
