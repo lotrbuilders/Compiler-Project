@@ -16,10 +16,12 @@ impl<'a> Parser<'a> {
             TokenType::LBrace,
             RecoveryStrategy::or(RecoveryStrategy::Until(';'), RecoveryStrategy::Until('{'))
         );
+        self.enter_scope();
         let mut result = Vec::<Statement>::new();
         loop {
             if let Some(TokenType::RBrace) = self.peek_type() {
                 self.next();
+                self.leave_scope();
                 break;
             }
             if self.peek() == None {
@@ -28,7 +30,10 @@ impl<'a> Parser<'a> {
                     .push(error!(loc, "Expected }} before end of file"));
                 return Err(());
             }
-            result.push(self.parse_statement()?);
+            let statement = self.parse_statement();
+            if let Ok(statement) = statement {
+                result.push(statement);
+            }
         }
         Ok(result)
     }
@@ -105,7 +110,11 @@ impl<'a> Parser<'a> {
                 self.next();
                 let (init, condition, expression) =
                     self.parse_braced('(', Parser::parse_for_clause)?;
-                let statement = Box::new(self.parse_statement()?);
+
+                self.enter_scope();
+                let statement = self.parse_statement();
+                self.leave_scope();
+                let statement = Box::new(statement?);
 
                 let span = begin.to(&self.peek_span());
                 Ok(Statement::For {

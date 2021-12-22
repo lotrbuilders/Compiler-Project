@@ -133,6 +133,15 @@ impl Parser<'_> {
     }
 }
 
+impl<'a> Parser<'a> {
+    pub fn enter_scope(&mut self) {
+        self.struct_table.enter_scope();
+    }
+    pub fn leave_scope(&mut self) {
+        self.struct_table.leave_scope();
+    }
+}
+
 // This macro looks at the incoming token
 // Returns Ok(token) if it matches the $expected pattern
 //                              or the given identifier
