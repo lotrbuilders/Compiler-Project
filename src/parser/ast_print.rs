@@ -168,6 +168,10 @@ impl Display for Expression {
                 write!(f, "))")?;
             }
 
+            Member(exp, id, indirect) => {
+                write!(f, "({}){}{}", exp, if *indirect { "->" } else { "." }, id)?;
+            }
+
             Unary(UnaryExpressionType::Cast, exp) => {
                 write!(f, "(({}){})", self.ast_type, exp)?;
             }

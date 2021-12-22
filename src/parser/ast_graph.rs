@@ -221,6 +221,15 @@ impl Graph for Expression {
                     arg.graph(buffer, node_number, number)?;
                 }
             }
+            Member(exp, id, indirect) => {
+                if *indirect {
+                    writeln!(buffer, "n{} [label=\"->{}\"]", number, id)?;
+                } else {
+                    writeln!(buffer, "n{} [label=\".{}\"]", number, id)?;
+                }
+                writeln!(buffer, "n{} -- n{}", parent, number)?;
+                exp.graph(buffer, node_number, number)?;
+            }
 
             Unary(op, exp) => {
                 writeln!(buffer, "n{} [label=\"{}\"]", number, op)?;

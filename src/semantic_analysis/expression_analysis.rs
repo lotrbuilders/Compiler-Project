@@ -28,6 +28,10 @@ impl Analysis for Expression {
                 return;
             }
 
+            Member(..) => {
+                todo!();
+            }
+
             Ident(name, symbol_number, global) => {
                 if let Some(symbol) = analyzer.symbol_table.get(name) {
                     self.ast_type = symbol.symbol_type.clone();
@@ -105,7 +109,7 @@ impl Expression {
         use ExpressionVariant::*;
 
         match &mut self.variant {
-            Ident(..) | ConstI(_) | CString(..) | Sizeof(..) => unreachable!(),
+            Ident(..) | ConstI(_) | CString(..) | Sizeof(..) | Member(..) => unreachable!(),
 
             Function(func, _) => func
                 .ast_type

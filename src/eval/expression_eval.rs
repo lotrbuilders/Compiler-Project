@@ -159,6 +159,10 @@ impl Evaluate for Expression {
                 }
             }
 
+            Member(..) => {
+                todo!();
+            }
+
             Assign(left, right) => {
                 let size = context.get_size(&self.ast_type);
                 let right_size = context.get_size(&right.ast_type);

@@ -11,20 +11,18 @@ impl Expression {
         }
     }
     pub fn const_eval(self, backend: &dyn Backend) -> Expression {
-        use ExpressionVariant::ConstI;
+        use ExpressionVariant::*;
         match self.variant {
-            ExpressionVariant::ConstI(_) => self,
-            ExpressionVariant::Assign(..)
-            | ExpressionVariant::Function(..)
-            | ExpressionVariant::Ident(..)
-            | ExpressionVariant::CString(..)
-            | ExpressionVariant::Binary(BinaryExpressionType::Index, ..)
-            | ExpressionVariant::Unary(
-                UnaryExpressionType::Deref | UnaryExpressionType::Address,
-                ..,
-            ) => self,
+            ConstI(_) => self,
+            Assign(..)
+            | Function(..)
+            | Ident(..)
+            | CString(..)
+            | Member(..)
+            | Binary(BinaryExpressionType::Index, ..)
+            | Unary(UnaryExpressionType::Deref | UnaryExpressionType::Address, ..) => self,
 
-            ExpressionVariant::Sizeof(typ) => {
+            Sizeof(typ) => {
                 let size = backend.eval_sizeof(&typ);
                 Expression {
                     span: self.span,
@@ -33,7 +31,7 @@ impl Expression {
                 }
             }
 
-            ExpressionVariant::Ternary(cond, left, right) => {
+            Ternary(cond, left, right) => {
                 let cond = cond.const_eval(backend);
                 let left = left.const_eval(backend);
                 let right = right.const_eval(backend);
@@ -57,7 +55,7 @@ impl Expression {
                     },
                 }
             }
-            ExpressionVariant::Binary(op, left, right) => {
+            Binary(op, left, right) => {
                 let left = left.const_eval(backend);
                 let right = right.const_eval(backend);
 
@@ -76,7 +74,7 @@ impl Expression {
                     },
                 }
             }
-            ExpressionVariant::Unary(op, exp) => {
+            Unary(op, exp) => {
                 let exp = exp.const_eval(backend);
 
                 match &exp.variant {
