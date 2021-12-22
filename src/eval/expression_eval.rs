@@ -22,7 +22,7 @@ impl Evaluate for Expression {
                 result.push(IRInstruction::AddrG(
                     IRSize::P,
                     addr,
-                    format!("__string{}", number),
+                    format!(".__string{}", number),
                 ));
                 addr
             }
@@ -39,13 +39,13 @@ impl Evaluate for Expression {
                 let sizes = func.ast_type.get_function_arguments().unwrap_or(&empty);
                 let argument_sizes: Vec<IRSize> = arguments
                     .iter()
-                    .map(|e| context.get_size(&e.ast_type))
+                    .map(|e| context.get_size(&e.ast_type.array_promotion()))
                     .collect();
 
                 let sizes = if !sizes.is_empty() {
                     sizes
                         .iter()
-                        .map(|t| context.get_size(&t.clone().remove_name()))
+                        .map(|t| context.get_size(&t.clone().remove_name().array_promotion()))
                         .collect()
                 } else {
                     argument_sizes.clone()
@@ -65,7 +65,7 @@ impl Evaluate for Expression {
                     Direction::Left2Right => {
                         for arg in 0..arguments.len() {
                             if !in_registers[arg] {
-                                let arg_size = context.get_size(&arguments[arg].ast_type);
+                                let arg_size = argument_sizes[arg];
                                 let vreg = arguments[arg].eval(result, context);
                                 let vreg = context.promote(result, sizes[arg], arg_size, vreg);
 
@@ -86,7 +86,7 @@ impl Evaluate for Expression {
                     Direction::Right2Left => {
                         for arg in (0..arguments.len()).rev() {
                             if !in_registers[arg] {
-                                let arg_size = context.get_size(&arguments[arg].ast_type);
+                                let arg_size = argument_sizes[arg];
                                 let vreg = arguments[arg].eval(result, context);
                                 let vreg = context.promote(result, sizes[arg], arg_size, vreg);
                                 if first {
@@ -110,7 +110,7 @@ impl Evaluate for Expression {
                         .filter(|&arg| in_registers[arg])
                         .map(|arg| {
                             Some({
-                                let arg_size = context.get_size(&arguments[arg].ast_type);
+                                let arg_size = argument_sizes[arg];
                                 let vreg = arguments[arg].eval(result, context);
                                 context.promote(result, sizes[arg], arg_size, vreg)
                             })
@@ -121,7 +121,7 @@ impl Evaluate for Expression {
                         .filter(|&arg| in_registers[arg])
                         .map(|arg| {
                             Some({
-                                let arg_size = context.get_size(&arguments[arg].ast_type);
+                                let arg_size = argument_sizes[arg];
                                 let vreg = arguments[arg].eval(result, context);
                                 context.promote(result, sizes[arg], arg_size, vreg)
                             })

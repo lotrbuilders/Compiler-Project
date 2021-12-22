@@ -51,7 +51,7 @@ impl ExternalDeclaration {
         let count = arguments.len();
         let ir_arguments = arguments
             .iter()
-            .map(|arg| context.get_size(&arg.clone().remove_name()))
+            .map(|arg| context.get_size(&arg.clone().remove_name().array_promotion()))
             .collect();
         let in_register = context.backend.get_arguments_in_registers(&ir_arguments);
         let vreg_count = in_register.iter().filter(|&&in_reg| in_reg).count() as u32;

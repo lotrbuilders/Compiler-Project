@@ -154,7 +154,7 @@ impl Type {
     }
 
     pub fn deref(self) -> Type {
-        if let Some(TypeNode::Pointer) = self.nodes.get(0) {
+        if let Some(TypeNode::Pointer | TypeNode::Array(..)) = self.nodes.get(0) {
             self.nodes[1..].into()
         } else {
             self
