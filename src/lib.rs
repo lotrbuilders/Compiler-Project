@@ -9,6 +9,7 @@ pub mod logger;
 pub mod options;
 pub mod parser;
 pub mod semantic_analysis;
+pub mod table;
 
 mod span;
 mod token;

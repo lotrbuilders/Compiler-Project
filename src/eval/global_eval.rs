@@ -2,7 +2,7 @@ use super::{Evaluate, EvaluationContext};
 use crate::backend::{ir::*, Backend};
 use crate::parser::ast::*;
 use crate::parser::r#type::DeclarationType;
-use crate::semantic_analysis::symbol_table::Symbol;
+use crate::table::Symbol;
 use std::collections::{HashMap, HashSet};
 
 impl ExternalDeclaration {

@@ -13,6 +13,7 @@ pub use self::r#type::{Type, TypeNode};
 use self::recovery::RecoveryStrategy;
 use crate::backend::Backend;
 use crate::span::Span;
+use crate::table::StructTable;
 use crate::token::{Token, TokenType};
 use crate::{error, expect};
 
@@ -20,6 +21,7 @@ use crate::{error, expect};
 pub struct Parser<'a> {
     errors: Vec<String>,
     tokens: Vec<Token>,
+    struct_table: StructTable,
     backend: &'a dyn Backend,
     token_index: usize,
 }
@@ -29,6 +31,7 @@ impl Parser<'_> {
         Parser {
             errors: Vec::new(),
             tokens: Vec::new(),
+            struct_table: StructTable::new(),
             backend,
             token_index: 0,
         }

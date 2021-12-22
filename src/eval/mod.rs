@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::backend::{ir::*, Backend};
 use crate::parser::ast::*;
-use crate::semantic_analysis::symbol_table::Symbol;
+use crate::table::Symbol;
 
 use self::evaluation_context::EvaluationContext;
 

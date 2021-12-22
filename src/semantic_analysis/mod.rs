@@ -1,5 +1,3 @@
-pub mod symbol_table;
-
 mod analysis;
 mod const_eval;
 mod expression_analysis;
@@ -12,9 +10,9 @@ pub mod type_promotion;
 use std::collections::HashMap;
 
 use self::analysis::Analysis;
-use self::symbol_table::{Symbol, SymbolTable};
 use crate::backend::Backend;
 use crate::parser::{ast::*, Type};
+use crate::table::{Symbol, SymbolTable};
 
 // The semantic analyzer checks the entire syntax tree for problems
 // The semantic analyzer is passed as a member and modified using traits
