@@ -19,9 +19,10 @@ pub enum TokenType {
     Do,
     Break,
     Continue,
-
-    //Statement keywords
     Return,
+
+    //Keywords
+    Sizeof,
 
     //Punctuation symbols
     LBrace,
@@ -162,8 +163,9 @@ impl Display for TokenType {
             Do => write!(f, "'do'"),
             Break => write!(f, "'break'"),
             Continue => write!(f, "'continue'"),
-
             Return => write!(f, "'return'"),
+
+            Sizeof => write!(f, "'sizeof'"),
 
             LBrace => write!(f, "'{{'"),
             RBrace => write!(f, "'}}'"),
