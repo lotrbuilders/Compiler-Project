@@ -174,6 +174,7 @@ impl Lexer {
             "continue" => Token::new(Continue, span),
             "return" => Token::new(Return, span),
             "sizeof" => Token::new(Sizeof, span),
+            "struct" => Token::new(Struct, span),
             _ => Token::new(Ident(identifier), span),
         }
     }
