@@ -25,6 +25,7 @@ impl Analysis for Expression {
                     }
                 }
                 self.ast_type = analyzer.backend.size_t();
+                return;
             }
 
             Ident(name, symbol_number, global) => {
