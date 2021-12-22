@@ -8,9 +8,8 @@ pub trait TypePromotion {
 impl TypePromotion for &Type {
     fn promote(self) -> Type {
         use TypeNode::*;
-        match self.nodes[0] {
-            Char => Type::int(),
-            Short => Type::int(),
+        match self.nodes.get(0) {
+            Some(Char | Short) | None => Type::int(),
             _ => self.array_promotion(),
         }
     }
