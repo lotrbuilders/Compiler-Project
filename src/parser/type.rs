@@ -9,12 +9,19 @@ pub enum DeclarationType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StructDeclaration {
+    name: Option<String>,
+    members: Option<Vec<Type>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypeNode {
     Char,
     Int,
     Long,
     Short,
     Pointer,
+    Struct(usize),
     Array(usize),
     Name(String),
     Function(Vec<Type>),
@@ -88,6 +95,13 @@ impl Type {
     pub fn is_array(&self) -> bool {
         match self.nodes.get(0) {
             Some(TypeNode::Array(..)) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_struct(&self) -> bool {
+        match self.nodes.get(0) {
+            Some(TypeNode::Struct(..)) => true,
             _ => false,
         }
     }
@@ -230,6 +244,7 @@ fn format_type(typ: &[TypeNode], f: &mut std::fmt::Formatter<'_>) -> std::fmt::R
             Long => write!(f, "long ")?,
             Short => write!(f, "short ")?,
             Pointer => write!(f, "* ")?,
+            Struct(..) => todo!(),
             Name(name) => write!(f, "{}", name)?,
             Function(arguments) => {
                 //Extend later when functions are fully implemented

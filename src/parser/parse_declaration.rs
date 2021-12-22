@@ -99,14 +99,8 @@ impl<'a> Parser<'a> {
         let mut int_seen = false;
         for node in &typ.nodes {
             match node {
-                TypeNode::Char => {
-                    if let Some(_) = type_specifier {
-                        self.invalid_type(&typ);
-                    }
-                    type_specifier = Some(Char);
-                }
                 TypeNode::Int => {
-                    if let Some(TypeNode::Char) = type_specifier {
+                    if let Some(TypeNode::Char | TypeNode::Struct(..)) = type_specifier {
                         self.invalid_type(&typ);
                     } else if int_seen {
                         self.invalid_type(&typ);
@@ -124,6 +118,13 @@ impl<'a> Parser<'a> {
                         self.invalid_type(&typ);
                     }
                 }
+                TypeNode::Struct(..) | TypeNode::Char => {
+                    if let Some(_) = type_specifier {
+                        self.invalid_type(&typ);
+                    }
+                    type_specifier = Some(node.clone());
+                }
+
                 TypeNode::Function(..)
                 | TypeNode::Name(..)
                 | TypeNode::Array(..)
