@@ -85,8 +85,8 @@ impl Lexer {
                         errors.push(err);
                     }
                 },
-                ';' | '{' | '}' | '(' | ')' | '[' | ']' | '+' | '-' | '*' | '/' | '~' | '?'
-                | ':' | ',' => {
+                ';' | '{' | '}' | '(' | ')' | '[' | ']' | '+' | '*' | '/' | '~' | '?' | ':'
+                | ',' => {
                     self.next(input);
                     output.push(Token::new(token::punct(c), self.here()));
                 }
@@ -125,6 +125,16 @@ impl Lexer {
                             self.next(input);
                         }
                         _ => output.push(Token::new(token::punct(first_char), begin)),
+                    }
+                }
+                '-' => {
+                    let begin = self.here();
+                    self.next(input);
+                    if let Some('>') = self.peek(input) {
+                        self.next(input);
+                        output.push(Token::new(TokenType::Arrow, begin.to(&self.here())));
+                    } else {
+                        output.push(Token::new(token::punct(c), begin));
                     }
                 }
 
