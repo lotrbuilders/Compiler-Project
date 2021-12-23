@@ -39,6 +39,10 @@ impl<'a> SemanticAnalyzer<'a> {
         }
     }
 
+    pub fn get_struct_table(&mut self) -> StructTable {
+        std::mem::replace(&mut self.struct_table, StructTable::new())
+    }
+
     pub fn get_global_table(&self) -> HashMap<String, Symbol> {
         self.symbol_table.global_table.clone()
     }

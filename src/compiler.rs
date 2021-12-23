@@ -79,10 +79,14 @@ pub fn compile(filename: String, output: String) -> Result<(), String> {
     log::debug!("Parser result:\n {}", PrintAst::new(&ast, &struct_table));
     let _ = crate::parser::ast_graph::print_graph("graph.gv", &ast);
 
-    let (analysis_errors, global_table) = {
+    let (analysis_errors, global_table, struct_table) = {
         log::info!("Analyzer started");
         let mut analyzer = SemanticAnalyzer::new(struct_table, &*backend);
-        (analyzer.analyze(&mut ast), analyzer.get_global_table())
+        (
+            analyzer.analyze(&mut ast),
+            analyzer.get_global_table(),
+            analyzer.get_struct_table(),
+        )
     };
 
     if lexer_errors.is_err() || parse_errors.is_err() || analysis_errors.is_err() {
@@ -91,7 +95,8 @@ pub fn compile(filename: String, output: String) -> Result<(), String> {
     }
 
     log::info!("Evaluation started");
-    let (ir_functions, ir_globals, function_names) = evaluate(&ast, &global_table, &mut *backend);
+    let (ir_functions, ir_globals, function_names) =
+        evaluate(&ast, &global_table, &mut *backend, struct_table);
     for ir in &ir_functions {
         log::debug!("Evaluation result:\n{}", ir);
     }

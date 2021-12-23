@@ -2,11 +2,15 @@ use super::{Evaluate, EvaluationContext};
 use crate::backend::{ir::*, Backend};
 use crate::parser::ast::*;
 use crate::parser::r#type::DeclarationType;
-use crate::table::Symbol;
+use crate::table::{StructTable, Symbol};
 use std::collections::{HashMap, HashSet};
 
 impl ExternalDeclaration {
-    pub fn eval(&self, backend: &mut dyn Backend) -> Option<IRFunction> {
+    pub fn eval(
+        &self,
+        struct_table: StructTable,
+        backend: &mut dyn Backend,
+    ) -> (Option<IRFunction>, StructTable) {
         match &self.function_body {
             Some(statements) => {
                 let mut instructions = Vec::<IRInstruction>::new();
@@ -18,7 +22,8 @@ impl ExternalDeclaration {
                     unfixed_break: Vec::new(),
                     unfixed_continue: Vec::new(),
                     loop_depth: 0,
-                    backend: backend,
+                    backend,
+                    struct_table,
                 };
                 instructions.push(IRInstruction::Label(None, 0));
 
@@ -26,18 +31,21 @@ impl ExternalDeclaration {
                 for statement in statements {
                     statement.eval(&mut instructions, &mut context);
                 }
-                Some(IRFunction {
-                    name: self.name.clone(),
-                    return_size: IRSize::S32,
-                    instructions,
-                    arguments,
-                    variables: context.variables,
-                    strings: context.strings,
-                })
+                (
+                    Some(IRFunction {
+                        name: self.name.clone(),
+                        return_size: IRSize::S32,
+                        instructions,
+                        arguments,
+                        variables: context.variables,
+                        strings: context.strings,
+                    }),
+                    context.struct_table,
+                )
             }
             None => {
                 log::info!("Empty function body");
-                None
+                (None, struct_table)
             }
         }
     }

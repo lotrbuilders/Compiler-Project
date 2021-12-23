@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::backend::{ir::*, Backend};
 use crate::parser::ast::*;
+use crate::table::struct_table::StructTable;
 use crate::table::Symbol;
 
 use self::evaluation_context::EvaluationContext;
@@ -25,11 +26,15 @@ pub fn evaluate(
     ast: &TranslationUnit,
     map: &HashMap<String, Symbol>,
     backend: &mut dyn Backend,
+    struct_table: StructTable,
 ) -> (Vec<IRFunction>, Vec<IRGlobal>, HashSet<String>) {
+    let mut struct_table = struct_table;
     let mut functions = Vec::<IRFunction>::new();
     let mut function_names = HashSet::<String>::new();
     for global in &ast.global_declarations {
-        if let Some(declaration) = global.eval(backend) {
+        let ext = global.eval(struct_table, backend);
+        struct_table = ext.1;
+        if let Some(declaration) = ext.0 {
             function_names.insert(declaration.name.clone());
             functions.push(declaration);
         }

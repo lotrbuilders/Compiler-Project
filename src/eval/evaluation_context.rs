@@ -4,6 +4,7 @@ use crate::{
         ast::{BinaryExpressionType, SizeofType},
         Type,
     },
+    table::StructTable,
 };
 
 pub struct EvaluationContext<'a> {
@@ -14,6 +15,7 @@ pub struct EvaluationContext<'a> {
     pub unfixed_continue: Vec<(usize, u32)>,
     pub unfixed_break: Vec<(usize, u32)>,
     pub loop_depth: u32,
+    pub struct_table: StructTable,
     pub backend: &'a dyn Backend,
 }
 
