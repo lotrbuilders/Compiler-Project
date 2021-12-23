@@ -13,7 +13,8 @@ impl<'a> Parser<'a> {
         while !self.empty() {
             match self.parse_external_declaration() {
                 Ok(Some(declaration)) => global_declarations.push(declaration),
-                Ok(None) | Err(_) => (),
+                Ok(None) => log::debug!("Struct declaration"),
+                Err(_) => (),
             }
         }
         let result = match self.errors.is_empty() {
@@ -33,8 +34,9 @@ impl<'a> Parser<'a> {
     pub fn parse_external_declaration(&mut self) -> Result<Option<ExternalDeclaration>, ()> {
         let begin = self.peek_span();
         let declaration = self.parse_declaration()?;
-        let declaration = declaration.remove_name();
-        let function_body = if Type::is_function(&declaration) {
+        let name = declaration.get_name();
+        let decl_type = declaration.remove_name();
+        let function_body = if Type::is_function(&decl_type) {
             if let Some(TokenType::LBrace) = self.peek_type() {
                 let compound_statement = self.parse_compound_statement()?;
                 Some(compound_statement)
@@ -62,10 +64,10 @@ impl<'a> Parser<'a> {
             None
         };
 
-        if let Some(name) = Type::get_name(&declaration) {
+        if let Some(name) = name {
             Ok(Some(ExternalDeclaration {
                 span: begin.to(&self.peek_span()),
-                ast_type: declaration,
+                ast_type: decl_type,
                 name,
                 function_body,
                 expression,

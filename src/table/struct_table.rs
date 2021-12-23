@@ -93,35 +93,6 @@ impl<'a> Index<usize> for &'a StructTable {
 
 impl Display for StructTable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        /*for map in &self.local_table {
-            for (key, value) in map {
-                writeln!(
-                    f,
-                    "struct {}__{}{};",
-                    key,
-                    value,
-                    PrintAst::new(&self.structs[*value], &self)
-                )?;
-            }
-        }
-        for (key, value) in &self.global_table {
-            writeln!(
-                f,
-                "struct {}__{}{};",
-                key,
-                value,
-                PrintAst::new(&self.structs[*value], &self)
-            )?;
-        }
-        for value in &self.anonymous_table {
-            writeln!(
-                f,
-                "struct __anonymous_struct__{}{};",
-                value,
-                PrintAst::new(&self.structs[*value], &self)
-            )?;
-        }*/
-
         for index in 0..self.structs.len() {
             let entry = &self.structs[index];
             if entry.name.is_some() {

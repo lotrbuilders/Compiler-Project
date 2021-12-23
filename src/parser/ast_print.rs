@@ -14,7 +14,7 @@ pub trait ASTDisplay {
     fn fmt_braced(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result {
         write!(f, "(")?;
         self.fmt(f, table)?;
-        write!(f, "(")?;
+        write!(f, ")")?;
         Ok(())
     }
     fn fmt_square(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result {
@@ -112,7 +112,7 @@ impl<'a> ASTDisplay for Statement {
                 typ.nodes.insert(0, TypeNode::Name(ident.clone()));
                 write!(f, "{}", typ)?;
                 if let Some(exp) = init {
-                    writeln!(f, " = ")?;
+                    write!(f, " = ")?;
                     exp.fmt(f, table)?;
                 }
                 writeln!(f, ";")?;
@@ -124,7 +124,7 @@ impl<'a> ASTDisplay for Statement {
                 span: _,
                 expression,
             } => {
-                expression.fmt(f, table)?;
+                expression.fmt_braced(f, table)?;
                 writeln!(f, ";")?;
             }
 
@@ -174,7 +174,7 @@ impl<'a> ASTDisplay for Statement {
                 ast_type: _,
                 expression,
             } => {
-                write!(f, "return",)?;
+                write!(f, "return ",)?;
                 expression.fmt(f, table)?;
                 writeln!(f, ";")?;
             }
@@ -185,7 +185,7 @@ impl<'a> ASTDisplay for Statement {
                 statement,
                 do_while: false,
             } => {
-                writeln!(f, "while")?;
+                writeln!(f, "while ")?;
                 expression.fmt_braced(f, table)?;
                 statement.fmt(f, table)?;
             }
@@ -211,9 +211,9 @@ impl<'a> ASTDisplay for Expression {
     fn fmt(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result {
         use ExpressionVariant::*;
         match &self.variant {
-            ConstI(value) => write!(f, "{}", value)?,
-            CString(value) => write!(f, "\"{}\"", value)?,
-            Ident(name, ..) => write!(f, "{}", name)?,
+            ConstI(value) => write!(f, "{} ", value)?,
+            CString(value) => write!(f, "{:?} ", value)?,
+            Ident(name, ..) => write!(f, "{} ", name)?,
             Sizeof(typ) => {
                 write!(f, "sizeof ",)?;
                 typ.fmt(f, table)?;
@@ -262,9 +262,9 @@ impl<'a> ASTDisplay for Expression {
             Ternary(cond, left, right) => {
                 cond.fmt_braced(f, table)?;
                 write!(f, "?")?;
-                left.fmt(f, table)?;
+                left.fmt_braced(f, table)?;
                 write!(f, ":")?;
-                right.fmt(f, table)?;
+                right.fmt_braced(f, table)?;
             }
 
             Assign(left, right) => {
