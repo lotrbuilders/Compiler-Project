@@ -1,4 +1,7 @@
-use crate::token::{Token, TokenType};
+use crate::{
+    table::StructTable,
+    token::{Token, TokenType},
+};
 use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
@@ -74,6 +77,14 @@ impl Type {
     pub fn pointer() -> Type {
         Type {
             nodes: vec![TypeNode::Pointer],
+        }
+    }
+
+    pub fn is_qualified(&self, struct_table: &StructTable) -> bool {
+        if let Some(TypeNode::Struct(index)) = self.nodes.get(0) {
+            struct_table[*index].is_qualified()
+        } else {
+            true
         }
     }
 

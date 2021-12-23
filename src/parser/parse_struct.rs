@@ -74,11 +74,14 @@ impl<'a> Parser<'a> {
             let decl = self.parse_declaration();
             self.expect_semicolon();
             if let Ok(decl) = decl {
+                let span = begin.to(&self.peek_span());
                 if let Some(name) = decl.get_name() {
-                    let typ = decl.remove_name().into();
+                    let typ: Type = decl.remove_name().into();
+                    if !typ.is_qualified(&self.struct_table) {
+                        self.errors.push(error!(span,"Expected a qualified type within struct definition, but {} is not qualified",typ))
+                    }
                     result.push((name, typ));
                 } else {
-                    let span = begin.to(&self.peek_span());
                     self.errors.push(error!(
                         span,
                         "Expected name in member declaration of struct"

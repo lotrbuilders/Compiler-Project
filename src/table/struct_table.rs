@@ -1,5 +1,5 @@
 use crate::parser::r#type::StructType;
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Index};
 
 #[derive(Clone, Debug)]
 pub struct StructTable {
@@ -74,5 +74,11 @@ impl StructTable {
     pub fn get_mut<'a>(&'a mut self, key: &String) -> Option<&'a mut StructType> {
         let index = self.get_index(key)?;
         Some(&mut self.structs[index])
+    }
+}
+impl<'a> Index<usize> for &'a StructTable {
+    type Output = StructType;
+    fn index(&self, index: usize) -> &'a Self::Output {
+        &self.structs[index]
     }
 }

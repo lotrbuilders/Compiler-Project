@@ -38,6 +38,10 @@ impl Parser<'_> {
         }
     }
 
+    pub fn get_struct_table(&mut self) -> StructTable {
+        std::mem::replace(&mut self.struct_table, StructTable::new())
+    }
+
     fn peek(&self) -> Option<Token> {
         match self.tokens.get(self.token_index) {
             Some(token) => Some(token.clone()),
