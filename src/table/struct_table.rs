@@ -1,4 +1,4 @@
-use crate::parser::r#type::{StructType, Type};
+use crate::parser::r#type::StructType;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
@@ -27,13 +27,9 @@ impl StructTable {
         self.local_table.pop();
     }
 
-    pub fn try_insert(
-        &mut self,
-        key: Option<&String>,
-        members: Vec<(String, Type)>,
-    ) -> Result<usize, ()> {
+    pub fn try_insert(&mut self, key: Option<&String>) -> Result<usize, ()> {
         let index = self.counter;
-        let symbol = StructType { members };
+        let symbol = StructType { members: None };
         if let Some(key) = key {
             if let Some(map) = self.local_table.last_mut() {
                 StructTable::try_insert2(map, key, index)
@@ -56,23 +52,27 @@ impl StructTable {
         }
     }
 
-    pub fn get<'a>(&'a self, key: &String) -> Option<&'a StructType> {
+    pub fn qualify(&mut self, index: usize, entry: StructType) {
+        self.structs[index] = entry;
+    }
+
+    pub fn get_index(&self, key: &String) -> Option<usize> {
         for map in self.local_table.iter().rev() {
-            let result = map.get(key);
+            let result = map.get(key).map(|i| *i);
             if result.is_some() {
-                return result.map(|&i| &self.structs[i]);
+                return result;
             }
         }
-        self.global_table.get(key).map(|&i| &self.structs[i])
+        self.global_table.get(key).map(|i| *i)
+    }
+
+    pub fn get<'a>(&'a self, key: &String) -> Option<&'a StructType> {
+        let index = self.get_index(key)?;
+        Some(&self.structs[index])
     }
 
     pub fn get_mut<'a>(&'a mut self, key: &String) -> Option<&'a mut StructType> {
-        for map in self.local_table.iter_mut().rev() {
-            let result = map.get(key);
-            if result.is_some() {
-                return result.map(|&i| &mut self.structs[i]);
-            }
-        }
-        self.global_table.get(key).map(|&i| &mut self.structs[i])
+        let index = self.get_index(key)?;
+        Some(&mut self.structs[index])
     }
 }

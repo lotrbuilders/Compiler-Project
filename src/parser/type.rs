@@ -10,7 +10,13 @@ pub enum DeclarationType {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StructType {
-    pub members: Vec<(String, Type)>,
+    pub members: Option<Vec<(String, Type)>>,
+}
+
+impl StructType {
+    pub fn is_qualified(&self) -> bool {
+        matches!(self.members, Some(..))
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -7,6 +7,7 @@ mod parse_declaration;
 mod parse_expression;
 mod parse_global;
 mod parse_statement;
+mod parse_struct;
 mod recovery;
 
 pub use self::r#type::{Type, TypeNode};

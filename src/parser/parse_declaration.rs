@@ -29,8 +29,12 @@ impl<'a> Parser<'a> {
         }
         let mut result = Vec::<TypeNode>::new();
         while let Some(token) = self.peek().filter(Parser::is_type_qualifier) {
-            self.next();
-            result.push(token.into());
+            if let TokenType::Struct = self.peek_type().unwrap() {
+                result.push(self.parse_struct()?);
+            } else {
+                self.next();
+                result.push(token.into());
+            }
         }
         Ok(result.into())
     }
