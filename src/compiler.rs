@@ -7,6 +7,7 @@ use colored::Colorize;
 use crate::backend;
 use crate::eval::evaluate;
 use crate::lexer::Lexer;
+use crate::parser::ast_print::PrintAst;
 use crate::parser::Parser;
 use crate::semantic_analysis::SemanticAnalyzer;
 
@@ -75,7 +76,7 @@ pub fn compile(filename: String, output: String) -> Result<(), String> {
         let struct_table = parser.get_struct_table();
         (ast, parse_errors, struct_table)
     };
-    log::debug!("Parser result:\n{}", ast);
+    log::debug!("Parser result:\n {}", PrintAst::new(&ast, &struct_table));
     let _ = crate::parser::ast_graph::print_graph("graph.gv", &ast);
 
     let (analysis_errors, global_table) = {
@@ -90,7 +91,6 @@ pub fn compile(filename: String, output: String) -> Result<(), String> {
     }
 
     log::info!("Evaluation started");
-    log::debug!("\n{}", ast);
     let (ir_functions, ir_globals, function_names) = evaluate(&ast, &global_table, &mut *backend);
     for ir in &ir_functions {
         log::debug!("Evaluation result:\n{}", ir);

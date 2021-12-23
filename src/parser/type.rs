@@ -4,6 +4,8 @@ use crate::{
 };
 use std::fmt::Display;
 
+use super::ast_print::ASTDisplay;
+
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum DeclarationType {
     Declaration,
@@ -13,6 +15,7 @@ pub enum DeclarationType {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StructType {
+    pub name: Option<String>,
     pub members: Option<Vec<(String, Type)>>,
 }
 
@@ -78,6 +81,9 @@ impl Type {
         Type {
             nodes: vec![TypeNode::Pointer],
         }
+    }
+    pub fn error() -> Type {
+        Type::int()
     }
 
     pub fn is_qualified(&self, struct_table: &StructTable) -> bool {
@@ -175,6 +181,13 @@ impl Type {
         }
     }
 
+    pub fn get_struct_index(&self) -> usize {
+        match self.nodes.get(0) {
+            Some(TypeNode::Struct(index)) => *index,
+            _ => unreachable!(),
+        }
+    }
+
     // Function works under current definition of the types, but might need to be processed further when more types are introduced
     pub fn combine(mut base_type: Type, mut declarator: Type) -> Type {
         declarator.nodes.append(&mut base_type.nodes);
@@ -242,13 +255,22 @@ impl From<&[TypeNode]> for Type {
     }
 }
 
+impl ASTDisplay for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter, table: &StructTable) -> std::fmt::Result {
+        format_type(&self.nodes, f, Some(table))
+    }
+}
 impl Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        format_type(&self.nodes, f)
+        format_type(&self.nodes, f, None)
     }
 }
 
-fn format_type(typ: &[TypeNode], f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+fn format_type(
+    typ: &[TypeNode],
+    f: &mut std::fmt::Formatter<'_>,
+    table: Option<&StructTable>,
+) -> std::fmt::Result {
     if typ.is_empty() {
         return Ok(());
     }
@@ -260,11 +282,10 @@ fn format_type(typ: &[TypeNode], f: &mut std::fmt::Formatter<'_>) -> std::fmt::R
             Long => write!(f, "long ")?,
             Short => write!(f, "short ")?,
             Pointer => write!(f, "* ")?,
-            Struct(..) => todo!(),
             Name(name) => write!(f, "{}", name)?,
             Function(arguments) => {
                 //Extend later when functions are fully implemented
-                format_type(&typ[0..i], f)?;
+                format_type(&typ[0..i], f, table)?;
                 write!(f, "(")?;
                 if let Some(arg) = arguments.get(0) {
                     write!(f, "{}", arg)?;
@@ -277,9 +298,21 @@ fn format_type(typ: &[TypeNode], f: &mut std::fmt::Formatter<'_>) -> std::fmt::R
             }
             Array(size) => {
                 //Extend later when functions are fully implemented
-                format_type(&typ[0..i], f)?;
+                format_type(&typ[0..i], f, table)?;
                 write!(f, "[{}]", size)?;
                 break;
+            }
+
+            Struct(index) => {
+                if let Some(table) = table {
+                    if let Some(name) = &table[*index].name {
+                        write!(f, "struct {}", name)?;
+                    } else {
+                        write!(f, "__anonymous_struct{}", index)?;
+                    }
+                } else {
+                    write!(f, "struct")?
+                }
             }
         };
     }

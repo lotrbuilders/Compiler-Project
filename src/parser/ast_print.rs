@@ -1,3 +1,5 @@
+use crate::table::StructTable;
+
 use super::ast::*;
 use std::fmt;
 use std::fmt::Display;
@@ -6,18 +8,60 @@ use std::fmt::Display;
 // The print-out should be valid c code to allow for relexing and reparsing
 
 // Allows the conversion of a type into a String representing the type as used in C
+pub trait ASTDisplay {
+    fn fmt(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result;
+    fn fmt_braced(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result {
+        write!(f, "(")?;
+        self.fmt(f, table)?;
+        write!(f, "(")?;
+        Ok(())
+    }
+    fn fmt_square(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result {
+        write!(f, "[")?;
+        self.fmt(f, table)?;
+        write!(f, "]")?;
+        Ok(())
+    }
+}
 
-impl Display for TranslationUnit {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+pub struct PrintAst<'a, T>
+where
+    T: ASTDisplay,
+{
+    item: &'a T,
+    table: &'a StructTable,
+}
+
+impl<'a, T> PrintAst<'a, T>
+where
+    T: ASTDisplay,
+{
+    pub fn new(item: &'a T, table: &'a StructTable) -> PrintAst<'a, T> {
+        PrintAst { item, table }
+    }
+}
+
+impl<'a, T> Display for PrintAst<'a, T>
+where
+    T: ASTDisplay,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let PrintAst { item, table } = *self;
+        item.fmt(f, table)
+    }
+}
+
+impl<'a> ASTDisplay for TranslationUnit {
+    fn fmt(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result {
         for declaration in &self.global_declarations {
-            writeln!(f, "{}", declaration)?;
+            declaration.fmt(f, table)?;
         }
         Ok(())
     }
 }
 
-impl Display for ExternalDeclaration {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl<'a> ASTDisplay for ExternalDeclaration {
+    fn fmt(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result {
         use super::TypeNode;
         let mut typ = self.ast_type.clone();
         typ.nodes.insert(0, TypeNode::Name(self.name.clone()));
@@ -27,7 +71,7 @@ impl Display for ExternalDeclaration {
             Some(body) => {
                 writeln!(f, "{{")?;
                 for statement in body {
-                    write!(f, "{}", statement)?;
+                    statement.fmt(f, table)?;
                 }
                 writeln!(f, "}}")?;
             }
@@ -36,8 +80,8 @@ impl Display for ExternalDeclaration {
     }
 }
 
-impl Display for Statement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl<'a> ASTDisplay for Statement {
+    fn fmt(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result {
         use Statement::*;
         match self {
             Break { .. } => writeln!(f, "break;")?,
@@ -50,7 +94,7 @@ impl Display for Statement {
             } => {
                 writeln!(f, "{{")?;
                 for stmt in statements {
-                    write!(f, "{}", stmt)?;
+                    stmt.fmt(f, table)?;
                 }
                 writeln!(f, "}}")?;
             }
@@ -66,10 +110,10 @@ impl Display for Statement {
                 typ.nodes.insert(0, TypeNode::Name(ident.clone()));
                 write!(f, "{}", typ)?;
                 if let Some(exp) = init {
-                    writeln!(f, " = {};", exp)?;
-                } else {
-                    writeln!(f, ";")?;
+                    writeln!(f, " = ")?;
+                    exp.fmt(f, table)?;
                 }
+                writeln!(f, ";")?;
             }
 
             Empty(_) => write!(f, ";")?,
@@ -77,7 +121,10 @@ impl Display for Statement {
             Expression {
                 span: _,
                 expression,
-            } => writeln!(f, "{};", expression)?,
+            } => {
+                expression.fmt(f, table)?;
+                writeln!(f, ";")?;
+            }
 
             If {
                 span: _,
@@ -85,10 +132,12 @@ impl Display for Statement {
                 statement,
                 else_statement,
             } => {
-                writeln!(f, "if ({})", expression)?;
-                writeln!(f, "{}", statement)?;
+                write!(f, "if ",)?;
+                expression.fmt_braced(f, table)?;
+                statement.fmt(f, table)?;
                 if let Some(statement) = else_statement {
-                    writeln!(f, "else \n{}", statement)?;
+                    writeln!(f, "else \n")?;
+                    statement.fmt(f, table)?;
                 }
             }
 
@@ -101,28 +150,32 @@ impl Display for Statement {
             } => {
                 write!(f, "for (")?;
                 match init {
-                    Some(init) => write!(f, "{}", init)?,
+                    Some(init) => init.fmt(f, table)?,
                     None => write!(f, ";")?,
                 }
 
-                if let Some(init) = condition {
-                    write!(f, "{}", init)?;
+                if let Some(cond) = condition {
+                    cond.fmt(f, table)?;
                 }
                 write!(f, ";")?;
 
                 match expression {
-                    Some(init) => writeln!(f, "{})", init)?,
-                    None => writeln!(f, ")")?,
+                    Some(init) => init.fmt(f, table)?,
+                    None => (),
                 }
-
-                writeln!(f, "{}", statement)?;
+                writeln!(f, ")")?;
+                statement.fmt(f, table)?;
             }
 
             Return {
                 span: _,
                 ast_type: _,
                 expression,
-            } => writeln!(f, "return {};", expression)?,
+            } => {
+                write!(f, "return",)?;
+                expression.fmt(f, table)?;
+                writeln!(f, ";")?;
+            }
 
             While {
                 span: _,
@@ -130,8 +183,9 @@ impl Display for Statement {
                 statement,
                 do_while: false,
             } => {
-                writeln!(f, "while ({})", expression)?;
-                writeln!(f, "{}", statement)?;
+                writeln!(f, "while")?;
+                expression.fmt_braced(f, table)?;
+                statement.fmt(f, table)?;
             }
 
             While {
@@ -140,60 +194,81 @@ impl Display for Statement {
                 statement,
                 do_while: true,
             } => {
-                write!(f, "do\n{}", statement)?;
-                writeln!(f, "while ({});", expression)?;
+                write!(f, "do\n",)?;
+                statement.fmt(f, table)?;
+                write!(f, "while ")?;
+                expression.fmt_braced(f, table)?;
+                writeln!(f, ";")?;
             }
         }
         Ok(())
     }
 }
 
-impl Display for Expression {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl<'a> ASTDisplay for Expression {
+    fn fmt(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result {
         use ExpressionVariant::*;
         match &self.variant {
             ConstI(value) => write!(f, "{}", value)?,
             CString(value) => write!(f, "\"{}\"", value)?,
             Ident(name, ..) => write!(f, "{}", name)?,
-            Sizeof(typ) => write!(f, "sizeof {}", typ)?,
+            Sizeof(typ) => {
+                write!(f, "sizeof ",)?;
+                typ.fmt(f, table)?;
+            }
 
             Function(func, arguments) => {
-                write!(f, "({}(", func)?;
+                write!(f, "(")?;
+                func.fmt(f, table)?;
+                write!(f, "(")?;
                 if let Some(arg) = arguments.get(0) {
-                    write!(f, "{}", arg)?;
+                    arg.fmt(f, table)?;
                 }
                 for arg in arguments.iter().skip(1) {
-                    write!(f, ",{}", arg)?;
+                    write!(f, ",")?;
+                    arg.fmt(f, table)?;
                 }
                 write!(f, "))")?;
             }
 
             Member(exp, id, indirect) => {
-                write!(f, "({}){}{}", exp, if *indirect { "->" } else { "." }, id)?;
+                exp.fmt_braced(f, table)?;
+                write!(f, "{}{}", if *indirect { "->" } else { "." }, id)?;
             }
 
             Unary(UnaryExpressionType::Cast, exp) => {
-                write!(f, "(({}){})", self.ast_type, exp)?;
+                write!(f, "({})", self.ast_type)?;
+                exp.fmt_braced(f, table)?;
             }
 
             Unary(op, exp) => {
-                write!(f, "({} {})", op, exp)?;
+                write!(f, "{} ", op)?;
+                exp.fmt_braced(f, table)?;
             }
 
             Binary(BinaryExpressionType::Index, left, right) => {
-                write!(f, "({}[{}])", left, right)?;
+                left.fmt_braced(f, table)?;
+                right.fmt_square(f, table)?;
             }
 
             Binary(op, left, right) => {
-                write!(f, "({} {} {})", left, op, right)?;
+                left.fmt_braced(f, table)?;
+                write!(f, " {} ", op)?;
+                right.fmt_braced(f, table)?;
             }
 
             Ternary(cond, left, right) => {
-                write!(f, "({} ? {} : {})", cond, left, right)?;
+                cond.fmt_braced(f, table)?;
+                write!(f, "?")?;
+                left.fmt(f, table)?;
+                write!(f, ":")?;
+                right.fmt(f, table)?;
             }
 
             Assign(left, right) => {
-                write!(f, "({} = {})", left, right)?;
+                left.fmt_braced(f, table)?;
+                write!(f, " = ")?;
+                right.fmt_braced(f, table)?;
             }
         }
         Ok(())
@@ -247,11 +322,11 @@ impl Display for UnaryExpressionType {
     }
 }
 
-impl Display for SizeofType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl ASTDisplay for SizeofType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>, table: &StructTable) -> fmt::Result {
         match self {
-            SizeofType::Type(typ) => write!(f, "({})", typ),
-            SizeofType::Expression(exp) => write!(f, "{}", exp),
+            SizeofType::Type(typ) => typ.fmt_braced(f, table),
+            SizeofType::Expression(exp) => exp.fmt_braced(f, table),
         }
     }
 }

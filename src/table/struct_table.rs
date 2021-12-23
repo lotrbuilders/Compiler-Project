@@ -29,7 +29,11 @@ impl StructTable {
 
     pub fn try_insert(&mut self, key: Option<&String>) -> Result<usize, ()> {
         let index = self.counter;
-        let symbol = StructType { members: None };
+        let name = key.map(|s| s.clone());
+        let symbol = StructType {
+            name,
+            members: None,
+        };
         if let Some(key) = key {
             if let Some(map) = self.local_table.last_mut() {
                 StructTable::try_insert2(map, key, index)

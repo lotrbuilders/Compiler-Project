@@ -8,7 +8,6 @@ impl Evaluate for Expression {
         use BinaryExpressionType::*;
         use ExpressionVariant::*;
         use UnaryExpressionType::*;
-        log::trace!("Eval expression {} with type {}", self, self.ast_type);
         match &self.variant {
             &ConstI(value) => {
                 let vreg = context.next_vreg();
