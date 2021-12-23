@@ -12,8 +12,8 @@ impl<'a> Parser<'a> {
         let mut global_declarations = Vec::<ExternalDeclaration>::new();
         while !self.empty() {
             match self.parse_external_declaration() {
-                Ok(declaration) => global_declarations.push(declaration),
-                Err(_) => (),
+                Ok(Some(declaration)) => global_declarations.push(declaration),
+                Ok(None) | Err(_) => (),
             }
         }
         let result = match self.errors.is_empty() {
@@ -30,10 +30,9 @@ impl<'a> Parser<'a> {
 
     // Parses a single extarnal declaration, which is either a function or a global
     // <external-declaration> ::= <declaration> (';'|<compound-statement>|'=' <const-expression> ';')
-    pub fn parse_external_declaration(&mut self) -> Result<ExternalDeclaration, ()> {
+    pub fn parse_external_declaration(&mut self) -> Result<Option<ExternalDeclaration>, ()> {
         let begin = self.peek_span();
         let declaration = self.parse_declaration()?;
-        let name = Type::get_name(&declaration).unwrap_or("name".to_string());
         let declaration = declaration.remove_name();
         let function_body = if Type::is_function(&declaration) {
             if let Some(TokenType::LBrace) = self.peek_type() {
@@ -63,12 +62,18 @@ impl<'a> Parser<'a> {
             None
         };
 
-        Ok(ExternalDeclaration {
-            span: begin.to(&self.peek_span()),
-            ast_type: declaration,
-            name,
-            function_body,
-            expression,
-        })
+        if let Some(name) = Type::get_name(&declaration) {
+            Ok(Some(ExternalDeclaration {
+                span: begin.to(&self.peek_span()),
+                ast_type: declaration,
+                name,
+                function_body,
+                expression,
+            }))
+        } else {
+            // If this was a struct declaration it does not need to show up in the ast further
+            // It is instead captured by the struct_table
+            Ok(None)
+        }
     }
 }

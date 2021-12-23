@@ -94,10 +94,10 @@ impl Analysis for ExternalDeclaration {
 
         if self.ast_type.is_function() {
             let return_type: Type = self.ast_type.get_return_type().unwrap().into();
-            if return_type.is_array() {
+            if return_type.is_array() || return_type.is_struct() {
                 analyzer
                     .errors
-                    .push(error!(self.span, "Cannot return an array"));
+                    .push(error!(self.span, "Cannot return an array or struct"));
             }
         }
 

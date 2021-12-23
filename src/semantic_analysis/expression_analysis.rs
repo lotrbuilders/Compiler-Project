@@ -3,7 +3,7 @@ use super::type_class::TypeClass;
 use super::SemanticAnalyzer;
 use crate::error;
 use crate::parser::{ast::*, Type};
-use crate::semantic_analysis::type_checking::check_arguments_function;
+use crate::semantic_analysis::type_checking::{check_arguments_function, check_member_type};
 use crate::semantic_analysis::type_promotion::TypePromotion;
 
 // The analysis for expressions
@@ -28,9 +28,7 @@ impl Analysis for Expression {
                 return;
             }
 
-            Member(..) => {
-                todo!();
-            }
+            Member(exp, ..) => exp.analyze(analyzer),
 
             Ident(name, symbol_number, global) => {
                 if let Some(symbol) = analyzer.symbol_table.get(name) {
@@ -91,9 +89,7 @@ impl Expression {
             Unary(UnaryExpressionType::Deref, _) => self.analyze(analyzer),
             Binary(BinaryExpressionType::Index, ..) => self.analyze(analyzer),
             _ => {
-                analyzer
-                    .errors
-                    .push(error!(self.span, "Expected lvalue not '{}'", self));
+                analyzer.errors.push(error!(self.span, "Expected lvalue"));
             }
         }
         if self.ast_type.is_array() {
@@ -109,7 +105,11 @@ impl Expression {
         use ExpressionVariant::*;
 
         match &mut self.variant {
-            Ident(..) | ConstI(_) | CString(..) | Sizeof(..) | Member(..) => unreachable!(),
+            Ident(..) | ConstI(_) | CString(..) | Sizeof(..) => unreachable!(),
+
+            Member(exp, id, indirect) => {
+                check_member_type(analyzer, &self.span, &exp.ast_type, id, *indirect)
+            }
 
             Function(func, _) => func
                 .ast_type

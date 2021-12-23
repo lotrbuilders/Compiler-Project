@@ -43,8 +43,9 @@ impl<'a> Parser<'a> {
             (Some(key), None) => self.struct_table.get_index(&key).unwrap(),
 
             // struct b{...} a;
-            (Some(key), Some(definition)) => {
+            (Some(key), Some(mut definition)) => {
                 let index = self.struct_table.get_index(&key).unwrap();
+                definition.name = Some(key.clone());
                 let def = self.struct_table.get(&key).unwrap();
 
                 // Check if struct has already been defined
@@ -90,6 +91,7 @@ impl<'a> Parser<'a> {
             }
         }
         Ok(StructType {
+            name: None,
             members: Some(result),
         })
     }
