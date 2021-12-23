@@ -1,5 +1,5 @@
-use crate::parser::r#type::StructType;
-use std::{collections::HashMap, ops::Index};
+use crate::parser::{ast_print::PrintAst, r#type::StructType};
+use std::{collections::HashMap, fmt::Display, ops::Index};
 
 #[derive(Clone, Debug)]
 pub struct StructTable {
@@ -7,6 +7,7 @@ pub struct StructTable {
     structs: Vec<StructType>,
     local_table: Vec<HashMap<String, usize>>,
     global_table: HashMap<String, usize>,
+    anonymous_table: Vec<usize>,
 }
 
 impl StructTable {
@@ -16,6 +17,7 @@ impl StructTable {
             structs: Vec::new(),
             local_table: Vec::new(),
             global_table: HashMap::new(),
+            anonymous_table: Vec::new(),
         }
     }
 
@@ -40,6 +42,8 @@ impl StructTable {
             } else {
                 StructTable::try_insert2(&mut self.global_table, key, index)
             }?;
+        } else {
+            self.anonymous_table.push(index);
         }
         self.structs.push(symbol);
 
@@ -84,5 +88,60 @@ impl<'a> Index<usize> for &'a StructTable {
     type Output = StructType;
     fn index(&self, index: usize) -> &'a Self::Output {
         &self.structs[index]
+    }
+}
+
+impl Display for StructTable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        /*for map in &self.local_table {
+            for (key, value) in map {
+                writeln!(
+                    f,
+                    "struct {}__{}{};",
+                    key,
+                    value,
+                    PrintAst::new(&self.structs[*value], &self)
+                )?;
+            }
+        }
+        for (key, value) in &self.global_table {
+            writeln!(
+                f,
+                "struct {}__{}{};",
+                key,
+                value,
+                PrintAst::new(&self.structs[*value], &self)
+            )?;
+        }
+        for value in &self.anonymous_table {
+            writeln!(
+                f,
+                "struct __anonymous_struct__{}{};",
+                value,
+                PrintAst::new(&self.structs[*value], &self)
+            )?;
+        }*/
+
+        for index in 0..self.structs.len() {
+            let entry = &self.structs[index];
+            if entry.name.is_some() {
+                writeln!(
+                    f,
+                    "struct {}__{}{};",
+                    entry.name.as_ref().unwrap(),
+                    index,
+                    PrintAst::new(&self.structs[index], &self)
+                )?;
+            } else {
+                writeln!(
+                    f,
+                    "struct __anonymous_struct__{}{};",
+                    index,
+                    PrintAst::new(&self.structs[index], &self)
+                )?;
+            }
+        }
+
+        Ok(())
     }
 }

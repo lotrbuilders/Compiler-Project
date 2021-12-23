@@ -306,9 +306,9 @@ fn format_type(
             Struct(index) => {
                 if let Some(table) = table {
                     if let Some(name) = &table[*index].name {
-                        write!(f, "struct {}", name)?;
+                        write!(f, "struct {}__{}", name, index)?;
                     } else {
-                        write!(f, "__anonymous_struct{}", index)?;
+                        write!(f, "__anonymous_struct__{}", index)?;
                     }
                 } else {
                     write!(f, "struct")?

@@ -1,6 +1,7 @@
 use crate::table::StructTable;
 
 use super::ast::*;
+use super::r#type::StructType;
 use std::fmt;
 use std::fmt::Display;
 
@@ -53,6 +54,7 @@ where
 
 impl<'a> ASTDisplay for TranslationUnit {
     fn fmt(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result {
+        write!(f, "{}", table)?;
         for declaration in &self.global_declarations {
             declaration.fmt(f, table)?;
         }
@@ -328,5 +330,23 @@ impl ASTDisplay for SizeofType {
             SizeofType::Type(typ) => typ.fmt_braced(f, table),
             SizeofType::Expression(exp) => exp.fmt_braced(f, table),
         }
+    }
+}
+
+impl ASTDisplay for StructType {
+    fn fmt(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result {
+        use super::TypeNode;
+        if self.members.is_some() {
+            writeln!(f, "\n{{")?;
+            for (name, typ) in self.members.as_ref().unwrap() {
+                let typ = typ.clone();
+                let name = vec![TypeNode::Name(name.clone())].into();
+                let typ = typ.append(&name);
+                writeln!(f, "{};\n", PrintAst::new(&typ, &table))?;
+            }
+            writeln!(f, "}}")?;
+        }
+
+        Ok(())
     }
 }
