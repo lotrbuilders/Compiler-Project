@@ -158,24 +158,8 @@ impl Evaluate for Expression {
                 }
             }
 
-            Member(exp, _, indirect, index) => {
-                let left = exp.eval_lvalue(result, context);
-                let left = if *indirect {
-                    let vreg = context.next_vreg();
-                    result.push(IRInstruction::Load(IRSize::P, vreg, left));
-                    vreg
-                } else {
-                    left
-                };
-
-                let struct_index = exp.ast_type.get_struct_index();
-                let offset = context.struct_offset_table[struct_index][*index as usize];
-
-                let right = context.next_vreg();
-                let addr = context.next_vreg();
-                result.push(IRInstruction::Imm(IRSize::P, right, offset as i128));
-                result.push(IRInstruction::Add(IRSize::P, addr, left, right));
-
+            Member(..) => {
+                let addr = self.eval_lvalue(result, context);
                 self.optional_load(result, context, addr)
             }
 
@@ -461,6 +445,25 @@ impl Expression {
             Binary(Index, ..) => {
                 let (left, right) = self.eval_pointer_addition(result, context);
                 let addr = context.next_vreg();
+                result.push(IRInstruction::Add(IRSize::P, addr, left, right));
+                addr
+            }
+            Member(exp, _, indirect, index) => {
+                let left = exp.eval_lvalue(result, context);
+                let left = if *indirect {
+                    let vreg = context.next_vreg();
+                    result.push(IRInstruction::Load(IRSize::P, vreg, left));
+                    vreg
+                } else {
+                    left
+                };
+
+                let struct_index = exp.ast_type.get_struct_index();
+                let offset = context.struct_offset_table[struct_index][*index as usize];
+
+                let right = context.next_vreg();
+                let addr = context.next_vreg();
+                result.push(IRInstruction::Imm(IRSize::P, right, offset as i128));
                 result.push(IRInstruction::Add(IRSize::P, addr, left, right));
                 addr
             }

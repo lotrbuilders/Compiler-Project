@@ -148,7 +148,7 @@ impl<'a> (dyn Backend + 'a) {
         self.get_size_struct(&typ.nodes[0], struct_info)
     }
 
-    fn get_size_struct(&self, typ: &TypeNode, struct_info: &Vec<TypeInfo>) -> IRSize {
+    pub fn get_size_struct(&self, typ: &TypeNode, struct_info: &Vec<TypeInfo>) -> IRSize {
         if let TypeNode::Struct(index) = typ {
             IRSize::B(struct_info[*index].size as u16)
         } else {

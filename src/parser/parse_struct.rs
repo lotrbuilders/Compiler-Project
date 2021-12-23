@@ -12,7 +12,9 @@ impl<'a> Parser<'a> {
         let name = match self.peek_type() {
             Some(TokenType::Ident(name)) => {
                 self.next();
-                let _ = self.struct_table.try_insert(Some(&name));
+                if !self.struct_table.contains(&name) {
+                    let _ = self.struct_table.try_insert(Some(&name));
+                }
                 Some(name)
             }
             Some(TokenType::LBrace) => None,
@@ -44,17 +46,20 @@ impl<'a> Parser<'a> {
 
             // struct b{...} a;
             (Some(key), Some(mut definition)) => {
-                let index = self.struct_table.get_index(&key).unwrap();
+                let mut index = self.struct_table.get_index(&key).unwrap();
                 definition.name = Some(key.clone());
                 let def = self.struct_table.get(&key).unwrap();
 
                 // Check if struct has already been defined
                 if def.is_qualified() {
-                    let span = begin.to(&self.peek_span());
-                    self.errors.push(error!(span, "Struct {} redefined", key));
-                } else {
-                    self.struct_table.qualify(self.backend, index, definition);
+                    if let Ok(i) = self.struct_table.try_insert(Some(&key)) {
+                        index = i;
+                    } else {
+                        let span = begin.to(&self.peek_span());
+                        self.errors.push(error!(span, "Struct {} redefined", key));
+                    }
                 }
+                self.struct_table.qualify(self.backend, index, definition);
 
                 index
             }

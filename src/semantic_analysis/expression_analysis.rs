@@ -88,6 +88,7 @@ impl Expression {
             }
             Unary(UnaryExpressionType::Deref, _) => self.analyze(analyzer),
             Binary(BinaryExpressionType::Index, ..) => self.analyze(analyzer),
+            Member(..) => self.analyze(analyzer),
             _ => {
                 analyzer.errors.push(error!(self.span, "Expected lvalue"));
             }

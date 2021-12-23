@@ -578,7 +578,7 @@ impl BackendAMD64 {
                     }
                     IRSize::B(size) => {
                         let size = size as i32;
-                        offset += size * count;
+                        offset += -size * count;
                         offset
                     }
                 },

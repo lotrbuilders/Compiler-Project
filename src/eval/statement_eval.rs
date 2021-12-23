@@ -33,7 +33,9 @@ impl Evaluate for Statement {
             } => {
                 let index = context.variables.len();
                 let (array_type, array_count) = decl_type.deconstruct();
-                let size = context.backend.get_size(&array_type);
+                let size = context
+                    .backend
+                    .get_size_struct(&array_type, &context.struct_size_table);
                 let variable = IRVariable {
                     size,
                     count: array_count,

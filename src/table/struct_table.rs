@@ -36,6 +36,15 @@ impl StructTable {
         self.local_table.pop();
     }
 
+    pub fn contains(&self, key: &String) -> bool {
+        for map in self.local_table.iter().rev() {
+            if map.get(key).is_some() {
+                return true;
+            }
+        }
+        self.global_table.get(key).is_some()
+    }
+
     pub fn try_insert(&mut self, key: Option<&String>) -> Result<usize, ()> {
         let index = self.counter;
         let name = key.map(|s| s.clone());
