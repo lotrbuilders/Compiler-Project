@@ -233,7 +233,7 @@ impl<'a> ASTDisplay for Expression {
                 write!(f, "))")?;
             }
 
-            Member(exp, id, indirect) => {
+            Member(exp, id, indirect, ..) => {
                 exp.fmt_braced(f, table)?;
                 write!(f, "{}{}", if *indirect { "->" } else { "." }, id)?;
             }

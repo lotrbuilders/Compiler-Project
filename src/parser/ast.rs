@@ -94,7 +94,7 @@ pub enum ExpressionVariant {
     Ternary(Box<Expression>, Box<Expression>, Box<Expression>),
     Binary(BinaryExpressionType, Box<Expression>, Box<Expression>),
     Unary(UnaryExpressionType, Box<Expression>),
-    Member(Box<Expression>, String, bool),
+    Member(Box<Expression>, String, bool, u16),
 
     Function(Box<Expression>, Vec<Expression>),
 

@@ -1,10 +1,15 @@
-use crate::parser::{ast_print::PrintAst, r#type::StructType};
+use crate::{
+    backend::{Backend, TypeInfo},
+    parser::{ast_print::PrintAst, r#type::StructType},
+};
 use std::{collections::HashMap, fmt::Display, ops::Index};
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct StructTable {
     counter: usize,
     pub structs: Vec<StructType>,
+    pub info: Vec<TypeInfo>,
+    pub offsets: Vec<Vec<usize>>,
     local_table: Vec<HashMap<String, usize>>,
     global_table: HashMap<String, usize>,
     anonymous_table: Vec<usize>,
@@ -15,6 +20,8 @@ impl StructTable {
         StructTable {
             counter: 0,
             structs: Vec::new(),
+            info: Vec::new(),
+            offsets: Vec::new(),
             local_table: Vec::new(),
             global_table: HashMap::new(),
             anonymous_table: Vec::new(),
@@ -46,6 +53,8 @@ impl StructTable {
             self.anonymous_table.push(index);
         }
         self.structs.push(symbol);
+        self.info.push(TypeInfo::new(0, 1, 1));
+        self.offsets.push(Vec::new());
 
         self.counter += 1;
         Ok(index)
@@ -60,8 +69,11 @@ impl StructTable {
         }
     }
 
-    pub fn qualify(&mut self, index: usize, entry: StructType) {
+    pub fn qualify(&mut self, backend: &dyn Backend, index: usize, entry: StructType) {
+        let (info, offsets) = entry.to_info(backend, &self.info);
         self.structs[index] = entry;
+        self.offsets[index] = offsets;
+        self.info[index] = info;
     }
 
     pub fn get_index(&self, key: &String) -> Option<usize> {

@@ -138,7 +138,7 @@ impl Parser<'_> {
                     exp = Expression {
                         span,
                         ast_type: Type::empty(),
-                        variant: ExpressionVariant::Member(Box::new(exp), name, indirect),
+                        variant: ExpressionVariant::Member(Box::new(exp), name, indirect, 0),
                     }
                 }
                 _ => break,

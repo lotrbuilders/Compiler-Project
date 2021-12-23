@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::backend::{ir::*, Backend, TypeInfo};
 use crate::parser::ast::*;
+use crate::parser::r#type::StructType;
 use crate::table::struct_table::StructTable;
 use crate::table::Symbol;
 use crate::utility::padding;
@@ -29,11 +30,10 @@ pub fn evaluate(
     backend: &mut dyn Backend,
     struct_table: StructTable,
 ) -> (Vec<IRFunction>, Vec<IRGlobal>, HashSet<String>) {
-    let (struct_table, struct_offsets) = struct_table.to_info(backend);
     let mut functions = Vec::<IRFunction>::new();
     let mut function_names = HashSet::<String>::new();
     for global in &ast.global_declarations {
-        if let Some(declaration) = global.eval(&struct_table, &struct_offsets, backend) {
+        if let Some(declaration) = global.eval(&struct_table.info, &struct_table.offsets, backend) {
             function_names.insert(declaration.name.clone());
             functions.push(declaration);
         }
@@ -55,25 +55,36 @@ impl StructTable {
         let mut size_list: Vec<TypeInfo> = Vec::new();
         let mut offset_list: Vec<Vec<usize>> = Vec::new();
         for object in &self.structs {
-            let (size, align, offsets) = match &object.members {
-                Some(members) => members.iter().fold(
-                    (0, 1, Vec::<usize>::new()),
-                    |(offset, alignment, mut offset_list), (_, typ)| {
-                        let element_alignment = backend.sizeof_element(typ) as usize;
-                        let alignment = std::cmp::max(alignment, element_alignment);
-                        let offset = offset + padding(offset, element_alignment);
-                        let sizeof = backend.sizeof(typ) as usize;
-                        offset_list.push(offset);
-                        (offset + sizeof, alignment, offset_list)
-                    },
-                ),
-                None => (0, 1, Vec::new()),
-            };
-
-            let size = size + padding(size, align);
-            size_list.push(TypeInfo::new(size, align, align));
+            let (info, offsets) = object.to_info(backend, &size_list);
+            size_list.push(info);
             offset_list.push(offsets);
         }
         (size_list, offset_list)
+    }
+}
+
+impl StructType {
+    pub fn to_info(
+        &self,
+        backend: &dyn Backend,
+        struct_size: &Vec<TypeInfo>,
+    ) -> (TypeInfo, Vec<usize>) {
+        let (size, align, offsets) = match &self.members {
+            Some(members) => members.iter().fold(
+                (0, 1, Vec::<usize>::new()),
+                |(offset, alignment, mut offset_list), (_, typ)| {
+                    let element_alignment = backend.sizeof_element(typ, struct_size) as usize;
+                    let alignment = std::cmp::max(alignment, element_alignment);
+                    let offset = offset + padding(offset, element_alignment);
+                    let sizeof = backend.sizeof(typ, struct_size) as usize;
+                    offset_list.push(offset);
+                    (offset + sizeof, alignment, offset_list)
+                },
+            ),
+            None => (0, 1, Vec::new()),
+        };
+
+        let size = size + padding(size, align);
+        (TypeInfo::new(size, align, align), offsets)
     }
 }

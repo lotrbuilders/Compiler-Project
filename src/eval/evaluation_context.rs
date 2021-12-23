@@ -2,7 +2,7 @@ use crate::{
     backend::{ir::*, Backend, TypeInfo},
     parser::{
         ast::{BinaryExpressionType, SizeofType},
-        Type,
+        Type, TypeNode,
     },
 };
 
@@ -136,33 +136,41 @@ impl<'a> EvaluationContext<'a> {
 }
 
 impl<'a> (dyn Backend + 'a) {
-    pub fn eval_sizeof(&self, typ: &SizeofType) -> u32 {
+    pub fn eval_sizeof(&self, typ: &SizeofType, struct_info: &Vec<TypeInfo>) -> u32 {
         let ast_type = match typ {
             SizeofType::Type(typ) => typ,
             SizeofType::Expression(exp) => &exp.ast_type,
         };
-        self.sizeof(ast_type)
+        self.sizeof(ast_type, struct_info)
     }
 
-    fn get_size2(&self, typ: &Type) -> IRSize {
-        Backend::get_size(self, &typ.nodes[0])
+    fn get_size2(&self, typ: &Type, struct_info: &Vec<TypeInfo>) -> IRSize {
+        self.get_size_struct(&typ.nodes[0], struct_info)
     }
 
-    pub fn sizeof_element(&self, typ: &Type) -> u32 {
-        if typ.is_array() {
-            let (array_type, _) = typ.deconstruct();
-            self.sizeof2(self.get_size(&array_type))
+    fn get_size_struct(&self, typ: &TypeNode, struct_info: &Vec<TypeInfo>) -> IRSize {
+        if let TypeNode::Struct(index) = typ {
+            IRSize::B(struct_info[*index].size as u16)
         } else {
-            self.sizeof2(self.get_size2(&typ))
+            Backend::get_size(self, &typ)
         }
     }
 
-    pub fn sizeof(&self, typ: &Type) -> u32 {
+    pub fn sizeof_element(&self, typ: &Type, struct_info: &Vec<TypeInfo>) -> u32 {
+        if typ.is_array() {
+            let (array_type, _) = typ.deconstruct();
+            self.sizeof2(self.get_size_struct(&array_type, struct_info))
+        } else {
+            self.sizeof2(self.get_size2(&typ, struct_info))
+        }
+    }
+
+    pub fn sizeof(&self, typ: &Type, struct_info: &Vec<TypeInfo>) -> u32 {
         if typ.is_array() {
             let (array_type, array_size) = typ.deconstruct();
-            self.sizeof2(self.get_size(&array_type)) * (array_size as u32)
+            self.sizeof2(self.get_size_struct(&array_type, struct_info)) * (array_size as u32)
         } else {
-            self.sizeof2(self.get_size2(&typ))
+            self.sizeof2(self.get_size2(&typ, struct_info))
         }
     }
 
@@ -192,11 +200,14 @@ impl<'a> (dyn Backend + 'a) {
 }
 
 impl<'a> EvaluationContext<'a> {
+    pub fn eval_sizeof(&self, typ: &SizeofType) -> u32 {
+        self.backend.eval_sizeof(typ, &self.struct_size_table)
+    }
     pub fn get_size(&'a self, typ: &Type) -> IRSize {
-        self.backend.get_size2(typ)
+        self.backend.get_size2(typ, &self.struct_size_table)
     }
     pub fn sizeof(&self, typ: &Type) -> u32 {
-        self.backend.sizeof(typ)
+        self.backend.sizeof(typ, &self.struct_size_table)
     }
 
     pub fn int_ptr(&self, signed: bool) -> IRSize {

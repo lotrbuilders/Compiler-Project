@@ -32,7 +32,7 @@ impl Evaluate for Expression {
             }
 
             Sizeof(typ) => {
-                let size = context.backend.eval_sizeof(typ) as i128;
+                let size = context.eval_sizeof(typ) as i128;
                 let size_t = context.get_size(&context.backend.size_t());
                 let vreg = context.next_vreg();
                 result.push(IRInstruction::Imm(size_t, vreg, size));
@@ -158,8 +158,25 @@ impl Evaluate for Expression {
                 }
             }
 
-            Member(..) => {
-                todo!();
+            Member(exp, _, indirect, index) => {
+                let left = exp.eval_lvalue(result, context);
+                let left = if *indirect {
+                    let vreg = context.next_vreg();
+                    result.push(IRInstruction::Load(IRSize::P, vreg, left));
+                    vreg
+                } else {
+                    left
+                };
+
+                let struct_index = exp.ast_type.get_struct_index();
+                let offset = context.struct_offset_table[struct_index][*index as usize];
+
+                let right = context.next_vreg();
+                let addr = context.next_vreg();
+                result.push(IRInstruction::Imm(IRSize::P, right, offset as i128));
+                result.push(IRInstruction::Add(IRSize::P, addr, left, right));
+
+                self.optional_load(result, context, addr)
             }
 
             Assign(left, right) => {

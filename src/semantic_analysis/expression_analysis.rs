@@ -107,8 +107,11 @@ impl Expression {
         match &mut self.variant {
             Ident(..) | ConstI(_) | CString(..) | Sizeof(..) => unreachable!(),
 
-            Member(exp, id, indirect) => {
-                check_member_type(analyzer, &self.span, &exp.ast_type, id, *indirect)
+            Member(exp, id, indirect, index) => {
+                let (ast_type, i) =
+                    check_member_type(analyzer, &self.span, &exp.ast_type, id, *indirect);
+                *index = i;
+                ast_type
             }
 
             Function(func, _) => func

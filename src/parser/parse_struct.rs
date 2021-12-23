@@ -35,7 +35,7 @@ impl<'a> Parser<'a> {
             // struct {...}a;
             (None, Some(definition)) => {
                 let index = self.struct_table.try_insert(None).unwrap();
-                self.struct_table.qualify(index, definition);
+                self.struct_table.qualify(self.backend, index, definition);
                 index
             }
 
@@ -53,7 +53,7 @@ impl<'a> Parser<'a> {
                     let span = begin.to(&self.peek_span());
                     self.errors.push(error!(span, "Struct {} redefined", key));
                 } else {
-                    self.struct_table.qualify(index, definition);
+                    self.struct_table.qualify(self.backend, index, definition);
                 }
 
                 index

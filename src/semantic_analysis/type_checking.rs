@@ -84,7 +84,7 @@ pub fn check_member_type(
     ast_type: &Type,
     id: &String,
     indirect: bool,
-) -> Type {
+) -> (Type, u16) {
     //Check and account for possible indirection
     let struct_type = if indirect {
         let ast_type = ast_type.array_promotion();
@@ -99,7 +99,7 @@ pub fn check_member_type(
         analyzer
             .errors
             .push(error!(span, "Expected a struct, but found {}", ast_type));
-        return Type::error();
+        return (Type::error(), 0);
     }
 
     // Get the definition of the type and check if it is qualified(fully defined)
@@ -110,14 +110,14 @@ pub fn check_member_type(
             span,
             "{} is unqualifed and cannot be accesed by {}", struct_type, id
         ));
-        return Type::error();
+        return (Type::error(), 0);
     }
 
     // Check if the id matches any known members
     // (Iteration is probably faster then hashing here as n is generally small)
-    for (member, typ) in struct_def.members.as_ref().unwrap() {
+    for ((member, typ), i) in struct_def.members.as_ref().unwrap().iter().zip(0..) {
         if member == id {
-            return typ.clone();
+            return (typ.clone(), i);
         }
     }
 
@@ -126,5 +126,5 @@ pub fn check_member_type(
         span,
         "{} does not have a member named {}", struct_type, id
     ));
-    Type::error()
+    (Type::error(), 0)
 }

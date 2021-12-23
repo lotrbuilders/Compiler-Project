@@ -221,7 +221,7 @@ impl Graph for Expression {
                     arg.graph(buffer, node_number, number)?;
                 }
             }
-            Member(exp, id, indirect) => {
+            Member(exp, id, indirect, ..) => {
                 if *indirect {
                     writeln!(buffer, "n{} [label=\"->{}\"]", number, id)?;
                 } else {

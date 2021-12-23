@@ -1,5 +1,5 @@
 use crate::{
-    backend::Backend,
+    backend::{Backend, TypeInfo},
     parser::{ast::*, Type},
 };
 
@@ -10,7 +10,7 @@ impl Expression {
             _ => false,
         }
     }
-    pub fn const_eval(self, backend: &dyn Backend) -> Expression {
+    pub fn const_eval(self, backend: &dyn Backend, struct_info: &Vec<TypeInfo>) -> Expression {
         use ExpressionVariant::*;
         match self.variant {
             ConstI(_) => self,
@@ -23,7 +23,7 @@ impl Expression {
             | Unary(UnaryExpressionType::Deref | UnaryExpressionType::Address, ..) => self,
 
             Sizeof(typ) => {
-                let size = backend.eval_sizeof(&typ);
+                let size = backend.eval_sizeof(&typ, &struct_info);
                 Expression {
                     span: self.span,
                     ast_type: self.ast_type,
@@ -32,9 +32,9 @@ impl Expression {
             }
 
             Ternary(cond, left, right) => {
-                let cond = cond.const_eval(backend);
-                let left = left.const_eval(backend);
-                let right = right.const_eval(backend);
+                let cond = cond.const_eval(backend, struct_info);
+                let left = left.const_eval(backend, struct_info);
+                let right = right.const_eval(backend, struct_info);
 
                 match (&cond.variant, &left.variant, &right.variant) {
                     (ConstI(cond), ConstI(left), ConstI(right)) => Expression {
@@ -56,8 +56,8 @@ impl Expression {
                 }
             }
             Binary(op, left, right) => {
-                let left = left.const_eval(backend);
-                let right = right.const_eval(backend);
+                let left = left.const_eval(backend, struct_info);
+                let right = right.const_eval(backend, struct_info);
 
                 match (&left.variant, &right.variant) {
                     (ConstI(left), ConstI(right)) => Expression {
@@ -74,13 +74,13 @@ impl Expression {
                 }
             }
             Unary(op, exp) => {
-                let exp = exp.const_eval(backend);
+                let exp = exp.const_eval(backend, struct_info);
 
                 match &exp.variant {
                     ConstI(exp) => Expression {
                         span: self.span,
                         ast_type: self.ast_type.clone(),
-                        variant: ConstI(op.const_eval(backend, exp, &self.ast_type)),
+                        variant: ConstI(op.const_eval(backend, struct_info, exp, &self.ast_type)),
                     },
                     _ => Expression {
                         span: self.span,
@@ -124,7 +124,13 @@ impl BinaryExpressionType {
 }
 
 impl UnaryExpressionType {
-    fn const_eval(&self, backend: &dyn Backend, &exp: &i128, ast_type: &Type) -> i128 {
+    fn const_eval(
+        &self,
+        backend: &dyn Backend,
+        struct_info: &Vec<TypeInfo>,
+        &exp: &i128,
+        ast_type: &Type,
+    ) -> i128 {
         use UnaryExpressionType::*;
         match self {
             Identity => exp,
@@ -132,7 +138,7 @@ impl UnaryExpressionType {
             BinNot => !exp,
             LogNot => (exp == 0) as i128,
             Cast => {
-                let size = (backend.sizeof(ast_type) * 8) as i128;
+                let size = (backend.sizeof(ast_type, struct_info) * 8) as i128;
                 exp % (1 << size)
             }
             Deref | Address => unreachable!(),

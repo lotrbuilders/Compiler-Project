@@ -63,7 +63,7 @@ impl<'a> Parser<'a> {
                 }
                 Some(TokenType::LSquare) => {
                     let expression = self.parse_braced('[', Parser::parse_conditional)?;
-                    let expression = expression.const_eval(self.backend);
+                    let expression = expression.const_eval(self.backend, &self.struct_table.info);
                     let number = if let ExpressionVariant::ConstI(value) = &expression.variant {
                         *value
                     } else {

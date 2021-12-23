@@ -144,7 +144,9 @@ impl Analysis for ExternalDeclaration {
 
         if let Some(expression) = &mut self.expression {
             expression.analyze(analyzer);
-            *expression = expression.clone().const_eval(analyzer.backend);
+            *expression = expression
+                .clone()
+                .const_eval(analyzer.backend, &analyzer.struct_table.info);
             if !expression.is_constant() {
                 analyzer.errors.push(error!(
                     self.span,
