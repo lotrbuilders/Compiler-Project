@@ -108,6 +108,12 @@ impl Analysis for ExternalDeclaration {
                 for arg in arguments {
                     if let Some(name) = arg.get_name() {
                         let symbol_type = arg.clone().remove_name().array_promotion();
+                        if symbol_type.is_struct() {
+                            analyzer.errors.push(error!(
+                                self.span,
+                                "Structs as arguments currently not yet supported\n"
+                            ))
+                        }
                         if let Err(()) = analyzer.symbol_table.try_insert(
                             &name,
                             &symbol_type,

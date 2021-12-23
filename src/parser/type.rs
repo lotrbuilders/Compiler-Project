@@ -87,10 +87,13 @@ impl Type {
     }
 
     pub fn is_qualified(&self, struct_table: &StructTable) -> bool {
-        if let Some(TypeNode::Struct(index)) = self.nodes.get(0) {
-            struct_table[*index].is_qualified()
-        } else {
-            true
+        Type::is_qualified2(&self.nodes, struct_table)
+    }
+    fn is_qualified2(nodes: &[TypeNode], struct_table: &StructTable) -> bool {
+        match nodes.get(0) {
+            Some(TypeNode::Struct(index)) => struct_table[*index].is_qualified(),
+            Some(TypeNode::Array(..)) => Type::is_qualified2(&nodes[1..], struct_table),
+            _ => true,
         }
     }
 
