@@ -264,7 +264,7 @@ impl Evaluate for Expression {
                 let mut right = right.eval(result, context);
 
                 // IF we are subtracting two pointers we need to devide their distance by the sizeof the pointed-to object
-                let size = context.sizeof(left.ast_type.clone().deref());
+                let size = context.sizeof(&left.ast_type.clone().deref());
                 if size != 1 {
                     let constant = context.next_vreg();
                     let vreg = context.next_vreg();
@@ -509,7 +509,7 @@ impl Expression {
 
         // We must multiply the right side with sizeof(*left)
         // The constant will always be added on the right side
-        let size = context.sizeof(left.ast_type.clone().deref());
+        let size = context.sizeof(&left.ast_type.clone().deref());
         if size != 1 {
             let constant = context.next_vreg();
             let vreg = context.next_vreg();

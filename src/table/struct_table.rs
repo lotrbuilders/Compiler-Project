@@ -4,7 +4,7 @@ use std::{collections::HashMap, fmt::Display, ops::Index};
 #[derive(Clone, Debug)]
 pub struct StructTable {
     counter: usize,
-    structs: Vec<StructType>,
+    pub structs: Vec<StructType>,
     local_table: Vec<HashMap<String, usize>>,
     global_table: HashMap<String, usize>,
     anonymous_table: Vec<usize>,

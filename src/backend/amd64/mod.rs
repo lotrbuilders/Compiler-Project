@@ -576,6 +576,11 @@ impl BackendAMD64 {
                         offset += -8 * count;
                         offset //+ 4 * (count - 1)
                     }
+                    IRSize::B(size) => {
+                        let size = size as i32;
+                        offset += size * count;
+                        offset
+                    }
                 },
                 // Stack argument
                 Some(None) => {

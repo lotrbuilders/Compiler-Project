@@ -36,6 +36,23 @@ pub fn get_backend(architecture: String) -> Result<Box<dyn Backend>, String> {
     Ok(backend)
 }
 
+#[derive(Clone, PartialEq)]
+pub struct TypeInfo {
+    pub size: usize,
+    pub align: usize,
+    pub stack_align: usize,
+}
+
+impl TypeInfo {
+    pub fn new(size: usize, align: usize, stack_align: usize) -> TypeInfo {
+        TypeInfo {
+            size: size,
+            align: align,
+            stack_align: stack_align,
+        }
+    }
+}
+
 #[derive(Clone, Copy, PartialEq)]
 pub enum Direction {
     Left2Right,

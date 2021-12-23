@@ -154,6 +154,7 @@ impl Display for IRSize {
             Self::S32 => write!(f, "s32"),
             Self::S64 => write!(f, "s64"),
             Self::P => write!(f, "p"),
+            Self::B(s) => write!(f, "b({})", s),
             //_ => unreachable!(),
         }
     }

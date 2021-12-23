@@ -69,7 +69,6 @@ impl Expression {
                     _ => Expression {
                         span: self.span,
                         ast_type: self.ast_type,
-
                         variant: ExpressionVariant::Binary(op, Box::new(left), Box::new(right)),
                     },
                 }
@@ -81,13 +80,11 @@ impl Expression {
                     ConstI(exp) => Expression {
                         span: self.span,
                         ast_type: self.ast_type.clone(),
-
-                        variant: ConstI(op.const_eval(backend, exp, self.ast_type)),
+                        variant: ConstI(op.const_eval(backend, exp, &self.ast_type)),
                     },
                     _ => Expression {
                         span: self.span,
                         ast_type: self.ast_type,
-
                         variant: ExpressionVariant::Unary(op, Box::new(exp)),
                     },
                 }
@@ -103,13 +100,6 @@ impl BinaryExpressionType {
             Add => left + right,
             Subtract => left - right,
             Multiply => left * right,
-            Divide => {
-                if right != 0 {
-                    left / right
-                } else {
-                    0
-                }
-            }
             Equal => (left == right) as i128,
             Inequal => (left != right) as i128,
             Less => (left < right) as i128,
@@ -121,13 +111,20 @@ impl BinaryExpressionType {
             LogOr => (left != 0 || right != 0) as i128,
             LogAnd => (left != 0 && right != 0) as i128,
             Comma => right,
+            Divide => {
+                if right != 0 {
+                    left / right
+                } else {
+                    0
+                }
+            }
             Index => unreachable!(),
         }
     }
 }
 
 impl UnaryExpressionType {
-    fn const_eval(&self, backend: &dyn Backend, &exp: &i128, ast_type: Type) -> i128 {
+    fn const_eval(&self, backend: &dyn Backend, &exp: &i128, ast_type: &Type) -> i128 {
         use UnaryExpressionType::*;
         match self {
             Identity => exp,

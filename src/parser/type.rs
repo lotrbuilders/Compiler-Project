@@ -164,6 +164,18 @@ impl Type {
             _ => None,
         }
     }
+
+    pub fn get_element(&self) -> TypeNode {
+        Type::get_element2(&self.nodes)
+    }
+    fn get_element2(nodes: &[TypeNode]) -> TypeNode {
+        match nodes.get(0) {
+            Some(TypeNode::Array(..)) => Type::get_element2(&nodes[1..]),
+            Some(t) => t.clone(),
+            None => unreachable!(),
+        }
+    }
+
     pub fn remove_name(self) -> Type {
         match self.nodes.get(0) {
             Some(TypeNode::Name(_)) => self.nodes[1..].into(),
@@ -210,17 +222,17 @@ impl Type {
         }
     }
 
-    pub fn deconstruct(&self) -> (Type, usize) {
+    pub fn deconstruct(&self) -> (TypeNode, usize) {
         Type::deconstruct2(&self.nodes)
     }
 
-    fn deconstruct2(typ: &[TypeNode]) -> (Type, usize) {
+    fn deconstruct2(typ: &[TypeNode]) -> (TypeNode, usize) {
         match typ.get(0) {
             Some(TypeNode::Array(size)) => {
                 let (t, s) = Type::deconstruct2(&typ[1..]);
                 (t, s * size)
             }
-            Some(..) => (typ.into(), 1),
+            Some(t) => (t.clone(), 1),
             None => unreachable!(),
         }
     }

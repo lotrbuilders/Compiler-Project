@@ -1,16 +1,17 @@
 use super::{Evaluate, EvaluationContext};
-use crate::backend::{ir::*, Backend};
+use crate::backend::{ir::*, Backend, TypeInfo};
 use crate::parser::ast::*;
 use crate::parser::r#type::DeclarationType;
-use crate::table::{StructTable, Symbol};
+use crate::table::Symbol;
 use std::collections::{HashMap, HashSet};
 
 impl ExternalDeclaration {
     pub fn eval(
         &self,
-        struct_table: StructTable,
+        struct_size_table: &Vec<TypeInfo>,
+        struct_offset_table: &Vec<Vec<usize>>,
         backend: &mut dyn Backend,
-    ) -> (Option<IRFunction>, StructTable) {
+    ) -> Option<IRFunction> {
         match &self.function_body {
             Some(statements) => {
                 let mut instructions = Vec::<IRInstruction>::new();
@@ -23,7 +24,8 @@ impl ExternalDeclaration {
                     unfixed_continue: Vec::new(),
                     loop_depth: 0,
                     backend,
-                    struct_table,
+                    struct_size_table,
+                    struct_offset_table,
                 };
                 instructions.push(IRInstruction::Label(None, 0));
 
@@ -31,21 +33,19 @@ impl ExternalDeclaration {
                 for statement in statements {
                     statement.eval(&mut instructions, &mut context);
                 }
-                (
-                    Some(IRFunction {
-                        name: self.name.clone(),
-                        return_size: IRSize::S32,
-                        instructions,
-                        arguments,
-                        variables: context.variables,
-                        strings: context.strings,
-                    }),
-                    context.struct_table,
-                )
+
+                Some(IRFunction {
+                    name: self.name.clone(),
+                    return_size: IRSize::S32,
+                    instructions,
+                    arguments,
+                    variables: context.variables,
+                    strings: context.strings,
+                })
             }
             None => {
                 log::info!("Empty function body");
-                (None, struct_table)
+                None
             }
         }
     }

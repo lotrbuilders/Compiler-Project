@@ -1,10 +1,9 @@
 use crate::{
-    backend::{ir::*, Backend},
+    backend::{ir::*, Backend, TypeInfo},
     parser::{
         ast::{BinaryExpressionType, SizeofType},
         Type,
     },
-    table::StructTable,
 };
 
 pub struct EvaluationContext<'a> {
@@ -15,7 +14,8 @@ pub struct EvaluationContext<'a> {
     pub unfixed_continue: Vec<(usize, u32)>,
     pub unfixed_break: Vec<(usize, u32)>,
     pub loop_depth: u32,
-    pub struct_table: StructTable,
+    pub struct_size_table: &'a Vec<TypeInfo>,
+    pub struct_offset_table: &'a Vec<Vec<usize>>,
     pub backend: &'a dyn Backend,
 }
 
@@ -141,25 +141,38 @@ impl<'a> (dyn Backend + 'a) {
             SizeofType::Type(typ) => typ,
             SizeofType::Expression(exp) => &exp.ast_type,
         };
-        self.sizeof(ast_type.clone())
+        self.sizeof(ast_type)
     }
-    pub fn get_size2(&self, typ: &Type) -> IRSize {
+
+    fn get_size2(&self, typ: &Type) -> IRSize {
         Backend::get_size(self, &typ.nodes[0])
     }
-    pub fn sizeof(&self, typ: Type) -> u32 {
+
+    pub fn sizeof_element(&self, typ: &Type) -> u32 {
         if typ.is_array() {
-            let (array_type, array_size) = typ.deconstruct();
-            self.sizeof2(self.get_size2(&array_type)) * (array_size as u32)
+            let (array_type, _) = typ.deconstruct();
+            self.sizeof2(self.get_size(&array_type))
         } else {
             self.sizeof2(self.get_size2(&typ))
         }
     }
+
+    pub fn sizeof(&self, typ: &Type) -> u32 {
+        if typ.is_array() {
+            let (array_type, array_size) = typ.deconstruct();
+            self.sizeof2(self.get_size(&array_type)) * (array_size as u32)
+        } else {
+            self.sizeof2(self.get_size2(&typ))
+        }
+    }
+
     fn sizeof2(&self, size: IRSize) -> u32 {
         match size {
             IRSize::S8 => 1,
             IRSize::S16 => 2,
             IRSize::S32 => 4,
             IRSize::S64 => 8,
+            IRSize::B(size) => size as u32,
             IRSize::P => self.sizeof_pointer(),
         }
     }
@@ -172,6 +185,7 @@ impl<'a> (dyn Backend + 'a) {
             _ => unreachable!(),
         }
     }
+
     pub fn size_t(&self) -> Type {
         vec![self.typeof_size_t()].into()
     }
@@ -181,31 +195,12 @@ impl<'a> EvaluationContext<'a> {
     pub fn get_size(&'a self, typ: &Type) -> IRSize {
         self.backend.get_size2(typ)
     }
-    pub fn sizeof(&self, typ: Type) -> u32 {
-        if typ.is_array() {
-            let (array_type, array_size) = typ.deconstruct();
-            self.sizeof2(self.get_size(&array_type)) * (array_size as u32)
-        } else {
-            self.sizeof2(self.get_size(&typ))
-        }
+    pub fn sizeof(&self, typ: &Type) -> u32 {
+        self.backend.sizeof(typ)
     }
-    fn sizeof2(&self, size: IRSize) -> u32 {
-        match size {
-            IRSize::S8 => 1,
-            IRSize::S16 => 2,
-            IRSize::S32 => 4,
-            IRSize::S64 => 8,
-            IRSize::P => self.backend.sizeof_pointer(),
-        }
-    }
+
     pub fn int_ptr(&self, signed: bool) -> IRSize {
-        assert!(signed); //Unsigned integers are currently unsupported
-        match self.backend.sizeof_pointer() {
-            8 => IRSize::S64,
-            4 => IRSize::S32,
-            2 => IRSize::S16,
-            _ => unreachable!(),
-        }
+        self.backend.int_ptr(signed)
     }
 }
 

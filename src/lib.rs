@@ -10,6 +10,7 @@ pub mod options;
 pub mod parser;
 pub mod semantic_analysis;
 pub mod table;
+pub mod utility;
 
 mod span;
 mod token;
