@@ -52,9 +52,16 @@ impl<'a> Parser<'a> {
         }
 
         let mut result = Vec::<ASTTypeNode>::new();
-        if let Some(TokenType::Ident(name)) = self.peek_type() {
-            self.next();
-            result.push(ASTTypeNode::Name(name));
+        match self.peek_type() {
+            Some(TokenType::LParenthesis) => {
+                let inner = self.parse_braced('(', Parser::parse_declarator)?;
+                result = inner.list
+            }
+            Some(TokenType::Ident(name)) => {
+                self.next();
+                result.push(ASTTypeNode::Name(name));
+            }
+            _ => (),
         }
 
         loop {
