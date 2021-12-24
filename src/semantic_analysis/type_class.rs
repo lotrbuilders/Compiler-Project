@@ -89,7 +89,10 @@ impl Type {
         if lhs.get(0).is_none() || rhs.get(0).is_none() {
             true
         } else if let (Some(Pointer), Some(Pointer)) = (lhs.get(0), rhs.get(0)) {
-            lhs[1..] == rhs[1..]
+            match (lhs.get(1), rhs.get(1)) {
+                (Some(Void), Some(_)) | (Some(_), Some(Void)) => true,
+                _ => lhs[1..] == rhs[1..],
+            }
         } else if Type::is_in2(lhs, TypeClass::Arithmetic)
             && Type::is_in2(rhs, TypeClass::Arithmetic)
         {

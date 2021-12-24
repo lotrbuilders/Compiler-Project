@@ -113,6 +113,12 @@ impl Analysis for ExternalDeclaration {
                     .errors
                     .push(error!(self.span, "Cannot return an array or struct"));
             }
+        } else {
+            if self.decl_type.is_void() {
+                analyzer
+                    .errors
+                    .push(error!(self.span, "Global variable cannot have type void"));
+            }
         }
 
         let function_body = self.function_body.is_some();
@@ -121,7 +127,17 @@ impl Analysis for ExternalDeclaration {
 
             analyzer.enter_scope();
             let arguments = self.ast_type.get_function_arguments(analyzer);
+            let mut first = true;
             for (typ, name) in arguments {
+                if typ.is_void() {
+                    if !first {
+                        analyzer.errors.push(error!(
+                            self.span,
+                            "Expected 'void' to be the first argument"
+                        ))
+                    }
+                }
+
                 if let Some(name) = name {
                     let symbol_type = typ.array_promotion();
                     if symbol_type.is_struct() {
@@ -129,6 +145,10 @@ impl Analysis for ExternalDeclaration {
                             self.span,
                             "Structs as arguments currently not yet supported\n"
                         ))
+                    } else if symbol_type.is_void() {
+                        analyzer
+                            .errors
+                            .push(error!(self.span, "Void is not a named argument\n"))
                     }
 
                     if let Err(()) = analyzer.symbol_table.try_insert(
@@ -144,13 +164,14 @@ impl Analysis for ExternalDeclaration {
                             &analyzer.symbol_table.get(&name).unwrap().symbol_type
                         ));
                     }
-                } else if function_body {
+                } else if function_body && !typ.is_void() {
                     analyzer.errors.push(error!(
                         self.span,
                         "Function argument without name in {}",
                         self.name.clone().unwrap_or_default()
                     ));
                 }
+                first = false;
             }
 
             for statement in statements {

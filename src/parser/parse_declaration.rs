@@ -65,16 +65,6 @@ impl<'a> Parser<'a> {
                 }
                 Some(TokenType::LSquare) => {
                     let expression = self.parse_braced('[', Parser::parse_conditional)?;
-                    /*let expression = expression.const_eval(self.backend, &self.struct_table.info);
-                    let number = if let ExpressionVariant::ConstI(value) = &expression.variant {
-                        *value
-                    } else {
-                        self.errors.push(error!(
-                            expression.span,
-                            "Expected a constant expression in array declaration"
-                        ));
-                        1
-                    };*/
                     result.push(ASTTypeNode::Array(Box::new(expression)));
                 }
                 _ => break,

@@ -98,6 +98,7 @@ impl Type {
         match nodes.get(0) {
             Some(TypeNode::Struct(index)) => struct_table[*index].is_qualified(),
             Some(TypeNode::Array(..)) => Type::is_qualified2(&nodes[1..], struct_table),
+            Some(TypeNode::Void) => false,
             _ => true,
         }
     }
