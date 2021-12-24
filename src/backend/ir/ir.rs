@@ -63,6 +63,7 @@ pub enum IRInstruction {
     Jcc(IRSize, IRReg, IRLabel),
     Jnc(IRSize, IRReg, IRLabel),
     Jmp(IRLabel),
+    CallV(IRSize, IRReg, IRReg, Box<IRArguments>),
     Call(IRSize, IRReg, String, Box<IRArguments>),
     Label(Option<Box<IRPhi>>, IRLabel),
 
@@ -108,6 +109,7 @@ pub enum IRType {
     Jnc,
     Jmp,
     Call,
+    CallV,
     Label,
 
     Cvp,
@@ -180,6 +182,7 @@ impl IRInstruction {
             &Self::Jnc(..) => IRType::Jnc,
             &Self::Jmp(..) => IRType::Jmp,
             &Self::Call(..) => IRType::Call,
+            &Self::CallV(..) => IRType::CallV,
             &Self::Label(..) => IRType::Label,
 
             &Self::Cvp(..) => IRType::Cvp,
@@ -217,7 +220,8 @@ impl IRInstruction {
             | &Self::Jnc(_, left, _)
             | &Self::Cvp(.., left)
             | &Self::Cvs(.., left)
-            | &Self::Cvu(.., left) => Some(left),
+            | &Self::Cvu(.., left)
+            | &Self::CallV(_, _, left, _) => Some(left),
             _ => None,
         }
     }
@@ -264,6 +268,7 @@ impl IRInstruction {
             | &Self::Gt(_, result, ..)
             | &Self::Ge(_, result, ..)
             | &Self::Call(_, result, ..)
+            | &Self::CallV(_, result, ..)
             | &Self::Cvp(_, result, ..)
             | &Self::Cvs(_, result, ..)
             | &Self::Cvu(_, result, ..) => Some(result),
@@ -295,7 +300,8 @@ impl IRInstruction {
             | Self::Jnc(size, ..)
             | Self::Jcc(size, ..)
             | Self::Ret(size, ..)
-            | Self::Call(size, ..) => size.clone(),
+            | Self::Call(size, ..)
+            | Self::CallV(size, ..) => size.clone(),
 
             Self::Cvs(to, _, from, _) | Self::Cvu(to, _, from, _) | Self::Cvp(to, _, from, _) => {
                 let _ = from;

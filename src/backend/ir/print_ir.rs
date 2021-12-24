@@ -97,6 +97,9 @@ impl Display for IRInstruction {
             Call(size, result, name, arguments) => {
                 write!(f, "\t%{} = {} call @{}({})", result, size, name, arguments)
             }
+            CallV(size, result, addr, arguments) => {
+                write!(f, "\t%{} = {} call %{}({})", result, size, addr, arguments)
+            }
             Label(Some(phi), label) => write!(f, "L{}:\t{}", label, phi),
             Label(None, label) => write!(f, "L{}:", label),
 

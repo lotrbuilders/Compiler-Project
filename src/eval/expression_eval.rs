@@ -142,7 +142,9 @@ impl Evaluate for Expression {
                     count,
                 });
 
-                if let Ident(name, ..) = &func.variant {
+                if let (Ident(name, ..), true) =
+                    (&func.variant, !func.ast_type.is_function_pointer())
+                {
                     let vreg = context.next_vreg();
                     let index = result.len();
                     if let Some(arg_index) = arg_index {
