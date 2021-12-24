@@ -12,8 +12,7 @@ impl<'a> Parser<'a> {
         let mut global_declarations = Vec::<ExternalDeclaration>::new();
         while !self.empty() {
             match self.parse_external_declaration() {
-                Ok(Some(declaration)) => global_declarations.push(declaration),
-                Ok(None) => log::debug!("Struct declaration"),
+                Ok(declaration) => global_declarations.push(declaration),
                 Err(_) => (),
             }
         }
@@ -31,18 +30,14 @@ impl<'a> Parser<'a> {
 
     // Parses a single extarnal declaration, which is either a function or a global
     // <external-declaration> ::= <declaration> (';'|<compound-statement>|'=' <const-expression> ';')
-    pub fn parse_external_declaration(&mut self) -> Result<Option<ExternalDeclaration>, ()> {
+    pub fn parse_external_declaration(&mut self) -> Result<ExternalDeclaration, ()> {
         let begin = self.peek_span();
         let declaration = self.parse_declaration()?;
         let name = declaration.get_name();
-        let decl_type = declaration.remove_name();
-        let function_body = if Type::is_function(&decl_type) {
-            if let Some(TokenType::LBrace) = self.peek_type() {
-                let compound_statement = self.parse_compound_statement()?;
-                Some(compound_statement)
-            } else {
-                None
-            }
+        //let decl_type = declaration.remove_name();
+        let function_body = if let Some(TokenType::LBrace) = self.peek_type() {
+            let compound_statement = self.parse_compound_statement()?;
+            Some(compound_statement)
         } else {
             None
         };
@@ -64,18 +59,13 @@ impl<'a> Parser<'a> {
             None
         };
 
-        if let Some(name) = name {
-            Ok(Some(ExternalDeclaration {
-                span: begin.to(&self.peek_span()),
-                ast_type: decl_type,
-                name,
-                function_body,
-                expression,
-            }))
-        } else {
-            // If this was a struct declaration it does not need to show up in the ast further
-            // It is instead captured by the struct_table
-            Ok(None)
-        }
+        Ok(ExternalDeclaration {
+            span: begin.to(&self.peek_span()),
+            ast_type: declaration,
+            decl_type: Type::int(),
+            name,
+            function_body,
+            expression,
+        })
     }
 }

@@ -238,7 +238,6 @@ fn test_valid_parser(path: PathBuf, failures: &mut Vec<String>, fail_count: &mut
     use utcc_lib::backend;
     use utcc_lib::compiler::open;
     use utcc_lib::lexer::Lexer;
-    use utcc_lib::parser::ast_print::PrintAst;
     use utcc_lib::parser::Parser;
     let filename = path.to_str().unwrap().to_string();
     let mut lexer = Lexer::new(&filename);
@@ -249,13 +248,13 @@ fn test_valid_parser(path: PathBuf, failures: &mut Vec<String>, fail_count: &mut
 
     let (tokens, lexer_errors) = lexer.lex(&mut file.chars());
 
-    let (ast1, parse_errors, struct_table) = {
+    let (ast1, parse_errors, _) = {
         let mut parser = Parser::new(&*backend);
         let (ast, parse_errors) = parser.parse(tokens);
         let struct_table = parser.get_struct_table();
         (ast, parse_errors, struct_table)
     };
-    let ast1_string = format!("{}", PrintAst::new(&ast1, &struct_table));
+    let ast1_string = format!("{}", ast1);
     if lexer_errors.is_err() || parse_errors.is_err() {
         if let Err(err) = lexer_errors {
             *fail_count += 1;
@@ -275,7 +274,7 @@ fn test_valid_parser(path: PathBuf, failures: &mut Vec<String>, fail_count: &mut
     }
     lexer = Lexer::new(&filename);
     let (tokens, lexer_errors) = lexer.lex(&mut ast1_string.chars());
-    let (ast2, parse_errors, struct_table) = {
+    let (ast2, parse_errors, _) = {
         let mut parser = Parser::new(&*backend);
         let (ast, parse_errors) = parser.parse(tokens);
         let struct_table = parser.get_struct_table();
@@ -298,7 +297,7 @@ fn test_valid_parser(path: PathBuf, failures: &mut Vec<String>, fail_count: &mut
         }
         return;
     }
-    let ast2_string = format!("{}", PrintAst::new(&ast2, &struct_table));
+    let ast2_string = format!("{}", ast2);
 
     if ast1_string != ast2_string {
         *fail_count += 1;

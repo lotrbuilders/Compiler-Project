@@ -186,14 +186,9 @@ impl<'a> Parser<'a> {
 
     fn parse_local_declaration(&mut self) -> Result<Statement, ()> {
         let begin = self.peek_span();
-        let decl_type = self.parse_declaration()?;
-        let ident = Type::get_name(&decl_type).unwrap_or_else(|| {
-            let span = begin.to(&self.peek_span());
-            self.errors
-                .push(error!(span, "Missing identifier in declaration"));
-            "name".to_string()
-        });
-        let decl_type = decl_type.remove_name();
+        let ast_type = self.parse_declaration()?;
+        let ident = ast_type.get_name();
+        //let decl_type = decl_type.remove_name();
 
         let init = if let Some(TokenType::Assign) = self.peek_type() {
             self.next();
@@ -210,7 +205,8 @@ impl<'a> Parser<'a> {
         Ok(Statement::Declaration {
             span: begin.to(&self.peek_span()),
             ident,
-            decl_type,
+            decl_type: Type::empty(),
+            ast_type,
             init,
         })
     }

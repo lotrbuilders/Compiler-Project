@@ -4,8 +4,6 @@ use crate::{
 };
 use std::fmt::Display;
 
-use super::ast_print::ASTDisplay;
-
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum DeclarationType {
     Declaration,
@@ -36,6 +34,12 @@ pub enum TypeNode {
     Array(usize),
     Name(String),
     Function(Vec<Type>),
+}
+
+impl TypeNode {
+    pub fn error() -> TypeNode {
+        TypeNode::Int
+    }
 }
 
 // Type contains  C Type used by something
@@ -275,11 +279,6 @@ impl From<&[TypeNode]> for Type {
     }
 }
 
-impl ASTDisplay for Type {
-    fn fmt(&self, f: &mut std::fmt::Formatter, table: &StructTable) -> std::fmt::Result {
-        format_type(&self.nodes, f, Some(table))
-    }
-}
 impl Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         format_type(&self.nodes, f, None)

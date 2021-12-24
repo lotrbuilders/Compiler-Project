@@ -29,6 +29,7 @@ impl Evaluate for Statement {
                 span: _,
                 ident: _,
                 decl_type,
+                ast_type: _,
                 init,
             } => {
                 let index = context.variables.len();

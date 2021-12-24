@@ -1,8 +1,4 @@
-use crate::parser::Type;
-use crate::table::StructTable;
-
 use super::ast::*;
-use super::r#type::StructType;
 use std::fmt;
 use std::fmt::Display;
 
@@ -10,71 +6,25 @@ use std::fmt::Display;
 // The print-out should be valid c code to allow for relexing and reparsing
 
 // Allows the conversion of a type into a String representing the type as used in C
-pub trait ASTDisplay {
-    fn fmt(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result;
-    fn fmt_braced(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result {
-        write!(f, "(")?;
-        self.fmt(f, table)?;
-        write!(f, ")")?;
-        Ok(())
-    }
-    fn fmt_square(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result {
-        write!(f, "[")?;
-        self.fmt(f, table)?;
-        write!(f, "]")?;
-        Ok(())
-    }
-}
 
-pub struct PrintAst<'a, T>
-where
-    T: ASTDisplay,
-{
-    item: &'a T,
-    table: &'a StructTable,
-}
-
-impl<'a, T> PrintAst<'a, T>
-where
-    T: ASTDisplay,
-{
-    pub fn new(item: &'a T, table: &'a StructTable) -> PrintAst<'a, T> {
-        PrintAst { item, table }
-    }
-}
-
-impl<'a, T> Display for PrintAst<'a, T>
-where
-    T: ASTDisplay,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let PrintAst { item, table } = *self;
-        item.fmt(f, table)
-    }
-}
-
-impl<'a> ASTDisplay for TranslationUnit {
-    fn fmt(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result {
-        write!(f, "{}", table)?;
+impl Display for TranslationUnit {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for declaration in &self.global_declarations {
-            declaration.fmt(f, table)?;
+            writeln!(f, "{}", declaration)?;
         }
         Ok(())
     }
 }
 
-impl<'a> ASTDisplay for ExternalDeclaration {
-    fn fmt(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result {
-        use super::TypeNode;
-        let mut typ = self.ast_type.clone();
-        typ.nodes.insert(0, TypeNode::Name(self.name.clone()));
-        write!(f, "{} ", PrintAst::new(&typ, table))?;
+impl Display for ExternalDeclaration {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.ast_type)?;
         match &self.function_body {
             None => writeln!(f, ";")?,
             Some(body) => {
                 writeln!(f, "{{")?;
                 for statement in body {
-                    statement.fmt(f, table)?;
+                    write!(f, "{}", statement)?;
                 }
                 writeln!(f, "}}")?;
             }
@@ -83,8 +33,8 @@ impl<'a> ASTDisplay for ExternalDeclaration {
     }
 }
 
-impl<'a> ASTDisplay for Statement {
-    fn fmt(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result {
+impl Display for Statement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use Statement::*;
         match self {
             Break { .. } => writeln!(f, "break;")?,
@@ -97,26 +47,24 @@ impl<'a> ASTDisplay for Statement {
             } => {
                 writeln!(f, "{{")?;
                 for stmt in statements {
-                    stmt.fmt(f, table)?;
+                    write!(f, "{}", stmt)?;
                 }
                 writeln!(f, "}}")?;
             }
 
             Declaration {
                 span: _,
-                ident,
-                decl_type,
+                ident: _,
+                decl_type: _,
+                ast_type,
                 init,
             } => {
-                use super::TypeNode;
-                let mut typ = decl_type.clone();
-                typ.nodes.insert(0, TypeNode::Name(ident.clone()));
-                write!(f, "{}", typ)?;
+                write!(f, "{}", ast_type)?;
                 if let Some(exp) = init {
-                    write!(f, " = ")?;
-                    exp.fmt(f, table)?;
+                    writeln!(f, " = {};", exp)?;
+                } else {
+                    writeln!(f, ";")?;
                 }
-                writeln!(f, ";")?;
             }
 
             Empty(_) => write!(f, ";")?,
@@ -124,10 +72,7 @@ impl<'a> ASTDisplay for Statement {
             Expression {
                 span: _,
                 expression,
-            } => {
-                expression.fmt_braced(f, table)?;
-                writeln!(f, ";")?;
-            }
+            } => writeln!(f, "{};", expression)?,
 
             If {
                 span: _,
@@ -135,12 +80,10 @@ impl<'a> ASTDisplay for Statement {
                 statement,
                 else_statement,
             } => {
-                write!(f, "if ",)?;
-                expression.fmt_braced(f, table)?;
-                statement.fmt(f, table)?;
+                writeln!(f, "if ({})", expression)?;
+                writeln!(f, "{}", statement)?;
                 if let Some(statement) = else_statement {
-                    writeln!(f, "else \n")?;
-                    statement.fmt(f, table)?;
+                    writeln!(f, "else \n{}", statement)?;
                 }
             }
 
@@ -153,32 +96,28 @@ impl<'a> ASTDisplay for Statement {
             } => {
                 write!(f, "for (")?;
                 match init {
-                    Some(init) => init.fmt(f, table)?,
+                    Some(init) => write!(f, "{}", init)?,
                     None => write!(f, ";")?,
                 }
 
-                if let Some(cond) = condition {
-                    cond.fmt(f, table)?;
+                if let Some(init) = condition {
+                    write!(f, "{}", init)?;
                 }
                 write!(f, ";")?;
 
                 match expression {
-                    Some(init) => init.fmt(f, table)?,
-                    None => (),
+                    Some(init) => writeln!(f, "{})", init)?,
+                    None => writeln!(f, ")")?,
                 }
-                writeln!(f, ")")?;
-                statement.fmt(f, table)?;
+
+                writeln!(f, "{}", statement)?;
             }
 
             Return {
                 span: _,
                 ast_type: _,
                 expression,
-            } => {
-                write!(f, "return ",)?;
-                expression.fmt(f, table)?;
-                writeln!(f, ";")?;
-            }
+            } => writeln!(f, "return {};", expression)?,
 
             While {
                 span: _,
@@ -186,9 +125,8 @@ impl<'a> ASTDisplay for Statement {
                 statement,
                 do_while: false,
             } => {
-                writeln!(f, "while ")?;
-                expression.fmt_braced(f, table)?;
-                statement.fmt(f, table)?;
+                writeln!(f, "while ({})", expression)?;
+                writeln!(f, "{}", statement)?;
             }
 
             While {
@@ -197,81 +135,60 @@ impl<'a> ASTDisplay for Statement {
                 statement,
                 do_while: true,
             } => {
-                write!(f, "do\n",)?;
-                statement.fmt(f, table)?;
-                write!(f, "while ")?;
-                expression.fmt_braced(f, table)?;
-                writeln!(f, ";")?;
+                write!(f, "do\n{}", statement)?;
+                writeln!(f, "while ({});", expression)?;
             }
         }
         Ok(())
     }
 }
 
-impl<'a> ASTDisplay for Expression {
-    fn fmt(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result {
+impl Display for Expression {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use ExpressionVariant::*;
         match &self.variant {
-            ConstI(value) => write!(f, "{} ", value)?,
-            CString(value) => write!(f, "{:?} ", value)?,
-            Ident(name, ..) => write!(f, "{} ", name)?,
-            Sizeof(typ) => {
-                write!(f, "sizeof ",)?;
-                typ.fmt(f, table)?;
-            }
+            ConstI(value) => write!(f, "{}", value)?,
+            CString(value) => write!(f, "\"{}\"", value)?,
+            Ident(name, ..) => write!(f, "{}", name)?,
+            Sizeof(typ) => write!(f, "sizeof {}", typ)?,
 
             Function(func, arguments) => {
-                write!(f, "(")?;
-                func.fmt(f, table)?;
-                write!(f, "(")?;
+                write!(f, "({}(", func)?;
                 if let Some(arg) = arguments.get(0) {
-                    arg.fmt(f, table)?;
+                    write!(f, "{}", arg)?;
                 }
                 for arg in arguments.iter().skip(1) {
-                    write!(f, ",")?;
-                    arg.fmt(f, table)?;
+                    write!(f, ",{}", arg)?;
                 }
                 write!(f, "))")?;
             }
 
-            Member(exp, id, indirect, ..) => {
-                exp.fmt_braced(f, table)?;
-                write!(f, "{}{}", if *indirect { "->" } else { "." }, id)?;
+            Member(exp, id, indirect, _) => {
+                write!(f, "({}){}{}", exp, if *indirect { "->" } else { "." }, id)?;
             }
 
-            Unary(UnaryExpressionType::Cast, exp) => {
-                write!(f, "({})", self.ast_type)?;
-                exp.fmt_braced(f, table)?;
+            Cast(exp, typ) => {
+                write!(f, "(({}){})", typ, exp)?;
             }
 
             Unary(op, exp) => {
-                write!(f, "{} ", op)?;
-                exp.fmt_braced(f, table)?;
+                write!(f, "({} {})", op, exp)?;
             }
 
             Binary(BinaryExpressionType::Index, left, right) => {
-                left.fmt_braced(f, table)?;
-                right.fmt_square(f, table)?;
+                write!(f, "({}[{}])", left, right)?;
             }
 
             Binary(op, left, right) => {
-                left.fmt_braced(f, table)?;
-                write!(f, " {} ", op)?;
-                right.fmt_braced(f, table)?;
+                write!(f, "({} {} {})", left, op, right)?;
             }
 
             Ternary(cond, left, right) => {
-                cond.fmt_braced(f, table)?;
-                write!(f, "?")?;
-                left.fmt_braced(f, table)?;
-                write!(f, ":")?;
-                right.fmt_braced(f, table)?;
+                write!(f, "({} ? {} : {})", cond, left, right)?;
             }
 
             Assign(left, right) => {
-                left.fmt_braced(f, table)?;
-                write!(f, " = ")?;
-                right.fmt_braced(f, table)?;
+                write!(f, "({} = {})", left, right)?;
             }
         }
         Ok(())
@@ -319,35 +236,92 @@ impl Display for UnaryExpressionType {
                 LogNot => "!",
                 Deref => "*",
                 Address => "&",
-                Cast => "cast",
             }
         )
     }
 }
 
-impl ASTDisplay for SizeofType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>, table: &StructTable) -> fmt::Result {
+impl Display for SizeofType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SizeofType::Type(typ) => typ.fmt_braced(f, table),
-            SizeofType::Expression(exp) => exp.fmt_braced(f, table),
+            SizeofType::Type(typ, _) => write!(f, "({})", typ),
+            SizeofType::Expression(exp) => write!(f, "{}", exp),
         }
     }
 }
 
-impl ASTDisplay for StructType {
-    fn fmt(&self, f: &mut fmt::Formatter, table: &StructTable) -> fmt::Result {
-        use super::TypeNode;
-        if self.members.is_some() {
-            writeln!(f, "\n{{")?;
-            for (name, typ) in self.members.as_ref().unwrap() {
-                let typ = typ.clone();
-                let name: Type = vec![TypeNode::Name(name.clone())].into();
-                let typ = name.append(&typ);
-                writeln!(f, "{};\n", PrintAst::new(&typ, &table))?;
-            }
-            writeln!(f, "}}")?;
-        }
-
-        Ok(())
+impl Display for ASTType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        format_prefix_type(&self.list, f)?;
+        format_type(&self.list, f)
     }
+}
+
+fn format_prefix_type(typ: &[ASTTypeNode], f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    for i in 0..typ.len() {
+        use super::TypeNode::*;
+        use ASTTypeNode::*;
+        type AST = ASTTypeNode;
+        match &typ[i] {
+            Simple(Char) => write!(f, "char ")?,
+            Simple(Int) => write!(f, "int ")?,
+            Simple(Long) => write!(f, "long ")?,
+            Simple(Short) => write!(f, "short ")?,
+            AST::Struct(s) => {
+                write!(f, "struct {} ", s.name.clone().unwrap_or_default())?;
+                if let Some(members) = &s.members {
+                    writeln!(f, "{{")?;
+                    for member in members {
+                        writeln!(f, "{};", member)?;
+                    }
+                    writeln!(f, "}}")?;
+                }
+            }
+            _ => (),
+        }
+    }
+    Ok(())
+}
+
+fn format_type(typ: &[ASTTypeNode], f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    if typ.is_empty() {
+        return Ok(());
+    }
+
+    for i in (0..typ.len()).rev() {
+        use super::TypeNode::*;
+        use ASTTypeNode::*;
+        type AST = ASTTypeNode;
+        match &typ[i] {
+            Simple(Char | Int | Long | Short) => (),
+
+            Simple(Pointer) => write!(f, "* ")?,
+            Simple(t) => {
+                log::error!("unexpected type node {:?}", t);
+                unreachable!()
+            }
+            AST::Name(name) => write!(f, "{} ", name)?,
+            AST::Function(arguments) => {
+                //Extend later when functions are fully implemented
+                format_type(&typ[0..i], f)?;
+                write!(f, "(")?;
+                if let Some(arg) = arguments.get(0) {
+                    write!(f, "{}", arg)?;
+                }
+                for arg in arguments.iter().skip(1) {
+                    write!(f, ", {}", arg)?;
+                }
+                write!(f, ")")?;
+                break;
+            }
+            AST::Array(size) => {
+                //Extend later when functions are fully implemented
+                format_type(&typ[0..i], f)?;
+                write!(f, "[{}]", size)?;
+                break;
+            }
+            AST::Struct(..) => (),
+        };
+    }
+    Ok(())
 }

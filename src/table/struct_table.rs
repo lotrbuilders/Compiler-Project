@@ -1,8 +1,8 @@
 use crate::{
     backend::{Backend, TypeInfo},
-    parser::{ast_print::PrintAst, r#type::StructType},
+    parser::r#type::StructType,
 };
-use std::{collections::HashMap, fmt::Display, ops::Index};
+use std::{collections::HashMap, ops::Index};
 
 #[derive(Clone)]
 pub struct StructTable {
@@ -109,31 +109,5 @@ impl<'a> Index<usize> for &'a StructTable {
     type Output = StructType;
     fn index(&self, index: usize) -> &'a Self::Output {
         &self.structs[index]
-    }
-}
-
-impl Display for StructTable {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for index in 0..self.structs.len() {
-            let entry = &self.structs[index];
-            if entry.name.is_some() {
-                writeln!(
-                    f,
-                    "struct {}__{}{};",
-                    entry.name.as_ref().unwrap(),
-                    index,
-                    PrintAst::new(&self.structs[index], &self)
-                )?;
-            } else {
-                writeln!(
-                    f,
-                    "struct __anonymous_struct__{}{};",
-                    index,
-                    PrintAst::new(&self.structs[index], &self)
-                )?;
-            }
-        }
-
-        Ok(())
     }
 }

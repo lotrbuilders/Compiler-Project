@@ -49,10 +49,10 @@ impl Parser<'_> {
         let some_type = self.peek2().as_ref().map(Parser::is_type_qualifier);
         let exp = match (self.peek_type(), some_type) {
             (Some(LParenthesis), Some(true)) => {
-                let ast_type = self.parse_braced('(', Parser::parse_declaration)?;
+                let typ = self.parse_braced('(', Parser::parse_declaration)?;
                 let exp = self.parse_cast()?;
                 let span = begin.to(&self.peek_span());
-                new_cast_expression(span, ast_type, exp)
+                new_cast_expression(span, typ, exp)
             }
             _ => self.parse_unary()?,
         };
@@ -81,7 +81,7 @@ impl Parser<'_> {
                     (Some(LParenthesis), Some(true))
                 ) {
                     let sizeof_type = self.parse_braced('(', Parser::parse_declaration)?;
-                    SizeofType::Type(sizeof_type)
+                    SizeofType::Type(sizeof_type, Type::empty())
                 } else {
                     SizeofType::Expression(Box::new(self.parse_expression()?))
                 };
@@ -352,10 +352,10 @@ fn new_unary_expression(token: &Token, exp: Expression) -> Expression {
     }
 }
 
-fn new_cast_expression(span: Span, ast_type: Type, exp: Expression) -> Expression {
+fn new_cast_expression(span: Span, ast_type: ASTType, exp: Expression) -> Expression {
     Expression {
         span,
-        ast_type,
-        variant: ExpressionVariant::Unary(UnaryExpressionType::Cast, Box::new(exp)),
+        ast_type: Type::empty(),
+        variant: ExpressionVariant::Cast(Box::new(exp), ast_type),
     }
 }

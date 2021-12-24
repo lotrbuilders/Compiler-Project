@@ -138,7 +138,7 @@ impl<'a> EvaluationContext<'a> {
 impl<'a> (dyn Backend + 'a) {
     pub fn eval_sizeof(&self, typ: &SizeofType, struct_info: &Vec<TypeInfo>) -> u32 {
         let ast_type = match typ {
-            SizeofType::Type(typ) => typ,
+            SizeofType::Type(_, typ) => typ,
             SizeofType::Expression(exp) => &exp.ast_type,
         };
         self.sizeof(ast_type, struct_info)

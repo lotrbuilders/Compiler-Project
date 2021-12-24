@@ -48,7 +48,12 @@ impl Graph for ExternalDeclaration {
     ) -> std::io::Result<()> {
         *node_number += 1;
         let number = *node_number;
-        writeln!(buffer, "n{} [label=\"function {}\"]", number, self.name)?;
+        writeln!(
+            buffer,
+            "n{} [label=\"function {}\"]",
+            number,
+            self.name.clone().unwrap_or(String::from("<none>"))
+        )?;
         if let Some(ref statements) = self.function_body {
             for statement in statements {
                 statement.graph(buffer, node_number, number)?;
@@ -93,9 +98,15 @@ impl Graph for Statement {
                 span: _,
                 ident,
                 decl_type: _,
+                ast_type: _,
                 init,
             } => {
-                writeln!(buffer, "n{} [label=\"declaration {}\"]", number, ident)?;
+                writeln!(
+                    buffer,
+                    "n{} [label=\"declaration {}\"]",
+                    number,
+                    ident.clone().unwrap_or(String::from("<none>"))
+                )?;
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
                 if let Some(init) = init {
                     init.graph(buffer, node_number, number)?;
@@ -221,12 +232,19 @@ impl Graph for Expression {
                     arg.graph(buffer, node_number, number)?;
                 }
             }
+
             Member(exp, id, indirect, ..) => {
                 if *indirect {
                     writeln!(buffer, "n{} [label=\"->{}\"]", number, id)?;
                 } else {
                     writeln!(buffer, "n{} [label=\".{}\"]", number, id)?;
                 }
+                writeln!(buffer, "n{} -- n{}", parent, number)?;
+                exp.graph(buffer, node_number, number)?;
+            }
+
+            Cast(exp, _typ) => {
+                writeln!(buffer, "n{} [label=\"cast\"]", number)?;
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
                 exp.graph(buffer, node_number, number)?;
             }

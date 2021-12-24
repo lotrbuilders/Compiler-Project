@@ -35,7 +35,7 @@ impl ExternalDeclaration {
                 }
 
                 Some(IRFunction {
-                    name: self.name.clone(),
+                    name: self.name.clone().unwrap(),
                     return_size: IRSize::S32,
                     instructions,
                     arguments,
@@ -55,7 +55,7 @@ impl ExternalDeclaration {
         result: &mut Vec<IRInstruction>,
         context: &mut EvaluationContext,
     ) -> IRArguments {
-        let arguments = self.ast_type.get_function_arguments().unwrap();
+        let arguments = self.decl_type.get_function_arguments().unwrap();
         let count = arguments.len();
         let ir_arguments = arguments
             .iter()
@@ -97,23 +97,28 @@ impl ExternalDeclaration {
         map: &HashMap<String, Symbol>,
         defined: &mut HashSet<String>,
     ) -> Option<IRGlobal> {
-        if defined.contains(&self.name) {
+        if self.name.is_none() {
+            return None;
+        }
+
+        let name = self.name.as_ref().unwrap();
+        if defined.contains(name) {
             None
         } else if let Some(_) = self.function_body {
-            defined.insert(self.name.clone());
+            defined.insert(name.clone());
             None
-        } else if self.ast_type.is_function() {
+        } else if self.decl_type.is_function() {
             log::trace!(
                 "Found non defined function {} with type {:?}",
-                self.name,
-                map[&self.name].declaration_type
+                name,
+                map[name].declaration_type
             );
-            defined.insert(self.name.clone());
-            if map[&self.name].declaration_type == DeclarationType::Definition {
+            defined.insert(name.clone());
+            if map[name].declaration_type == DeclarationType::Definition {
                 None
             } else {
                 Some(IRGlobal {
-                    name: self.name.clone(),
+                    name: name.clone(),
                     size: IRSize::S32,
                     value: None,
                     function: true,
@@ -121,10 +126,10 @@ impl ExternalDeclaration {
             }
         } else {
             if let Some(expression) = &self.expression {
-                defined.insert(self.name.clone());
+                defined.insert(name.clone());
                 if let ExpressionVariant::ConstI(value) = expression.variant {
                     Some(IRGlobal {
-                        name: self.name.clone(),
+                        name: name.clone(),
                         size: IRSize::S32,
                         value: Some(value),
                         function: false,
@@ -132,10 +137,10 @@ impl ExternalDeclaration {
                 } else {
                     unreachable!();
                 }
-            } else if map[&self.name].declaration_type == DeclarationType::Declaration {
-                defined.insert(self.name.clone());
+            } else if map[name].declaration_type == DeclarationType::Declaration {
+                defined.insert(name.clone());
                 Some(IRGlobal {
-                    name: self.name.clone(),
+                    name: name.clone(),
                     size: IRSize::S32,
                     value: None,
                     function: false,

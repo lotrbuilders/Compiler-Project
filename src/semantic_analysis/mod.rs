@@ -56,6 +56,16 @@ impl<'a> SemanticAnalyzer<'a> {
         }
     }
 
+    fn enter_scope(&mut self) {
+        self.symbol_table.enter_scope();
+        self.struct_table.enter_scope();
+    }
+
+    fn leave_scope(&mut self) {
+        self.symbol_table.leave_scope();
+        self.struct_table.leave_scope();
+    }
+
     fn enter_loop(&mut self) {
         self.loop_depth += 1;
     }

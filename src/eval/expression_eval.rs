@@ -372,18 +372,18 @@ impl Evaluate for Expression {
                 vreg
             }
 
+            Cast(exp, _) => {
+                let exp_size = context.get_size(&exp.ast_type);
+                let size = context.get_size(&self.ast_type);
+                let vreg = exp.eval(result, context);
+                context.promote(result, size, exp_size, vreg)
+            }
+
             Unary(Identity, exp) => exp.eval(result, context),
             Unary(Address, exp) => exp.eval_lvalue(result, context),
             Unary(Deref, _exp) => {
                 let addr = self.eval_lvalue(result, context);
                 self.optional_load(result, context, addr)
-            }
-
-            Unary(Cast, exp) => {
-                let exp_size = context.get_size(&exp.ast_type);
-                let size = context.get_size(&self.ast_type);
-                let vreg = exp.eval(result, context);
-                context.promote(result, size, exp_size, vreg)
             }
 
             Unary(LogNot, exp) => {
@@ -413,7 +413,7 @@ impl Evaluate for Expression {
                 result.push(match op {
                     Negate => IRInstruction::Sub(size, vreg, right, left),
                     BinNot => IRInstruction::Xor(size, vreg, left, right),
-                    LogNot | Identity | Address | Deref | Cast => unreachable!(),
+                    LogNot | Identity | Address | Deref => unreachable!(),
                 });
                 vreg
             }

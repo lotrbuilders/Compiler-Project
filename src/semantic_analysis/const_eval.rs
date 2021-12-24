@@ -1,7 +1,10 @@
 use crate::{
     backend::{Backend, TypeInfo},
+    error,
     parser::{ast::*, Type},
 };
+
+use super::SemanticAnalyzer;
 
 impl Expression {
     pub fn is_constant(&self) -> bool {
@@ -10,6 +13,26 @@ impl Expression {
             _ => false,
         }
     }
+
+    pub fn get_const_value(&self) -> i128 {
+        match self.variant {
+            ExpressionVariant::ConstI(val) => val,
+            _ => 0,
+        }
+    }
+
+    pub fn force_const_eval(&mut self, analyzer: &mut SemanticAnalyzer) {
+        let expression = std::mem::replace(self, Expression::default(&self.span));
+        let expression = expression.const_eval(analyzer.backend, &analyzer.struct_table.info);
+        if !expression.is_constant() {
+            analyzer.errors.push(error!(
+                self.span,
+                "Initialization of global variable must be constant"
+            ));
+        }
+        *self = expression;
+    }
+
     pub fn const_eval(self, backend: &dyn Backend, struct_info: &Vec<TypeInfo>) -> Expression {
         use ExpressionVariant::*;
         match self.variant {
@@ -73,6 +96,28 @@ impl Expression {
                     },
                 }
             }
+
+            Cast(exp, typ) => {
+                let exp = exp.const_eval(backend, struct_info);
+
+                match &exp.variant {
+                    ConstI(exp) => {
+                        let size = (backend.sizeof(&self.ast_type, struct_info) * 8) as i128;
+                        let value = exp % (1 << size);
+                        Expression {
+                            span: self.span,
+                            ast_type: self.ast_type.clone(),
+                            variant: ConstI(value),
+                        }
+                    }
+                    _ => Expression {
+                        span: self.span,
+                        ast_type: self.ast_type,
+                        variant: ExpressionVariant::Cast(Box::new(exp), typ),
+                    },
+                }
+            }
+
             Unary(op, exp) => {
                 let exp = exp.const_eval(backend, struct_info);
 
@@ -124,23 +169,14 @@ impl BinaryExpressionType {
 }
 
 impl UnaryExpressionType {
-    fn const_eval(
-        &self,
-        backend: &dyn Backend,
-        struct_info: &Vec<TypeInfo>,
-        &exp: &i128,
-        ast_type: &Type,
-    ) -> i128 {
+    fn const_eval(&self, _: &dyn Backend, _: &Vec<TypeInfo>, &exp: &i128, ast_type: &Type) -> i128 {
         use UnaryExpressionType::*;
+        let _ = ast_type;
         match self {
             Identity => exp,
             Negate => -exp,
             BinNot => !exp,
             LogNot => (exp == 0) as i128,
-            Cast => {
-                let size = (backend.sizeof(ast_type, struct_info) * 8) as i128;
-                exp % (1 << size)
-            }
             Deref | Address => unreachable!(),
         }
     }

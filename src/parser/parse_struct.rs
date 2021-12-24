@@ -1,20 +1,19 @@
-use super::r#type::StructType;
-use super::Type;
-use super::{recovery::RecoveryStrategy, Parser, TypeNode};
+use super::ast::{ASTStruct, ASTType, ASTTypeNode};
+use super::{recovery::RecoveryStrategy, Parser};
 use crate::error;
 use crate::token::TokenType;
 
 impl<'a> Parser<'a> {
-    pub fn parse_struct(&mut self) -> Result<TypeNode, ()> {
+    pub fn parse_struct(&mut self) -> Result<ASTTypeNode, ()> {
         let begin = self.peek_span();
         self.next();
 
         let name = match self.peek_type() {
             Some(TokenType::Ident(name)) => {
                 self.next();
-                if !self.struct_table.contains(&name) {
+                /*if !self.struct_table.contains(&name) {
                     let _ = self.struct_table.try_insert(Some(&name));
-                }
+                }*/
                 Some(name)
             }
             Some(TokenType::LBrace) => None,
@@ -33,7 +32,12 @@ impl<'a> Parser<'a> {
             None
         };
 
-        let index = match (name, struct_definition) {
+        let ast_struct = Box::new(ASTStruct {
+            name,
+            members: struct_definition,
+        });
+
+        /*let index = match (name, struct_definition) {
             // struct {...}a;
             (None, Some(definition)) => {
                 let index = self.struct_table.try_insert(None).unwrap();
@@ -65,21 +69,26 @@ impl<'a> Parser<'a> {
             }
 
             _ => todo!(),
-        };
+        };*/
 
-        Ok(TypeNode::Struct(index))
+        Ok(ASTTypeNode::Struct(ast_struct))
     }
 
-    fn parse_struct_declaration(&mut self) -> Result<StructType, ()> {
-        let mut result = Vec::<(String, Type)>::new();
-        let begin = self.peek_span();
+    fn parse_struct_declaration(&mut self) -> Result<Vec<ASTType>, ()> {
+        let mut result = Vec::<ASTType>::new();
         loop {
             if let Some(TokenType::RBrace) = self.peek_type() {
                 break;
             }
             let decl = self.parse_declaration();
+            if decl.is_ok() {
+                result.push(decl.unwrap());
+            }
+            if let Some(TokenType::RBrace) = self.peek_type() {
+                break;
+            }
             self.expect_semicolon();
-            if let Ok(decl) = decl {
+            /*if let Ok(decl) = decl {
                 let span = begin.to(&self.peek_span());
                 if let Some(name) = decl.get_name() {
                     let typ: Type = decl.remove_name().into();
@@ -93,11 +102,8 @@ impl<'a> Parser<'a> {
                         "Expected name in member declaration of struct"
                     ))
                 }
-            }
+            }*/
         }
-        Ok(StructType {
-            name: None,
-            members: Some(result),
-        })
+        Ok(result)
     }
 }

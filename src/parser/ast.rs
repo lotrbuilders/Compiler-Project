@@ -1,5 +1,5 @@
-use super::Type;
-use crate::span::Span;
+use super::{Type, TypeNode};
+use crate::{span::Span, token::Token};
 
 // This module declares all the AST members that are used
 
@@ -13,8 +13,9 @@ pub struct TranslationUnit {
 #[derive(Debug, Clone)]
 pub struct ExternalDeclaration {
     pub span: Span,
-    pub ast_type: Type,
-    pub name: String,
+    pub decl_type: Type,
+    pub ast_type: ASTType,
+    pub name: Option<String>,
     pub function_body: Option<Vec<Statement>>,
     pub expression: Option<Expression>,
 }
@@ -67,8 +68,9 @@ pub enum Statement {
 
     Declaration {
         span: Span,
-        ident: String,
+        ident: Option<String>,
         decl_type: Type,
+        ast_type: ASTType,
         init: Option<Expression>,
     },
 
@@ -87,6 +89,16 @@ pub struct Expression {
     pub variant: ExpressionVariant,
 }
 
+impl Expression {
+    pub fn default(span: &Span) -> Expression {
+        Expression {
+            span: span.clone(),
+            ast_type: Type::empty(),
+            variant: ExpressionVariant::ConstI(0),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum ExpressionVariant {
     Assign(Box<Expression>, Box<Expression>),
@@ -95,6 +107,7 @@ pub enum ExpressionVariant {
     Binary(BinaryExpressionType, Box<Expression>, Box<Expression>),
     Unary(UnaryExpressionType, Box<Expression>),
     Member(Box<Expression>, String, bool, u16),
+    Cast(Box<Expression>, ASTType),
 
     Function(Box<Expression>, Vec<Expression>),
 
@@ -106,7 +119,7 @@ pub enum ExpressionVariant {
 
 #[derive(Debug, Clone)]
 pub enum SizeofType {
-    Type(Type),
+    Type(ASTType, Type),
     Expression(Box<Expression>),
 }
 
@@ -138,5 +151,67 @@ pub enum UnaryExpressionType {
     LogNot,
     Deref,
     Address,
-    Cast,
+}
+
+#[derive(Debug, Clone)]
+pub struct ASTType {
+    pub span: Span,
+    pub list: Vec<ASTTypeNode>,
+}
+#[derive(Debug, Clone)]
+pub enum ASTTypeNode {
+    Simple(TypeNode),
+    Array(Box<Expression>),
+    Struct(Box<ASTStruct>),
+    Name(String),
+    Function(Vec<ASTType>),
+}
+
+#[derive(Debug, Clone)]
+pub struct ASTStruct {
+    pub name: Option<String>,
+    pub members: Option<Vec<ASTType>>,
+}
+
+impl ASTType {
+    pub fn combine(mut self, mut rhs: ASTType) -> ASTType {
+        let span = self.span.to(&rhs.span);
+        rhs.list.append(&mut self.list);
+        ASTType {
+            span,
+            list: rhs.list,
+        }
+    }
+    pub fn from_slice(slice: &[ASTTypeNode], span: Span) -> ASTType {
+        ASTType {
+            span,
+            list: slice.into(),
+        }
+    }
+    pub fn get_name(&self) -> Option<String> {
+        match self.list.get(0) {
+            Some(ASTTypeNode::Name(name)) => Some(name.clone()),
+            _ => None,
+        }
+    }
+    pub fn has_name(&self) -> bool {
+        self.get_name().is_some()
+    }
+    pub fn is_type_declaration(&self) -> bool {
+        use ASTTypeNode::*;
+        for entry in &self.list {
+            match entry {
+                Struct(s) => return s.members.is_some() && s.name.is_some(),
+                Name(_) => continue,
+                _ => break,
+            }
+        }
+        false
+    }
+}
+
+impl From<Token> for ASTTypeNode {
+    fn from(t: Token) -> Self {
+        ASTTypeNode::Simple(t.into())
+    }
 }

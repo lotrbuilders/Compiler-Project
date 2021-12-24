@@ -17,8 +17,9 @@ impl Analysis for Expression {
 
             Sizeof(typ) => {
                 match typ {
-                    SizeofType::Type(typ) => {
-                        analyzer.assert_no_name(&self.span, typ);
+                    SizeofType::Type(ast_type, typ) => {
+                        analyzer.assert_no_name(&self.span, ast_type);
+                        *typ = ast_type.to_type(analyzer);
                     }
                     SizeofType::Expression(exp) => {
                         exp.analyze(analyzer);
@@ -53,6 +54,10 @@ impl Analysis for Expression {
 
             Unary(UnaryExpressionType::Address, exp) => {
                 exp.analyze_lvalue(analyzer);
+            }
+
+            Cast(exp, _) => {
+                exp.analyze(analyzer);
             }
 
             Unary(_op, exp) => {
@@ -128,6 +133,15 @@ impl Expression {
 
             Unary(UnaryExpressionType::Address, exp) => Type::pointer().append(&exp.ast_type),
 
+            Cast(exp, ast_type) => {
+                let typ = ast_type.to_type(analyzer);
+                let span = &self.span;
+                analyzer.assert_no_name(span, ast_type);
+                analyzer.assert_in(span, &exp.ast_type, TypeClass::Scalar);
+                analyzer.assert_in(span, &typ, TypeClass::Scalar);
+                typ
+            }
+
             Unary(op, exp) => op.get_type(analyzer, exp, &mut self.ast_type),
 
             Binary(op, left, right) => op.get_type(analyzer, left, right),
@@ -166,12 +180,7 @@ impl Expression {
 }
 
 impl UnaryExpressionType {
-    fn get_type(
-        &self,
-        analyzer: &mut SemanticAnalyzer,
-        exp: &Expression,
-        ast_type: &mut Type,
-    ) -> Type {
+    fn get_type(&self, analyzer: &mut SemanticAnalyzer, exp: &Expression, _: &mut Type) -> Type {
         use TypeClass::*;
         use UnaryExpressionType::*;
 
@@ -191,12 +200,6 @@ impl UnaryExpressionType {
                 analyzer.assert_in(span, typ, Pointer);
                 exp_type.deref()
             }
-            Cast => {
-                analyzer.assert_no_name(span, ast_type);
-                analyzer.assert_in(span, typ, self.get_type_class());
-                analyzer.assert_in(span, ast_type, self.get_type_class());
-                ast_type.clone()
-            }
             Address => unreachable!(),
         }
     }
@@ -207,7 +210,7 @@ impl UnaryExpressionType {
         match self {
             Identity | Negate => Arithmetic,
             BinNot => Integer,
-            Cast | LogNot => Scalar,
+            LogNot => Scalar,
 
             Deref | Address => unreachable!(),
         }

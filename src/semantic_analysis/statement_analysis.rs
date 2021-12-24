@@ -55,9 +55,20 @@ impl Analysis for Statement {
             Declaration {
                 span,
                 ident,
+                ast_type,
                 decl_type: symbol_type,
                 init,
             } => {
+                *symbol_type = ast_type.to_type(analyzer);
+                if ident.is_none() && !ast_type.is_type_declaration() {
+                    analyzer
+                        .errors
+                        .push(error!(span, "Declaration with a name"));
+                }
+                if ident.is_none() {
+                    return;
+                }
+                let ident = ident.as_ref().unwrap();
                 log::trace!("Declaration of {} with type {}", ident, symbol_type);
                 if let Some(init) = init {
                     init.analyze(analyzer);
@@ -81,11 +92,11 @@ impl Analysis for Statement {
                 span: _,
                 statements,
             } => {
-                analyzer.symbol_table.enter_scope();
+                analyzer.enter_scope();
                 for stmt in statements {
                     stmt.analyze(analyzer);
                 }
-                analyzer.symbol_table.leave_scope();
+                analyzer.leave_scope();
             }
         }
     }
@@ -118,7 +129,7 @@ impl Statement {
                 expression,
                 statement,
             } => {
-                analyzer.symbol_table.enter_scope();
+                analyzer.enter_scope();
                 analyzer.enter_loop();
 
                 init.as_mut().map(|init| init.analyze(analyzer));
@@ -133,7 +144,7 @@ impl Statement {
                 statement.check_for_declaration(analyzer);
 
                 analyzer.leave_loop();
-                analyzer.symbol_table.leave_scope();
+                analyzer.leave_scope();
             }
 
             If {

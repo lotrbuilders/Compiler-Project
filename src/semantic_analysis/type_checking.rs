@@ -1,7 +1,8 @@
 use super::SemanticAnalyzer;
 use crate::error;
-use crate::parser::ast::Expression;
-use crate::parser::r#type::Type;
+use crate::parser::ast::{ASTStruct, ASTType, ASTTypeNode, Expression};
+use crate::parser::r#type::{StructType, Type, TypeNode};
+use crate::semantic_analysis::analysis::Analysis;
 use crate::semantic_analysis::type_class::TypeClass;
 use crate::span::Span;
 
@@ -127,4 +128,206 @@ pub fn check_member_type(
         "{} does not have a member named {}", struct_type, id
     ));
     (Type::error(), 0)
+}
+
+impl ASTType {
+    pub fn to_type(&mut self, analyzer: &mut SemanticAnalyzer) -> Type {
+        use super::ASTTypeNode::*;
+        use TypeNode::*;
+        type AST = ASTTypeNode;
+        let mut declarator = Vec::new();
+        let mut type_specifiers = Vec::new();
+        for entry in &mut self.list {
+            match entry {
+                Simple(t @ (Char | Int | Long | Short)) => {
+                    type_specifiers.push(t.clone());
+                }
+                Simple(Pointer) => declarator.push(Pointer),
+                Simple(_) => unreachable!(),
+                AST::Name(_) => (),
+                AST::Struct(s) => {
+                    type_specifiers.push(s.to_type(&self.span, analyzer));
+                }
+                AST::Function(arguments) => {
+                    let (arguments, _) = ASTType::tranform_function_arguments(arguments, analyzer);
+                    declarator.push(TypeNode::Function(arguments));
+                }
+                AST::Array(exp) => {
+                    exp.analyze(analyzer);
+                    exp.force_const_eval(analyzer);
+                    let value = exp.get_const_value();
+                    if value.is_negative() {
+                        analyzer
+                            .errors
+                            .push(error!(self.span, "Size of array must be positive"));
+                    }
+                    let value = std::cmp::max(value, 0);
+                    declarator.push(TypeNode::Array(value as usize));
+                }
+            }
+        }
+        let base_type = analyzer.check_declaration_specifiers(&self.span, &type_specifiers);
+        let declarator: Type = declarator.into();
+        let typ = Type::combine(base_type, declarator);
+        typ
+    }
+    pub fn get_function_arguments(
+        &mut self,
+        analyzer: &mut SemanticAnalyzer,
+    ) -> Vec<(Type, Option<String>)> {
+        type AST = ASTTypeNode;
+        let mut arguments = None;
+        log::debug!("get function arguments of {:?}", self);
+        for entry in &mut self.list {
+            match entry {
+                AST::Name(_) => continue,
+                AST::Function(args) => {
+                    arguments = Some(args);
+                    break;
+                }
+                t => {
+                    log::error!("unexpected {:?}", t);
+                    unreachable!()
+                }
+            }
+        }
+        let arguments = arguments.unwrap();
+        let (types, names) = ASTType::tranform_function_arguments(arguments, analyzer);
+        types.into_iter().zip(names.into_iter()).collect()
+    }
+    fn tranform_function_arguments(
+        arguments: &mut Vec<ASTType>,
+        analyzer: &mut SemanticAnalyzer,
+    ) -> (Vec<Type>, Vec<Option<String>>) {
+        arguments
+            .iter_mut()
+            .map(|ast| {
+                let name = ast.get_name();
+                let typ = ast.to_type(analyzer);
+                (typ, name)
+            })
+            .unzip()
+    }
+}
+
+impl ASTStruct {
+    fn to_type(&mut self, span: &Span, analyzer: &mut SemanticAnalyzer) -> TypeNode {
+        let name = self.name.as_ref();
+        if self.members.is_none() {
+            let name = name.unwrap();
+            if analyzer.struct_table.contains(name) {
+                let index = analyzer.struct_table.get_index(name).unwrap();
+                return TypeNode::Struct(index);
+            } else {
+                let index = analyzer.struct_table.try_insert(Some(name)).unwrap();
+                return TypeNode::Struct(index);
+            }
+        }
+
+        // If a struct is already in the table and already qualified(definied) we raise an error
+        if name.is_some()
+            && analyzer.struct_table.contains(name.unwrap())
+            && analyzer
+                .struct_table
+                .get(name.unwrap())
+                .unwrap()
+                .is_qualified()
+        {
+            analyzer
+                .errors
+                .push(error!(span, "Struct {} redefined", name.unwrap()));
+            return TypeNode::error();
+        }
+
+        // If the struct is not yet defined, insert it
+        // Otherwise we can get the index from the struct table
+        let index = analyzer
+            .struct_table
+            .try_insert(name)
+            .or_else(|_| -> Result<usize, ()> {
+                Ok(analyzer.struct_table.get_index(name.unwrap()).unwrap())
+            })
+            .unwrap();
+
+        let ast_members = self.members.as_mut().unwrap();
+        let mut members = Vec::new();
+        for member in ast_members {
+            let name = member.get_name();
+            if name.is_none() {
+                analyzer
+                    .errors
+                    .push(error!(span, "Missing member name in struct definition"));
+                continue;
+            }
+
+            let name = name.unwrap();
+            let typ = member.to_type(analyzer);
+            if !typ.is_qualified(&analyzer.struct_table) {
+                analyzer.errors.push(error!(
+                    span,
+                    "Missing member {} is not qualified in struct definition", name
+                ));
+                continue;
+            }
+            members.push((name, typ))
+        }
+
+        let entry = StructType {
+            name: self.name.clone(),
+            members: Some(members),
+        };
+        analyzer
+            .struct_table
+            .qualify(analyzer.backend, index, entry);
+
+        TypeNode::Struct(index)
+    }
+}
+
+impl<'a> SemanticAnalyzer<'a> {
+    fn check_declaration_specifiers(&mut self, span: &Span, typ: &[TypeNode]) -> Type {
+        use TypeNode::*;
+        let mut type_specifier = None;
+        let mut int_seen = false;
+        for node in typ {
+            match node {
+                TypeNode::Int => {
+                    if let Some(TypeNode::Char | TypeNode::Struct(..)) = type_specifier {
+                        self.invalid_type(span, &typ);
+                    } else if int_seen {
+                        self.invalid_type(span, &typ);
+                    } else {
+                        if let None = type_specifier {
+                            type_specifier = Some(Int)
+                        }
+                        int_seen = true;
+                    }
+                }
+                t @ (TypeNode::Long | TypeNode::Short) => {
+                    if let Some(TypeNode::Int) | None = type_specifier {
+                        type_specifier = Some(t.clone());
+                    } else {
+                        self.invalid_type(span, &typ);
+                    }
+                }
+                TypeNode::Struct(..) | TypeNode::Char => {
+                    if let Some(_) = type_specifier {
+                        self.invalid_type(span, &typ);
+                    }
+                    type_specifier = Some(node.clone());
+                }
+
+                TypeNode::Function(..)
+                | TypeNode::Name(..)
+                | TypeNode::Array(..)
+                | TypeNode::Pointer => unreachable!(),
+            }
+        }
+        vec![type_specifier.expect("failure to check for type specifer")].into()
+    }
+    fn invalid_type(&mut self, span: &Span, typ: &[TypeNode]) {
+        let typ: Type = typ.into();
+        self.errors
+            .push(error!(span, "Invalid type specifiers provided: {}", typ));
+    }
 }
