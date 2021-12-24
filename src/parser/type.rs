@@ -29,6 +29,7 @@ pub enum TypeNode {
     Int,
     Long,
     Short,
+    Void,
     Pointer,
     Struct(usize),
     Array(usize),
@@ -106,6 +107,9 @@ impl Type {
             Some(TypeNode::Char) => true,
             _ => false,
         }
+    }
+    pub fn is_void(&self) -> bool {
+        matches!(self.nodes.get(0), Some(TypeNode::Void))
     }
 
     pub fn is_declaration(&self) -> bool {
@@ -256,6 +260,7 @@ impl From<Token> for TypeNode {
             Long => TypeNode::Long,
             Short => TypeNode::Short,
             Asterisk => TypeNode::Pointer,
+            Void => TypeNode::Void,
             Ident(name) => TypeNode::Name(name),
             _ => {
                 log::error!("From<Token> for Type called on unqualified type");
@@ -300,6 +305,7 @@ fn format_type(
             Int => write!(f, "int ")?,
             Long => write!(f, "long ")?,
             Short => write!(f, "short ")?,
+            Void => write!(f, "void ")?,
             Pointer => write!(f, "* ")?,
             Name(name) => write!(f, "{}", name)?,
             Function(arguments) => {

@@ -28,7 +28,17 @@ impl Analysis for Statement {
                 expression,
                 ast_type,
             } => {
-                expression.analyze(analyzer);
+                *ast_type = analyzer.function_return_type.clone();
+                if expression.is_none() {
+                    if !ast_type.is_void() {
+                        analyzer
+                            .errors
+                            .push(error!(span, "Return without value in none void function"));
+                    }
+                    return;
+                }
+                let expression = expression.as_ref().unwrap();
+
                 if !expression
                     .ast_type
                     .is_compatible(&analyzer.function_return_type)
@@ -40,7 +50,6 @@ impl Analysis for Statement {
                         expression.ast_type
                     ));
                 }
-                *ast_type = analyzer.function_return_type.clone();
             }
 
             Expression {

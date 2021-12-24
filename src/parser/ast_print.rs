@@ -117,7 +117,10 @@ impl Display for Statement {
                 span: _,
                 ast_type: _,
                 expression,
-            } => writeln!(f, "return {};", expression)?,
+            } => match expression {
+                Some(expression) => writeln!(f, "return {};", expression)?,
+                None => writeln!(f, "return;")?,
+            },
 
             While {
                 span: _,
@@ -267,6 +270,7 @@ fn format_prefix_type(typ: &[ASTTypeNode], f: &mut std::fmt::Formatter<'_>) -> s
             Simple(Int) => write!(f, "int ")?,
             Simple(Long) => write!(f, "long ")?,
             Simple(Short) => write!(f, "short ")?,
+            Simple(Void) => write!(f, "void ")?,
             AST::Struct(s) => {
                 write!(f, "struct {} ", s.name.clone().unwrap_or_default())?;
                 if let Some(members) = &s.members {
@@ -293,7 +297,7 @@ fn format_type(typ: &[ASTTypeNode], f: &mut std::fmt::Formatter<'_>) -> std::fmt
         use ASTTypeNode::*;
         type AST = ASTTypeNode;
         match &typ[i] {
-            Simple(Char | Int | Long | Short) => (),
+            Simple(Char | Int | Long | Short | Void) => (),
 
             Simple(Pointer) => write!(f, "* ")?,
             Simple(t) => {

@@ -86,7 +86,7 @@ impl Parser<'_> {
     fn is_type_qualifier(token: &Token) -> bool {
         use TokenType::*;
         match token.token() {
-            Char | Int | Long | Short | Struct => true,
+            Char | Int | Long | Short | Struct | Void => true,
             _ => false,
         }
     }

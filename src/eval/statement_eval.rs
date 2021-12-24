@@ -139,11 +139,15 @@ impl Evaluate for Statement {
                 ast_type,
                 expression,
             } => {
-                let size = context.get_size(&ast_type);
-                let exp_size = context.get_size(&expression.ast_type);
-                let vreg = expression.eval(result, context);
-                let vreg = context.promote(result, size, exp_size, vreg);
-                result.push(IRInstruction::Ret(size, vreg))
+                if let Some(exp) = expression {
+                    let size = context.get_size(&ast_type);
+                    let exp_size = context.get_size(&exp.ast_type);
+                    let vreg = exp.eval(result, context);
+                    let vreg = context.promote(result, size, exp_size, vreg);
+                    result.push(IRInstruction::Ret(size, vreg))
+                } else {
+                    todo!()
+                }
             }
 
             // The check is done last, therefore an extra jump is inserted at the front

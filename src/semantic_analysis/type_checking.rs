@@ -181,6 +181,7 @@ impl ASTType {
         for entry in &mut self.list {
             match entry {
                 AST::Name(_) => continue,
+                AST::Simple(TypeNode::Pointer) => continue,
                 AST::Function(args) => {
                     arguments = Some(args);
                     break;
@@ -292,15 +293,15 @@ impl<'a> SemanticAnalyzer<'a> {
         for node in typ {
             match node {
                 TypeNode::Int => {
-                    if let Some(TypeNode::Char | TypeNode::Struct(..)) = type_specifier {
+                    if int_seen {
                         self.invalid_type(span, &typ);
-                    } else if int_seen {
-                        self.invalid_type(span, &typ);
-                    } else {
+                    } else if let Some(TypeNode::Long | TypeNode::Short) = type_specifier {
                         if let None = type_specifier {
                             type_specifier = Some(Int)
                         }
                         int_seen = true;
+                    } else {
+                        self.invalid_type(span, &typ);
                     }
                 }
                 t @ (TypeNode::Long | TypeNode::Short) => {
@@ -310,7 +311,7 @@ impl<'a> SemanticAnalyzer<'a> {
                         self.invalid_type(span, &typ);
                     }
                 }
-                TypeNode::Struct(..) | TypeNode::Char => {
+                TypeNode::Struct(..) | TypeNode::Char | TypeNode::Void => {
                     if let Some(_) = type_specifier {
                         self.invalid_type(span, &typ);
                     }

@@ -172,7 +172,9 @@ impl Graph for Statement {
             } => {
                 writeln!(buffer, "n{} [label=\"return\"]", number)?;
                 writeln!(buffer, "n{} -- n{}", parent, number)?;
-                expression.graph(buffer, node_number, number)?;
+                if let Some(expression) = expression {
+                    expression.graph(buffer, node_number, number)?;
+                }
             }
 
             While {

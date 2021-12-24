@@ -132,7 +132,7 @@ impl<'a> Parser<'a> {
                 let _ = expect!(self, TokenType::Semicolon, RecoveryStrategy::Nothing);
 
                 //Expression is unwrapped here to first parse semicolon first
-                let expression = expression?;
+                let expression = Some(expression?);
                 let span = begin.to(&self.peek_span());
                 Ok(Statement::Return {
                     span,

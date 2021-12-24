@@ -26,7 +26,7 @@ pub enum Statement {
     Return {
         span: Span,
         ast_type: Type,
-        expression: Expression,
+        expression: Option<Expression>,
     },
 
     If {
