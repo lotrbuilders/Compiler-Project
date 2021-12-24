@@ -118,6 +118,13 @@ impl Type {
             .unwrap_or(false)
     }
 
+    pub fn is_void_pointer(&self) -> bool {
+        matches!(
+            (self.nodes.get(0), self.nodes.get(1)),
+            (Some(TypeNode::Pointer), Some(TypeNode::Void))
+        )
+    }
+
     pub fn is_pointer(&self) -> bool {
         match self.nodes.get(0) {
             Some(TypeNode::Pointer) => true,

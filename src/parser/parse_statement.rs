@@ -75,7 +75,7 @@ impl<'a> Parser<'a> {
                 let statement = Box::new(self.parse_statement()?);
                 expect!(self, TokenType::While, RecoveryStrategy::Nothing)?;
                 let expression = self.parse_braced('(', Parser::parse_expression)?;
-                let _ = expect!(self, TokenType::Semicolon, RecoveryStrategy::Nothing);
+                self.expect_semicolon();
 
                 let span = begin.to(&self.peek_span());
                 Ok(Statement::While {
@@ -128,11 +128,16 @@ impl<'a> Parser<'a> {
 
             Some(Return) => {
                 self.next();
-                let expression = self.parse_expression();
-                let _ = expect!(self, TokenType::Semicolon, RecoveryStrategy::Nothing);
+                let expression = if let Some(TokenType::Semicolon) = self.peek_type() {
+                    self.next();
+                    None
+                } else {
+                    let expression = self.parse_expression();
+                    self.expect_semicolon();
+                    //Expression is unwrapped here to first parse semicolon first
+                    Some(expression?)
+                };
 
-                //Expression is unwrapped here to first parse semicolon first
-                let expression = Some(expression?);
                 let span = begin.to(&self.peek_span());
                 Ok(Statement::Return {
                     span,
@@ -168,11 +173,7 @@ impl<'a> Parser<'a> {
 
             Some(_) => {
                 let expression = self.parse_expression();
-                let _ = expect!(
-                    self,
-                    TokenType::Semicolon,
-                    RecoveryStrategy::or(RecoveryStrategy::UpTo('}'), RecoveryStrategy::Until(';'))
-                );
+                self.expect_semicolon();
 
                 //Expression is unwrapped here to first parse semicolon first
                 let expression = expression?;
@@ -241,7 +242,7 @@ impl<'a> Parser<'a> {
             }
             Some(_) => {
                 let condition = self.parse_expression();
-                let _ = expect!(self, TokenType::Semicolon, RecoveryStrategy::Nothing);
+                self.expect_semicolon();
                 Some(Box::new(condition?))
             }
 
