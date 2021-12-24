@@ -11,6 +11,7 @@ pub enum TokenType {
     Long,
     Short,
     Struct,
+    Void,
 
     //Control flow keywords
     If,
@@ -161,6 +162,7 @@ impl Display for TokenType {
             Long => write!(f, "'long'"),
             Short => write!(f, "'short'"),
             Struct => write!(f, "'struct'"),
+            Void => write!(f, "'void'"),
 
             If => write!(f, "'if'"),
             Else => write!(f, "'else'"),

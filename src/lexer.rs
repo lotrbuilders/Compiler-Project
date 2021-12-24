@@ -175,6 +175,8 @@ impl Lexer {
             "int" => Token::new(Int, span),
             "long" => Token::new(Long, span),
             "short" => Token::new(Short, span),
+            "struct" => Token::new(Struct, span),
+            "void" => Token::new(Void, span),
             "if" => Token::new(If, span),
             "else" => Token::new(Else, span),
             "while" => Token::new(While, span),
@@ -184,7 +186,7 @@ impl Lexer {
             "continue" => Token::new(Continue, span),
             "return" => Token::new(Return, span),
             "sizeof" => Token::new(Sizeof, span),
-            "struct" => Token::new(Struct, span),
+
             _ => Token::new(Ident(identifier), span),
         }
     }
