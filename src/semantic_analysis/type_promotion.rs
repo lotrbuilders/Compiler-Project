@@ -40,6 +40,10 @@ impl Type {
                 result.nodes[0] = TypeNode::Pointer;
                 result
             }
+            Some(TypeNode::Function(..)) => {
+                let result = Type::pointer();
+                result.append(&mut self.clone())
+            }
             _ => self.clone(),
         }
     }

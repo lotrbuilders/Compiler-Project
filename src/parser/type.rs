@@ -147,6 +147,14 @@ impl Type {
         }
     }
 
+    pub fn is_function_pointer(&self) -> bool {
+        matches!(self.nodes.get(0), Some(TypeNode::Pointer)) && Type::is_function2(&self.nodes[1..])
+    }
+
+    pub fn is_callable(&self) -> bool {
+        self.is_function() || self.is_function_pointer()
+    }
+
     pub fn is_function(&self) -> bool {
         Type::is_function2(&self.nodes)
     }
@@ -161,6 +169,7 @@ impl Type {
 
     pub fn get_function_arguments<'a>(&'a self) -> Option<&'a Vec<Type>> {
         Type::get_function_arguments2(&self.nodes)
+            .or_else(|| Type::get_function_arguments2(&self.nodes[1..]))
     }
 
     fn get_function_arguments2<'a>(input: &'a [TypeNode]) -> Option<&'a Vec<Type>> {
@@ -200,7 +209,11 @@ impl Type {
     }
 
     pub fn get_return_type<'a>(&'a self) -> Option<&'a [TypeNode]> {
-        Type::get_return_type2(&self.nodes)
+        if self.is_function_pointer() {
+            Type::get_return_type2(&self.nodes[1..])
+        } else {
+            Type::get_return_type2(&self.nodes)
+        }
     }
 
     fn get_return_type2<'a>(input: &'a [TypeNode]) -> Option<&'a [TypeNode]> {

@@ -12,7 +12,7 @@ pub fn check_arguments_function(
     function_type: &Type,
     arguments: &Vec<Expression>,
 ) {
-    if !Type::is_function(function_type) {
+    if !Type::is_callable(function_type) {
         analyzer
             .errors
             .push(error!(span, "Cannot call '{}'", function_type));
