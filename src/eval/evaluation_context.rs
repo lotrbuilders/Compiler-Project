@@ -176,6 +176,7 @@ impl<'a> (dyn Backend + 'a) {
 
     fn sizeof2(&self, size: IRSize) -> u32 {
         match size {
+            IRSize::V => 1,
             IRSize::S8 => 1,
             IRSize::S16 => 2,
             IRSize::S32 => 4,

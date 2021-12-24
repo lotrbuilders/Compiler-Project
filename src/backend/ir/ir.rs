@@ -131,6 +131,7 @@ pub enum IRSize {
     S32,
     S64,
     P,
+    V,
     B(u16),
 }
 
@@ -142,7 +143,7 @@ impl IRSize {
             IRSize::S32 => 32,
             IRSize::S64 => 64,
             IRSize::B(size) => (*size as usize) * 8,
-            IRSize::P => unreachable!(),
+            IRSize::P | IRSize::V => unreachable!(),
         }
     }
 }

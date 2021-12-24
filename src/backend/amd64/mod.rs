@@ -581,6 +581,7 @@ impl BackendAMD64 {
                         offset += -size * count;
                         offset
                     }
+                    IRSize::V => unreachable!(),
                 },
                 // Stack argument
                 Some(None) => {
