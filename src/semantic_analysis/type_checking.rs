@@ -139,7 +139,7 @@ impl ASTType {
         let mut type_specifiers = Vec::new();
         for entry in &mut self.list {
             match entry {
-                Simple(t @ (Char | Int | Long | Short)) => {
+                Simple(t @ (Char | Int | Long | Short | Void)) => {
                     type_specifiers.push(t.clone());
                 }
                 Simple(Pointer) => declarator.push(Pointer),
@@ -296,12 +296,12 @@ impl<'a> SemanticAnalyzer<'a> {
                     if int_seen {
                         self.invalid_type(span, &typ);
                     } else if let Some(TypeNode::Long | TypeNode::Short) = type_specifier {
-                        if let None = type_specifier {
-                            type_specifier = Some(Int)
-                        }
+                        int_seen = true;
+                    } else if type_specifier.is_none() {
+                        type_specifier = Some(Int);
                         int_seen = true;
                     } else {
-                        self.invalid_type(span, &typ);
+                        self.invalid_type(span, typ);
                     }
                 }
                 t @ (TypeNode::Long | TypeNode::Short) => {

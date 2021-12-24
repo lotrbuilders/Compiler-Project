@@ -123,7 +123,7 @@ mcon64:  m mem64                    "{m}"
 %ireg:  Cvs s64s32s16s8(_r %ireg)   #"#extend/truncuate" {2}
 
 :       Arg pi32i64(r %ireg)        #"push {r:.64}\n" {1}
-%eax:   Call pi64i32i16i8(#name)    #"#call {name}\n" {20}
+%eax:   Call pi64i32i16i8v(#name)    #"#call {name}\n" {20}
 }
 
 impl Backend for BackendAMD64 {
@@ -223,6 +223,7 @@ impl Backend for BackendAMD64 {
             Int => IRSize::S32,
             Long => IRSize::S64,
             Pointer => IRSize::P,
+            Void => IRSize::V,
             _ => unreachable!(),
         }
     }

@@ -30,15 +30,18 @@ impl Analysis for Statement {
             } => {
                 *ast_type = analyzer.function_return_type.clone();
                 if expression.is_none() {
+                    log::debug!("Void return");
                     if !ast_type.is_void() {
                         analyzer
                             .errors
                             .push(error!(span, "Return without value in none void function"));
                     }
                     return;
+                } else {
+                    log::debug!("Normal return");
                 }
-                let expression = expression.as_ref().unwrap();
-
+                let expression = expression.as_mut().unwrap();
+                expression.analyze(analyzer);
                 if !expression
                     .ast_type
                     .is_compatible(&analyzer.function_return_type)
