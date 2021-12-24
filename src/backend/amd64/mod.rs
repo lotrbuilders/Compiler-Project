@@ -124,6 +124,7 @@ mcon64:  m mem64                    "{m}"
 
 :       Arg pi32i64(r %ireg)        #"push {r:.64}\n" {1}
 %eax:   Call pi64i32i16i8v(#name)    #"#call {name}\n" {20}
+%eax:   CallV pi64i32i16i8v(r %ireg) #"#call {r}\n"    {20}
 }
 
 impl Backend for BackendAMD64 {
@@ -388,7 +389,7 @@ impl BackendAMD64 {
                 },
                 false,
             ),
-            Call(_size, _vreg, name, arguments) => (
+            Call(_size, _vreg, _, arguments) | CallV(_size, _vreg, _, arguments) => (
                 {
                     let length = arguments.count;
                     let alignment = self.get_stack_alignment(arguments);
@@ -397,10 +398,27 @@ impl BackendAMD64 {
                     } else {
                         String::new()
                     };
-                    let outside_file = if !self.function_names.contains(name) {
-                        "wrt ..plt"
+
+                    let (name, addr) = match instruction {
+                        Call(.., name, _) => (Some(name), None),
+                        CallV(.., addr, _) => (None, Some(*addr)),
+                        _ => unreachable!(),
+                    };
+
+                    let outside_file =
+                        if name.is_some() && !self.function_names.contains(name.unwrap()) {
+                            "wrt ..plt"
+                        } else {
+                            ""
+                        };
+
+                    let callable = if name.is_some() {
+                        name.unwrap().clone()
                     } else {
-                        ""
+                        format!(
+                            "{:.64}",
+                            self.allocation[addr.unwrap() as usize][index].unwrap()
+                        )
                     };
 
                     format!(
@@ -410,12 +428,12 @@ impl BackendAMD64 {
                             // Only hold for integer and pointer arguments
                             format!(
                                 "\tcall {} {}\n\tadd rsp,{}\n",
-                                name,
+                                callable,
                                 outside_file,
                                 8 * (std::cmp::max(6, length) - 6) + alignment as usize
                             )
                         } else {
-                            format!("\tcall {} {}\n", name, outside_file,)
+                            format!("\tcall {} {}\n", callable, outside_file,)
                         }
                     )
                 },

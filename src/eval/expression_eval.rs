@@ -156,7 +156,16 @@ impl Evaluate for Expression {
                     vreg
                 } else {
                     // Function pointers are not yet supported
-                    todo!();
+                    let addr = func.eval(result, context);
+                    let vreg = context.next_vreg();
+                    let index = result.len();
+                    if let Some(arg_index) = arg_index {
+                        if let IRInstruction::Arg(_, _, Some(fix)) = &mut result[arg_index] {
+                            *fix = index;
+                        }
+                    }
+                    result.push(IRInstruction::CallV(size, vreg, addr, arguments));
+                    vreg
                 }
             }
 
