@@ -176,7 +176,7 @@ impl Evaluate for Expression {
 
             Assign(left, right) => {
                 let size = context.get_size(&self.ast_type);
-                let right_size = context.get_size(&right.ast_type);
+                let right_size = context.get_size(&right.ast_type.array_promotion());
                 let vreg = right.eval(result, context);
                 let vreg = context.promote(result, size, right_size, vreg);
                 let addr = left.eval_lvalue(result, context);
@@ -493,7 +493,7 @@ impl Expression {
         context: &mut EvaluationContext,
         addr: u32,
     ) -> u32 {
-        if !self.ast_type.is_array() {
+        if !self.ast_type.is_array() && !self.ast_type.is_function() {
             let size = context.get_size(&self.ast_type);
             let vreg = context.next_vreg();
             result.push(IRInstruction::Load(size, vreg, addr));

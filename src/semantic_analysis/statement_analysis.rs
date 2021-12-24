@@ -80,6 +80,12 @@ impl Analysis for Statement {
                 if ident.is_none() {
                     return;
                 }
+                if symbol_type.is_function() && init.is_some() {
+                    analyzer
+                        .errors
+                        .push(error!(span, "Function declaration with a value"));
+                }
+
                 let ident = ident.as_ref().unwrap();
                 log::trace!("Declaration of {} with type {}", ident, symbol_type);
                 if let Some(init) = init {

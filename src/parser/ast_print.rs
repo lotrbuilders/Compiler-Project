@@ -151,7 +151,7 @@ impl Display for Expression {
         use ExpressionVariant::*;
         match &self.variant {
             ConstI(value) => write!(f, "{}", value)?,
-            CString(value) => write!(f, "\"{}\"", value)?,
+            CString(value) => write!(f, "{:?}", value)?,
             Ident(name, ..) => write!(f, "{}", name)?,
             Sizeof(typ) => write!(f, "sizeof {}", typ)?,
 
@@ -307,7 +307,9 @@ fn format_type(typ: &[ASTTypeNode], f: &mut std::fmt::Formatter<'_>) -> std::fmt
             AST::Name(name) => write!(f, "{} ", name)?,
             AST::Function(arguments) => {
                 //Extend later when functions are fully implemented
+                write!(f, "(")?;
                 format_type(&typ[0..i], f)?;
+                write!(f, ")")?;
                 write!(f, "(")?;
                 if let Some(arg) = arguments.get(0) {
                     write!(f, "{}", arg)?;
@@ -320,7 +322,9 @@ fn format_type(typ: &[ASTTypeNode], f: &mut std::fmt::Formatter<'_>) -> std::fmt
             }
             AST::Array(size) => {
                 //Extend later when functions are fully implemented
+                write!(f, "(")?;
                 format_type(&typ[0..i], f)?;
+                write!(f, ")")?;
                 write!(f, "[{}]", size)?;
                 break;
             }
