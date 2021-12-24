@@ -1,3 +1,4 @@
+use crate::parser::Type;
 use crate::table::StructTable;
 
 use super::ast::*;
@@ -67,7 +68,7 @@ impl<'a> ASTDisplay for ExternalDeclaration {
         use super::TypeNode;
         let mut typ = self.ast_type.clone();
         typ.nodes.insert(0, TypeNode::Name(self.name.clone()));
-        write!(f, "{}", typ)?;
+        write!(f, "{} ", PrintAst::new(&typ, table))?;
         match &self.function_body {
             None => writeln!(f, ";")?,
             Some(body) => {
@@ -340,8 +341,8 @@ impl ASTDisplay for StructType {
             writeln!(f, "\n{{")?;
             for (name, typ) in self.members.as_ref().unwrap() {
                 let typ = typ.clone();
-                let name = vec![TypeNode::Name(name.clone())].into();
-                let typ = typ.append(&name);
+                let name: Type = vec![TypeNode::Name(name.clone())].into();
+                let typ = name.append(&typ);
                 writeln!(f, "{};\n", PrintAst::new(&typ, &table))?;
             }
             writeln!(f, "}}")?;

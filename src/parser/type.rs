@@ -197,8 +197,13 @@ impl Type {
     }
 
     pub fn get_struct_index(&self) -> usize {
-        match self.nodes.get(0) {
-            Some(TypeNode::Struct(index)) => *index,
+        Type::get_struct_index2(&self.nodes, true)
+    }
+
+    pub fn get_struct_index2(nodes: &[TypeNode], first: bool) -> usize {
+        match (nodes.get(0), first) {
+            (Some(TypeNode::Struct(index)), _) => *index,
+            (Some(TypeNode::Pointer), true) => Type::get_struct_index2(&nodes[1..], false),
             _ => unreachable!(),
         }
     }
@@ -321,12 +326,12 @@ fn format_type(
             Struct(index) => {
                 if let Some(table) = table {
                     if let Some(name) = &table[*index].name {
-                        write!(f, "struct {}__{}", name, index)?;
+                        write!(f, "struct {}__{} ", name, index)?;
                     } else {
-                        write!(f, "__anonymous_struct__{}", index)?;
+                        write!(f, "__anonymous_struct__{} ", index)?;
                     }
                 } else {
-                    write!(f, "struct")?
+                    write!(f, "struct ")?
                 }
             }
         };

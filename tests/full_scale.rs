@@ -228,6 +228,7 @@ tests! {
     full_scale_stage_14: ("src/stage_14",test_valid_full_scale,test_invalid_full_scale)
     full_scale_stage_15: ("src/stage_15",test_valid_full_scale,test_invalid_full_scale)
     full_scale_stage_16: ("src/stage_16",test_valid_full_scale,test_invalid_full_scale)
+    full_scale_stage_17: ("src/stage_17",test_valid_full_scale,test_invalid_full_scale)
 
     full_scale_stage_19: ("src/stage_19",test_valid_full_scale,test_invalid_full_scale)
     full_scale_stage_21: ("src/stage_21",test_valid_full_scale,test_invalid_full_scale)

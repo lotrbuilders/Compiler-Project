@@ -34,8 +34,8 @@ impl Type {
         (self, rhs).promote()
     }
     pub fn array_promotion(&self) -> Type {
-        match self.nodes[0] {
-            TypeNode::Array(..) => {
+        match self.nodes.get(0) {
+            Some(TypeNode::Array(..)) => {
                 let mut result = self.clone();
                 result.nodes[0] = TypeNode::Pointer;
                 result
