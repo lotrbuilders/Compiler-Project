@@ -231,6 +231,7 @@ tests! {
     full_scale_stage_17: ("src/stage_17",test_valid_full_scale,test_invalid_full_scale)
 
     full_scale_stage_19: ("src/stage_19",test_valid_full_scale,test_invalid_full_scale)
+    full_scale_stage_20: ("src/stage_20",test_valid_full_scale,test_invalid_full_scale)
     full_scale_stage_21: ("src/stage_21",test_valid_full_scale,test_invalid_full_scale)
 }
 

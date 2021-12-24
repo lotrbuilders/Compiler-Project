@@ -173,7 +173,11 @@ impl<'a> Parser<'a> {
 
             Some(_) => {
                 let expression = self.parse_expression();
-                self.expect_semicolon();
+                let _ = expect!(
+                    self,
+                    TokenType::Semicolon,
+                    RecoveryStrategy::or(RecoveryStrategy::UpTo('}'), RecoveryStrategy::Until(';'))
+                );
 
                 //Expression is unwrapped here to first parse semicolon first
                 let expression = expression?;
