@@ -146,7 +146,11 @@ impl Evaluate for Statement {
                     let vreg = context.promote(result, size, exp_size, vreg);
                     result.push(IRInstruction::Ret(size, vreg))
                 } else {
-                    todo!()
+                    use crate::parser::Type;
+                    // Creates a temporary that isn't used.
+                    let vreg = context.next_vreg();
+                    result.push(IRInstruction::Imm(context.get_size(&Type::int()), vreg, 0));
+                    result.push(IRInstruction::Ret(IRSize::V, vreg))
                 }
             }
 
