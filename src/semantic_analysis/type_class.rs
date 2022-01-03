@@ -19,7 +19,7 @@ pub enum TypeClass {
     Arithmetic,
 }
 
-impl<'a> SemanticAnalyzer<'a> {
+impl SemanticAnalyzer {
     pub fn assert_in(&mut self, span: &Span, typ: &Type, class: TypeClass) {
         if !typ.is_in(class) {
             self.errors

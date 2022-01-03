@@ -1,6 +1,6 @@
 use crate::{
-    backend::{Backend, TypeInfo},
     error,
+    eval::evaluation_context::EvaluateSize,
     parser::{ast::*, Type},
 };
 
@@ -23,7 +23,7 @@ impl Expression {
 
     pub fn force_const_eval(&mut self, analyzer: &mut SemanticAnalyzer) {
         let expression = std::mem::replace(self, Expression::default(&self.span));
-        let expression = expression.const_eval(analyzer.backend, &analyzer.struct_table.info);
+        let expression = expression.const_eval(analyzer);
         if !expression.is_constant() {
             analyzer.errors.push(error!(
                 self.span,
@@ -33,7 +33,7 @@ impl Expression {
         *self = expression;
     }
 
-    pub fn const_eval(self, backend: &dyn Backend, struct_info: &Vec<TypeInfo>) -> Expression {
+    pub fn const_eval(self, evaluation: &dyn EvaluateSize) -> Expression {
         use ExpressionVariant::*;
         match self.variant {
             ConstI(_) => self,
@@ -46,7 +46,7 @@ impl Expression {
             | Unary(UnaryExpressionType::Deref | UnaryExpressionType::Address, ..) => self,
 
             Sizeof(typ) => {
-                let size = backend.eval_sizeof(&typ, &struct_info);
+                let size = evaluation.eval_sizeof(&typ);
                 Expression {
                     span: self.span,
                     ast_type: self.ast_type,
@@ -55,9 +55,9 @@ impl Expression {
             }
 
             Ternary(cond, left, right) => {
-                let cond = cond.const_eval(backend, struct_info);
-                let left = left.const_eval(backend, struct_info);
-                let right = right.const_eval(backend, struct_info);
+                let cond = cond.const_eval(evaluation);
+                let left = left.const_eval(evaluation);
+                let right = right.const_eval(evaluation);
 
                 match (&cond.variant, &left.variant, &right.variant) {
                     (ConstI(cond), ConstI(left), ConstI(right)) => Expression {
@@ -79,8 +79,8 @@ impl Expression {
                 }
             }
             Binary(op, left, right) => {
-                let left = left.const_eval(backend, struct_info);
-                let right = right.const_eval(backend, struct_info);
+                let left = left.const_eval(evaluation);
+                let right = right.const_eval(evaluation);
 
                 match (&left.variant, &right.variant) {
                     (ConstI(left), ConstI(right)) => Expression {
@@ -98,11 +98,11 @@ impl Expression {
             }
 
             Cast(exp, typ) => {
-                let exp = exp.const_eval(backend, struct_info);
+                let exp = exp.const_eval(evaluation);
 
                 match &exp.variant {
                     ConstI(exp) => {
-                        let size = (backend.sizeof(&self.ast_type, struct_info) * 8) as i128;
+                        let size = (evaluation.sizeof(&self.ast_type) * 8) as i128;
                         let value = exp % (1 << size);
                         Expression {
                             span: self.span,
@@ -119,13 +119,13 @@ impl Expression {
             }
 
             Unary(op, exp) => {
-                let exp = exp.const_eval(backend, struct_info);
+                let exp = exp.const_eval(evaluation);
 
                 match &exp.variant {
                     ConstI(exp) => Expression {
                         span: self.span,
                         ast_type: self.ast_type.clone(),
-                        variant: ConstI(op.const_eval(backend, struct_info, exp, &self.ast_type)),
+                        variant: ConstI(op.const_eval(exp, &self.ast_type)),
                     },
                     _ => Expression {
                         span: self.span,
@@ -169,7 +169,7 @@ impl BinaryExpressionType {
 }
 
 impl UnaryExpressionType {
-    fn const_eval(&self, _: &dyn Backend, _: &Vec<TypeInfo>, &exp: &i128, ast_type: &Type) -> i128 {
+    fn const_eval(&self, &exp: &i128, ast_type: &Type) -> i128 {
         use UnaryExpressionType::*;
         let _ = ast_type;
         match self {

@@ -1,5 +1,5 @@
 use crate::{
-    backend::{Backend, TypeInfo},
+    backend::{TypeInfo, TypeInfoTable},
     parser::r#type::StructType,
 };
 use std::{collections::HashMap, ops::Index};
@@ -78,8 +78,8 @@ impl StructTable {
         }
     }
 
-    pub fn qualify(&mut self, backend: &dyn Backend, index: usize, entry: StructType) {
-        let (info, offsets) = entry.to_info(backend, &self.info);
+    pub fn qualify(&mut self, type_info: &TypeInfoTable, index: usize, entry: StructType) {
+        let (info, offsets) = entry.to_info(type_info, &self.info);
         self.structs[index] = entry;
         self.offsets[index] = offsets;
         self.info[index] = info;

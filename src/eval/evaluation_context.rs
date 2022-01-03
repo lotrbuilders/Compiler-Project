@@ -1,5 +1,5 @@
 use crate::{
-    backend::{ir::*, Backend, TypeInfo},
+    backend::{ir::*, Backend, TypeInfo, TypeInfoTable},
     parser::{
         ast::{BinaryExpressionType, SizeofType},
         Type, TypeNode,
@@ -17,6 +17,7 @@ pub struct EvaluationContext<'a> {
     pub struct_size_table: &'a Vec<TypeInfo>,
     pub struct_offset_table: &'a Vec<Vec<usize>>,
     pub backend: &'a dyn Backend,
+    pub type_info: TypeInfoTable,
 }
 
 impl<'a> EvaluationContext<'a> {
@@ -135,6 +136,82 @@ impl<'a> EvaluationContext<'a> {
     }
 }
 
+impl TypeInfoTable {
+    pub fn get_irsize(&self, typ: &TypeNode, struct_info: &Vec<TypeInfo>) -> IRSize {
+        use TypeNode::*;
+        match typ {
+            Char => self.char.irsize,
+            Short => self.short.irsize,
+            Int => self.int.irsize,
+            Long => self.long.irsize,
+            Pointer => IRSize::P,
+            Struct(index) => IRSize::B(struct_info[*index].size as u16),
+            Void => IRSize::V,
+            _ => unreachable!(),
+        }
+    }
+
+    fn get_sizeof(&self, typ: &TypeNode, struct_info: &Vec<TypeInfo>) -> u32 {
+        use TypeNode::*;
+        let res = match typ {
+            Char => self.char.size,
+            Short => self.short.size,
+            Int => self.int.size,
+            Long => self.long.size,
+            Pointer => self.pointer.size,
+            Struct(index) => struct_info[*index].size,
+            Void => 1,
+            _ => unreachable!(),
+        };
+        res as u32
+    }
+
+    fn get_size2(&self, typ: &Type, struct_info: &Vec<TypeInfo>) -> IRSize {
+        self.get_irsize(&typ.nodes[0], struct_info)
+    }
+
+    pub fn eval_sizeof(&self, typ: &SizeofType, struct_info: &Vec<TypeInfo>) -> u32 {
+        let ast_type = match typ {
+            SizeofType::Type(_, typ) => typ,
+            SizeofType::Expression(exp) => &exp.ast_type,
+        };
+        self.sizeof(ast_type, struct_info)
+    }
+
+    pub fn sizeof_element(&self, typ: &Type, struct_info: &Vec<TypeInfo>) -> u32 {
+        if typ.is_array() {
+            let (array_type, _) = typ.deconstruct();
+            self.get_sizeof(&array_type, struct_info)
+        } else {
+            self.get_sizeof(&typ.nodes[0], struct_info)
+        }
+    }
+
+    pub fn sizeof(&self, typ: &Type, struct_info: &Vec<TypeInfo>) -> u32 {
+        if typ.is_array() {
+            let (array_type, array_size) = typ.deconstruct();
+            self.get_sizeof(&array_type, struct_info) * (array_size as u32)
+        } else {
+            self.get_sizeof(&typ.nodes[0], struct_info)
+        }
+    }
+
+    pub fn int_ptr(&self, signed: bool) -> IRSize {
+        assert!(signed); //Unsigned integers are currently unsupported
+        match self.pointer.size {
+            8 => IRSize::S64,
+            4 => IRSize::S32,
+            2 => IRSize::S16,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn size_t(&self) -> Type {
+        vec![self.size_t.clone()].into()
+    }
+}
+
+/*
 impl<'a> (dyn Backend + 'a) {
     pub fn eval_sizeof(&self, typ: &SizeofType, struct_info: &Vec<TypeInfo>) -> u32 {
         let ast_type = match typ {
@@ -196,23 +273,41 @@ impl<'a> (dyn Backend + 'a) {
     }
 
     pub fn size_t(&self) -> Type {
-        vec![self.typeof_size_t()].into()
+        vec![self.type].into()
+    }
+}*/
+
+pub trait EvaluateSize {
+    fn type_info<'a>(&'a self) -> &'a TypeInfoTable;
+    fn struct_size_table<'a>(&'a self) -> &'a Vec<TypeInfo>;
+
+    fn eval_sizeof(&self, typ: &SizeofType) -> u32 {
+        self.type_info().eval_sizeof(typ, &self.struct_size_table())
+    }
+    fn get_size(&self, typ: &Type) -> IRSize {
+        self.type_info().get_size2(typ, &self.struct_size_table())
+    }
+    fn sizeof(&self, typ: &Type) -> u32 {
+        self.type_info().sizeof(typ, &self.struct_size_table())
+    }
+    fn sizeof_element(&self, typ: &Type) -> u32 {
+        self.type_info()
+            .sizeof_element(typ, &self.struct_size_table())
+    }
+    fn int_ptr(&self, signed: bool) -> IRSize {
+        self.type_info().int_ptr(signed)
+    }
+    fn size_t(&self) -> Type {
+        self.type_info().size_t()
     }
 }
 
-impl<'a> EvaluationContext<'a> {
-    pub fn eval_sizeof(&self, typ: &SizeofType) -> u32 {
-        self.backend.eval_sizeof(typ, &self.struct_size_table)
+impl<'b> EvaluateSize for EvaluationContext<'b> {
+    fn type_info(&self) -> &TypeInfoTable {
+        &self.type_info
     }
-    pub fn get_size(&'a self, typ: &Type) -> IRSize {
-        self.backend.get_size2(typ, &self.struct_size_table)
-    }
-    pub fn sizeof(&self, typ: &Type) -> u32 {
-        self.backend.sizeof(typ, &self.struct_size_table)
-    }
-
-    pub fn int_ptr(&self, signed: bool) -> IRSize {
-        self.backend.int_ptr(signed)
+    fn struct_size_table<'a>(&'a self) -> &'a Vec<TypeInfo> {
+        &self.struct_size_table
     }
 }
 

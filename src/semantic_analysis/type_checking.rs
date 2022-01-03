@@ -279,13 +279,13 @@ impl ASTStruct {
         };
         analyzer
             .struct_table
-            .qualify(analyzer.backend, index, entry);
+            .qualify(&analyzer.type_info, index, entry);
 
         TypeNode::Struct(index)
     }
 }
 
-impl<'a> SemanticAnalyzer<'a> {
+impl SemanticAnalyzer {
     fn check_declaration_specifiers(&mut self, span: &Span, typ: &[TypeNode]) -> Type {
         use TypeNode::*;
         let mut type_specifier = None;

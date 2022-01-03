@@ -1,4 +1,4 @@
-use super::{Evaluate, EvaluationContext};
+use super::{evaluation_context::EvaluateSize, Evaluate, EvaluationContext};
 use crate::backend::{ir::*, Backend, TypeInfo};
 use crate::parser::ast::*;
 use crate::parser::r#type::DeclarationType;
@@ -26,6 +26,7 @@ impl ExternalDeclaration {
                     backend,
                     struct_size_table,
                     struct_offset_table,
+                    type_info: backend.get_type_info_table(),
                 };
                 instructions.push(IRInstruction::Label(None, 0));
 

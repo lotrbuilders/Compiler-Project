@@ -1,5 +1,6 @@
 use super::{Evaluate, EvaluationContext};
 use crate::backend::ir::*;
+use crate::eval::evaluation_context::EvaluateSize;
 use crate::parser::ast::*;
 
 impl Evaluate for Statement {
@@ -35,8 +36,8 @@ impl Evaluate for Statement {
                 let index = context.variables.len();
                 let (array_type, array_count) = decl_type.deconstruct();
                 let size = context
-                    .backend
-                    .get_size_struct(&array_type, &context.struct_size_table);
+                    .type_info
+                    .get_irsize(&array_type, &context.struct_size_table);
                 let variable = IRVariable {
                     size,
                     count: array_count,

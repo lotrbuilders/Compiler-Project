@@ -25,7 +25,7 @@ impl Analysis for Expression {
                         exp.analyze(analyzer);
                     }
                 }
-                self.ast_type = analyzer.backend.size_t();
+                self.ast_type = analyzer.type_info.size_t();
                 return;
             }
 

@@ -36,7 +36,7 @@ pub fn get_backend(architecture: String) -> Result<Box<dyn Backend>, String> {
     Ok(backend)
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct TypeInfo {
     pub size: usize,
     pub align: usize,
@@ -55,14 +55,15 @@ impl TypeInfo {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct TypeInfoTable {
-    char: TypeInfo,
-    short: TypeInfo,
-    int: TypeInfo,
-    long: TypeInfo,
-    pointer: TypeInfo,
+    pub char: TypeInfo,
+    pub short: TypeInfo,
+    pub int: TypeInfo,
+    pub long: TypeInfo,
+    pub pointer: TypeInfo,
 
-    size_t: TypeNode,
+    pub size_t: TypeNode,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -113,7 +114,7 @@ pub trait Backend {
 
     fn get_type_info_table(&self) -> TypeInfoTable;
 
-    fn get_size(&self, typ: &TypeNode) -> IRSize;
+    /*fn get_size(&self, typ: &TypeNode) -> IRSize;
     fn sizeof_pointer(&self) -> u32;
-    fn typeof_size_t(&self) -> TypeNode;
+    fn typeof_size_t(&self) -> TypeNode;*/
 }

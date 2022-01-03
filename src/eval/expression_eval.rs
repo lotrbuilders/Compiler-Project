@@ -1,5 +1,6 @@
 use super::{Evaluate, EvaluationContext};
 use crate::backend::ir::*;
+use crate::eval::evaluation_context::EvaluateSize;
 use crate::parser::{ast::*, Type};
 use crate::semantic_analysis::type_promotion::TypePromotion;
 
@@ -33,7 +34,7 @@ impl Evaluate for Expression {
 
             Sizeof(typ) => {
                 let size = context.eval_sizeof(typ) as i128;
-                let size_t = context.get_size(&context.backend.size_t());
+                let size_t = context.get_size(&context.size_t());
                 let vreg = context.next_vreg();
                 result.push(IRInstruction::Imm(size_t, vreg, size));
                 vreg

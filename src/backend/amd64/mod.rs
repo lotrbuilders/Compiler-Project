@@ -256,7 +256,7 @@ impl Backend for BackendAMD64 {
         }
     }
 
-    fn get_size(&self, typ: &crate::parser::TypeNode) -> IRSize {
+    /*fn get_size(&self, typ: &crate::parser::TypeNode) -> IRSize {
         use crate::parser::TypeNode::*;
         match typ {
             Char => IRSize::S8,
@@ -275,7 +275,7 @@ impl Backend for BackendAMD64 {
 
     fn typeof_size_t(&self) -> crate::parser::TypeNode {
         return crate::parser::TypeNode::Long;
-    }
+    }*/
 }
 
 impl BackendAMD64 {

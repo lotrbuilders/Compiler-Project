@@ -10,7 +10,8 @@ pub mod type_promotion;
 use std::collections::HashMap;
 
 use self::analysis::Analysis;
-use crate::backend::Backend;
+use crate::backend::{Backend, TypeInfoTable};
+use crate::eval::evaluation_context::EvaluateSize;
 use crate::parser::{ast::*, Type};
 use crate::table::{StructTable, Symbol, SymbolTable};
 
@@ -18,24 +19,25 @@ use crate::table::{StructTable, Symbol, SymbolTable};
 // The semantic analyzer is passed as a member and modified using traits
 
 #[derive(Clone)]
-pub struct SemanticAnalyzer<'a> {
+pub struct SemanticAnalyzer {
     errors: Vec<String>,
     symbol_table: SymbolTable,
     struct_table: StructTable,
     function_return_type: Type,
-    backend: &'a dyn Backend,
+    type_info: TypeInfoTable,
+    //backend: &'a dyn Backend,
     loop_depth: u32,
 }
 
-impl<'a> SemanticAnalyzer<'a> {
-    pub fn new(struct_table: StructTable, backend: &'a dyn Backend) -> SemanticAnalyzer<'a> {
+impl SemanticAnalyzer {
+    pub fn new(struct_table: StructTable, backend: &dyn Backend) -> SemanticAnalyzer {
         SemanticAnalyzer {
             errors: Vec::new(),
             symbol_table: SymbolTable::new(),
             struct_table,
             loop_depth: 0,
             function_return_type: Type::empty(),
-            backend,
+            type_info: backend.get_type_info_table(),
         }
     }
 
@@ -76,5 +78,15 @@ impl<'a> SemanticAnalyzer<'a> {
 
     fn in_loop(&mut self) -> bool {
         return self.loop_depth > 0;
+    }
+}
+
+impl EvaluateSize for SemanticAnalyzer {
+    fn type_info(&self) -> &TypeInfoTable {
+        &self.type_info
+    }
+
+    fn struct_size_table<'a>(&'a self) -> &'a Vec<crate::backend::TypeInfo> {
+        &self.struct_table.info
     }
 }

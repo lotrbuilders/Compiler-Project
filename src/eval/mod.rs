@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::backend::{ir::*, Backend, TypeInfo};
+use crate::backend::{ir::*, Backend, TypeInfo, TypeInfoTable};
 use crate::parser::ast::*;
 use crate::parser::r#type::StructType;
 use crate::table::struct_table::StructTable;
@@ -9,7 +9,7 @@ use crate::utility::padding;
 
 use self::evaluation_context::EvaluationContext;
 
-mod evaluation_context;
+pub mod evaluation_context;
 mod expression_eval;
 mod global_eval;
 mod statement_eval;
@@ -51,7 +51,7 @@ pub fn evaluate(
 }
 
 impl StructTable {
-    pub fn to_info(&self, backend: &dyn Backend) -> (Vec<TypeInfo>, Vec<Vec<usize>>) {
+    /*pub fn to_info(&self, backend: &dyn Backend) -> (Vec<TypeInfo>, Vec<Vec<usize>>) {
         let mut size_list: Vec<TypeInfo> = Vec::new();
         let mut offset_list: Vec<Vec<usize>> = Vec::new();
         for object in &self.structs {
@@ -60,23 +60,23 @@ impl StructTable {
             offset_list.push(offsets);
         }
         (size_list, offset_list)
-    }
+    }*/
 }
 
 impl StructType {
     pub fn to_info(
         &self,
-        backend: &dyn Backend,
+        type_info: &TypeInfoTable,
         struct_size: &Vec<TypeInfo>,
     ) -> (TypeInfo, Vec<usize>) {
         let (size, align, offsets) = match &self.members {
             Some(members) => members.iter().fold(
                 (0, 1, Vec::<usize>::new()),
                 |(offset, alignment, mut offset_list), (_, typ)| {
-                    let element_alignment = backend.sizeof_element(typ, struct_size) as usize;
+                    let element_alignment = type_info.sizeof_element(typ, struct_size) as usize;
                     let alignment = std::cmp::max(alignment, element_alignment);
                     let offset = offset + padding(offset, element_alignment);
-                    let sizeof = backend.sizeof(typ, struct_size) as usize;
+                    let sizeof = type_info.sizeof(typ, struct_size) as usize;
                     offset_list.push(offset);
                     (offset + sizeof, alignment, offset_list)
                 },
