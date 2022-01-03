@@ -10,7 +10,7 @@ use self::registers::*;
 
 rburg::rburg_main! {
     BackendAMD64,
-:       Ret pi64i32i16i8(_a %eax)    #"return\n"
+:       Ret pi64i32i16i8v(_a %eax)    #"return\n"
 :       Store i8(r %ireg, a %ireg)   "mov [{a:.64}],{r:.8}\n"
 :       Store i8(r %ireg, a adr)     "mov [{a}],{r:.8}\n"
 :       Store i16(r %ireg, a %ireg)  "mov [{a:.64}],{r:.16}\n"

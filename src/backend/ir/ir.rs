@@ -250,6 +250,8 @@ impl IRInstruction {
     // Returns the result vregister if it exists
     pub fn get_result(&self) -> Option<IRReg> {
         match self {
+            &Self::Call(IRSize::V, ..) | &Self::CallV(IRSize::V, ..) => None,
+
             &Self::Imm(_, result, ..)
             | &Self::AddrL(_, result, ..)
             | &Self::AddrG(_, result, ..)

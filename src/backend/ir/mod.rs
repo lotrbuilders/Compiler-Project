@@ -9,23 +9,33 @@ pub use ir_phi::*;
 // Get the indices at which virtual registers are defined
 pub fn get_definition_indices(function: &IRFunction) -> Vec<u32> {
     let instructions = &function.instructions;
-    let arguments = &function.arguments.arguments;
-    let mut result = arguments
+    let count = instructions
         .iter()
-        .filter_map(|arg| *arg)
-        .map(|_| 0u32)
-        .collect::<Vec<u32>>();
+        .filter_map(|ins| {
+            ins.get_result().or_else(|| {
+                if let IRInstruction::Label(Some(phi), ..) = ins {
+                    Some(phi.targets.iter().cloned().max().unwrap_or(0))
+                } else {
+                    None
+                }
+            })
+        })
+        .max()
+        .unwrap_or(0)
+        + 1;
 
-    for i in 0..instructions.len() {
-        match &instructions[i] {
+    let mut result = vec![0; count as usize];
+
+    for (i, instruction) in instructions.iter().enumerate() {
+        match instruction {
             IRInstruction::Label(Some(phi), _) => {
-                for _ in &phi.targets {
-                    result.push(i as u32);
+                for &r in &phi.targets {
+                    result[r as usize] = i as u32;
                 }
             }
             _ => {
-                if let Some(_) = instructions[i].get_result() {
-                    result.push(i as u32);
+                if let Some(r) = instructions[i].get_result() {
+                    result[r as usize] = i as u32;
                 }
             }
         }
