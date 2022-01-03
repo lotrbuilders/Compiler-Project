@@ -1,12 +1,15 @@
 use super::ir::*;
-use super::Backend;
-use super::TypeInfoTable;
 use std::collections::HashSet;
 
+mod backend;
+mod emit;
 mod register_allocation;
 mod registers;
+mod utility;
 use self::register_allocation::*;
 use self::registers::*;
+
+pub use self::emit::*;
 
 rburg::rburg_main! {
     BackendAMD64,
@@ -128,199 +131,8 @@ mcon64:  m mem64                    "{m}"
 %eax:   CallV pi64i32i16i8v(r %ireg) #"#call {r}\n"    {20}
 }
 
-impl Backend for BackendAMD64 {
-    fn backend_type(&self) -> &'static str {
-        "burg"
-    }
-
-    // Generates assembly for a single function
-    // Modifies the storage for the backend to allow for this
-    fn generate(&mut self, function: &IRFunction, function_names: &HashSet<String>) -> String {
-        self.function_name = function.name.clone();
-        self.instructions = function.instructions.clone();
-        self.definition_index = get_definition_indices(&function);
-        self.use_count = BackendAMD64::get_use_count(&self.instructions, &self.definition_index);
-        self.instruction_states = vec![State::new(); self.instructions.len()];
-        self.rules = vec![0xffff; self.instructions.len()];
-        self.arguments = function.arguments.clone();
-        self.function_names = function_names.clone();
-
-        let (local_offsets, stack_size) =
-            BackendAMD64::find_local_offsets(&function.variables, &function.arguments);
-
-        log::info!("Local offsets: {:?}", local_offsets);
-        log::info!("Stack size: {}", stack_size);
-        self.local_offsets = local_offsets;
-        self.stack_size = stack_size;
-        for instruction in (0..function.instructions.len()).rev() {
-            log::trace!("Labeling instruction tree starting at {}", instruction);
-            self.label(instruction as u32);
-        }
-        log::info!("Labeled function {}:\n{}", function.name, self.to_string(),);
-
-        for i in (0..self.instructions.len()).rev() {
-            self.reduce_instruction(i as u32, stmt_NT);
-        }
-
-        log::info!("definitive rules:\n{:?}", self.rules);
-        log::info!("Starting register allocation");
-        RegisterAllocatorSimple::allocate_registers(self);
-        log::debug!(
-            "vreg2reg at start \n[\n{}]",
-            self.allocation
-                .iter()
-                .map(|reg| format!("\t{}\n", reg))
-                .flat_map(|s| s.chars().collect::<Vec<char>>())
-                .collect::<String>()
-        );
-
-        log::info!("Starting assembly generation");
-        let assembly = self.emit_asm(&function.strings);
-        log::info!("Assembly:\n{}", assembly);
-        assembly
-    }
-
-    fn generate_globals(&mut self, globals: &Vec<IRGlobal>) -> String {
-        let mut result = String::new();
-        for global in globals {
-            if global.function {
-                result.push_str(&self.emit_function_declaration(&global.name));
-            } else if let Some(value) = global.value {
-                result.push_str(&self.emit_global_definition(&global.name, value, &global.size));
-            } else {
-                result.push_str(&self.emit_common(&global.name, &global.size));
-            }
-        }
-        result
-    }
-
-    fn generate_global_prologue(&mut self) -> String {
-        format!("default rel\nsection .text\n")
-        //String::new()
-    }
-
-    fn get_arguments_in_registers(&self, sizes: &Vec<IRSize>) -> Vec<bool> {
-        let mut result = Vec::with_capacity(sizes.len());
-        let mut ireg = 0;
-        for _size in sizes {
-            result.push(ireg < 6);
-            ireg += 1;
-        }
-        result
-    }
-
-    fn argument_evaluation_direction_registers(&self) -> super::Direction {
-        super::Direction::Left2Right
-    }
-
-    fn argument_evaluation_direction_stack(&self) -> super::Direction {
-        super::Direction::Right2Left
-    }
-
-    fn get_type_info_table(&self) -> TypeInfoTable {
-        use super::TypeInfo;
-        use crate::parser::TypeNode::*;
-        TypeInfoTable {
-            char: TypeInfo {
-                size: 1,
-                align: 1,
-                stack_align: 4,
-                irsize: IRSize::S8,
-            },
-            short: TypeInfo {
-                size: 2,
-                align: 2,
-                stack_align: 4,
-                irsize: IRSize::S16,
-            },
-            int: TypeInfo {
-                size: 4,
-                align: 4,
-                stack_align: 4,
-                irsize: IRSize::S32,
-            },
-            long: TypeInfo {
-                size: 8,
-                align: 8,
-                stack_align: 8,
-                irsize: IRSize::S64,
-            },
-            pointer: TypeInfo {
-                size: 8,
-                align: 8,
-                stack_align: 8,
-                irsize: IRSize::S64,
-            },
-
-            size_t: Long,
-        }
-    }
-
-    /*fn get_size(&self, typ: &crate::parser::TypeNode) -> IRSize {
-        use crate::parser::TypeNode::*;
-        match typ {
-            Char => IRSize::S8,
-            Short => IRSize::S16,
-            Int => IRSize::S32,
-            Long => IRSize::S64,
-            Pointer => IRSize::P,
-            Void => IRSize::V,
-            _ => unreachable!(),
-        }
-    }
-
-    fn sizeof_pointer(&self) -> u32 {
-        return 8;
-    }
-
-    fn typeof_size_t(&self) -> crate::parser::TypeNode {
-        return crate::parser::TypeNode::Long;
-    }*/
-}
-
 impl BackendAMD64 {
-    // Automatically generated
-    // Checks if the instruction at index is the last instruction of the function for return optimization
-    #[allow(dead_code)]
-    fn range(&self, index: u32, from: i128, to: i128) -> u16 {
-        let ins: &IRInstruction = &self.instructions[index as usize];
-        match ins {
-            &IRInstruction::Imm(_, _, value) => {
-                if value >= from && value <= to {
-                    0
-                } else {
-                    0xfff
-                }
-            }
-            _ => {
-                log::error!("range called on unsupported instruction");
-                0xfff
-            }
-        }
-    }
-    // Automatically generated
-    // Checks if the instruction at index is the last instruction of the function for return optimization
-    #[allow(dead_code)]
-    fn is_last_instruction(&self, index: usize) -> bool {
-        self.instructions.len() - 1 == index
-    }
-
-    fn scale(&self, index: u32) -> u16 {
-        let ins: &IRInstruction = &self.instructions[index as usize];
-        match ins {
-            &IRInstruction::Imm(_, _, value) => match value {
-                1 | 2 | 4 | 8 => 0,
-                _ => 0xfff,
-            },
-            _ => {
-                log::error!("scale called on unsupported instruction");
-                0xfff
-            }
-        }
-    }
-}
-
-impl BackendAMD64 {
+    /*
     // Should be automatically generated
     // Gets the rule that is assocatiated with the specific non_terminal used
     fn get_rule(&self, index: u32, non_terminal: usize) -> u16 {
@@ -335,11 +147,14 @@ impl BackendAMD64 {
             log::warn!("{}", self.instructions[index as usize],);
         }
         rule
-    }
+    }*/
 
-    // Does not currrently support instructions with seperate levels of terminals, these need to be weeded out of the tree first
-    // This could be done by only labelling nodes that we know to be terminals(registers that are used more then once and instructions that don't return values)
-    // This also not supported in the labelizer due to the lack of a condition
+    super::rburg_template::get_rule! {}
+    super::rburg_template::reduce_instruction! {}
+
+    /*
+    // Selects the rule for a specific instruction and propogates upwards in the DAG
+    // Should be automatically generated
     fn reduce_instruction(&mut self, instruction: u32, non_terminal: usize) -> () {
         if self.rules[instruction as usize] != 0xffff {
             log::trace!("{} already reduced correctly", instruction);
@@ -356,45 +171,47 @@ impl BackendAMD64 {
             self.reduce_instruction(kids[i], child_non_terminals[i]);
         }
         self.rules[instruction as usize] = rule_number;
-    }
+    }*/
 
-    // Should be automatically generated
-    // Emits handwritten assembly if necessary, otherwise uses the automatic generated function
-    fn emit_asm(&mut self, strings: &Vec<String>) -> String {
-        let mut result = self.emit_prologue();
-        for instruction in 0..self.instructions.len() {
-            for modification in &self.reg_relocations[instruction] {
-                result.push_str(&self.emit_move(modification));
-                //use RegisterLocation::*;
-                use RegisterRelocation::*;
-                match modification {
-                    Move(..) => continue, //  self.vreg2reg[vreg as usize] = Reg(to),
-                    TwoAddressMove(..) => continue,
-                    Spill(..) => continue,
-                    Reload(..) => continue,
-                    MemMove(..) => continue,
-                    _ => unimplemented!(),
+    super::rburg_template::emit_asm! {}
+    /*
+        // Should be automatically generated
+        // Emits handwritten assembly if necessary, otherwise uses the automatic generated function
+        fn emit_asm(&mut self, strings: &Vec<String>) -> String {
+            let mut result = self.emit_prologue();
+            for instruction in 0..self.instructions.len() {
+                for modification in &self.reg_relocations[instruction] {
+                    result.push_str(&self.emit_move(modification));
+                    //use RegisterLocation::*;
+                    use RegisterRelocation::*;
+                    match modification {
+                        Move(..) => continue, //  self.vreg2reg[vreg as usize] = Reg(to),
+                        TwoAddressMove(..) => continue,
+                        Spill(..) => continue,
+                        Reload(..) => continue,
+                        MemMove(..) => continue,
+                        _ => unimplemented!(),
+                    }
+                }
+                let rule = self.rules[instruction];
+                if self.is_instruction(rule) {
+                    let procede = if self.custom_print[rule as usize] {
+                        let (handwritten, procede) = self.emit_asm2(instruction);
+                        result.push_str(&handwritten);
+                        procede
+                    } else {
+                        true
+                    };
+                    if procede {
+                        result.push_str(&self.gen_asm(instruction));
+                    }
                 }
             }
-            let rule = self.rules[instruction];
-            if self.is_instruction(rule) {
-                let procede = if self.custom_print[rule as usize] {
-                    let (handwritten, procede) = self.emit_asm2(instruction);
-                    result.push_str(&handwritten);
-                    procede
-                } else {
-                    true
-                };
-                if procede {
-                    result.push_str(&self.gen_asm(instruction));
-                }
-            }
+            result.push_str(&self.emit_epilogue());
+            result.push_str(&self.emit_strings(strings));
+            result
         }
-        result.push_str(&self.emit_epilogue());
-        result.push_str(&self.emit_strings(strings));
-        result
-    }
-
+    */
     fn get_stack_alignment(&self, arguments: &IRArguments) -> i32 {
         let length = arguments.count as i32;
         let extra_stack_size = (std::cmp::max(length, 6) - 6) * 8;
@@ -409,189 +226,6 @@ impl BackendAMD64 {
         match alignment {
             0 => String::new(),
             i => format!("\tsub rsp,{}\n", i),
-        }
-    }
-
-    // Should be handwritten for any backend
-    // Might use a macro to generate parts
-    // Emits handwritten assembly for instruction that are too complex to process normally
-    // The boolean specifies wether the normal assembly should also be generated
-    fn emit_asm2(&self, index: usize) -> (String, bool) {
-        let instruction = &self.instructions[index];
-        let _rule = self.rules[index];
-        use IRInstruction::*;
-        match instruction {
-            Ret(_size, _vreg) => (
-                if !self.is_last_instruction(index) {
-                    format!("\tjmp .end\n")
-                } else {
-                    String::new()
-                },
-                false,
-            ),
-            Call(_size, _vreg, _, arguments) | CallV(_size, _vreg, _, arguments) => (
-                {
-                    let length = arguments.count;
-                    let alignment = self.get_stack_alignment(arguments);
-                    let alignment_instruction = if length <= 6 {
-                        self.stack_alignment_instruction(alignment)
-                    } else {
-                        String::new()
-                    };
-
-                    let (name, addr) = match instruction {
-                        Call(.., name, _) => (Some(name), None),
-                        CallV(.., addr, _) => (None, Some(*addr)),
-                        _ => unreachable!(),
-                    };
-
-                    let outside_file =
-                        if name.is_some() && !self.function_names.contains(name.unwrap()) {
-                            "wrt ..plt"
-                        } else {
-                            ""
-                        };
-
-                    let callable = if name.is_some() {
-                        name.unwrap().clone()
-                    } else {
-                        format!(
-                            "{:.64}",
-                            self.allocation[addr.unwrap() as usize][index].unwrap()
-                        )
-                    };
-
-                    format!(
-                        "{}{}",
-                        alignment_instruction,
-                        if length > 6 || alignment != 0 {
-                            // Only hold for integer and pointer arguments
-                            format!(
-                                "\tcall {} {}\n\tadd rsp,{}\n",
-                                callable,
-                                outside_file,
-                                8 * (std::cmp::max(6, length) - 6) + alignment as usize
-                            )
-                        } else {
-                            format!("\tcall {} {}\n", callable, outside_file,)
-                        }
-                    )
-                },
-                false,
-            ),
-            Arg(_size, _vreg, Some(index)) => (
-                {
-                    if let IRInstruction::Call(_size, _result, _name, arguments) =
-                        &self.instructions[*index]
-                    {
-                        let alignment = self.get_stack_alignment(arguments);
-                        self.stack_alignment_instruction(alignment)
-                    } else {
-                        String::new()
-                    }
-                },
-                true,
-            ),
-            Cvs(
-                to_s @ (IRSize::S64 | IRSize::S32 | IRSize::S16 | IRSize::S8),
-                to_r,
-                from_s @ (IRSize::S64 | IRSize::S32 | IRSize::S16 | IRSize::S8),
-                from_r,
-            ) if to_s > from_s => (
-                format!(
-                    "\tmovsx {:.to_w$},{:.from_w$}\n",
-                    self.allocation[*to_r as usize][index].unwrap(),
-                    self.allocation[*from_r as usize][index].unwrap(),
-                    from_w = from_s.to_bit_width(),
-                    to_w = to_s.to_bit_width()
-                ),
-                false,
-            ),
-            Cvs(
-                to_s @ (IRSize::S64 | IRSize::S32 | IRSize::S16 | IRSize::S8),
-                to_r,
-                from_s @ (IRSize::S64 | IRSize::S32 | IRSize::S16 | IRSize::S8),
-                from_r,
-            ) => {
-                let _ = (to_s, to_r, from_s, from_r);
-                (String::new(), false)
-            }
-
-            _ => (String::new(), true),
-        }
-    }
-
-    fn emit_function_declaration(&self, name: &String) -> String {
-        format!("section .text\nextern {}\n", name)
-    }
-
-    fn emit_global_definition(&self, name: &String, value: i128, size: &IRSize) -> String {
-        let _ = size;
-        format!("section .data\n{}:\n\tdq {}\n", name, value)
-    }
-
-    fn emit_common(&self, name: &String, size: &IRSize) -> String {
-        let _ = size;
-        format!("section .bss\n{}:\n\tresb 4\n", name)
-    }
-
-    // Should be handwritten for any backend
-    // Might use a macro to generate parts
-    // Emits the prologue for a function, such that it will be correct for the compiler
-    fn emit_prologue(&self) -> String {
-        let mut prologue = format!(
-            "global {}\nsection .text\n{}:\n",
-            self.function_name, self.function_name
-        );
-        if self.stack_size != 0 {
-            prologue.push_str(&format!("\tpush rbp\n\tmov rbp,rsp\n"));
-            prologue.push_str(&format!("\tsub rsp, {}\n", self.stack_size));
-        }
-        prologue
-    }
-
-    // Should be handwritten for any backend
-    // Might use a macro to generate parts
-    // Emits the epilogue for a function, such that it will be correct for the compiler
-    fn emit_epilogue(&self) -> String {
-        let mut epilogue = ".end:\n".to_string();
-        if self.stack_size != 0 {
-            epilogue.push_str(&format!("\tadd rsp, {}\n", self.stack_size));
-            epilogue.push_str(&format!("\tpop rbp\n"));
-        }
-        epilogue.push_str(&format!("\tret\n"));
-        epilogue
-    }
-
-    fn emit_strings(&self, strings: &Vec<String>) -> String {
-        let mut result = String::from("section .data\n");
-        for (string, i) in strings.iter().zip(0..) {
-            result.push_str(&format!(".__string{}:\n\tdb ", i));
-            for c in string.chars() {
-                let b = c as u8;
-                result.push_str(&format!("{},", b))
-            }
-            result.push_str("0\n")
-        }
-        result
-    }
-
-    fn emit_move(&self, modification: &RegisterRelocation) -> String {
-        use RegisterRelocation::*;
-        match modification {
-            &TwoAddressMove(from, to) => format!("\tmov {:.64},{:.64}\n", to, from),
-            &Move(from, to) => {
-                format!("\tmov {:.64},{:.64}\n", to, from)
-            }
-            &Reload(reg, mem) => format!("\tmov {:.64}, [rbp-{}]\n", reg, mem),
-            &Spill(reg, mem) => format!("\tmov [rbp-{}],{:.64} \n", mem, reg),
-            &MemMove(from, to, reg) => {
-                format!(
-                    "\tmov {:.64}, [rbp-{}]\n\tmov [rbp-{}], {:.64}\n",
-                    reg, from, to, reg
-                )
-            }
-            _ => unimplemented!(),
         }
     }
 
@@ -656,23 +290,5 @@ impl BackendAMD64 {
         }
 
         (result, -offset + 8)
-    }
-
-    fn get_use_count(instructions: &Vec<IRInstruction>, definitions: &Vec<u32>) -> Vec<u32> {
-        log::debug!(
-            "Started get use count with {} definitions",
-            definitions.len()
-        );
-        let mut use_count = vec![0u32; definitions.len()];
-        for instruction in instructions {
-            if let Some(left) = instruction.get_left() {
-                use_count[left as usize] += 1;
-            }
-            if let Some(right) = instruction.get_right() {
-                use_count[right as usize] += 1;
-            }
-        }
-        log::debug!("Use count: {:?}", use_count);
-        use_count
     }
 }

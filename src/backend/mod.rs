@@ -1,5 +1,6 @@
 mod amd64;
 pub mod ir;
+mod rburg_template;
 
 use std::collections::HashSet;
 
@@ -117,4 +118,22 @@ pub trait Backend {
     /*fn get_size(&self, typ: &TypeNode) -> IRSize;
     fn sizeof_pointer(&self) -> u32;
     fn typeof_size_t(&self) -> TypeNode;*/
+}
+
+fn get_use_count(instructions: &Vec<IRInstruction>, definitions: &Vec<u32>) -> Vec<u32> {
+    log::debug!(
+        "Started get use count with {} definitions",
+        definitions.len()
+    );
+    let mut use_count = vec![0u32; definitions.len()];
+    for instruction in instructions {
+        if let Some(left) = instruction.get_left() {
+            use_count[left as usize] += 1;
+        }
+        if let Some(right) = instruction.get_right() {
+            use_count[right as usize] += 1;
+        }
+    }
+    log::debug!("Use count: {:?}", use_count);
+    use_count
 }
