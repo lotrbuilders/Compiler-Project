@@ -1,5 +1,6 @@
 use super::ir::*;
 use super::Backend;
+use super::TypeInfoTable;
 use std::collections::HashSet;
 
 mod register_allocation;
@@ -198,14 +199,6 @@ impl Backend for BackendAMD64 {
         //String::new()
     }
 
-    fn argument_evaluation_direction_registers(&self) -> super::Direction {
-        super::Direction::Left2Right
-    }
-
-    fn argument_evaluation_direction_stack(&self) -> super::Direction {
-        super::Direction::Right2Left
-    }
-
     fn get_arguments_in_registers(&self, sizes: &Vec<IRSize>) -> Vec<bool> {
         let mut result = Vec::with_capacity(sizes.len());
         let mut ireg = 0;
@@ -214,6 +207,53 @@ impl Backend for BackendAMD64 {
             ireg += 1;
         }
         result
+    }
+
+    fn argument_evaluation_direction_registers(&self) -> super::Direction {
+        super::Direction::Left2Right
+    }
+
+    fn argument_evaluation_direction_stack(&self) -> super::Direction {
+        super::Direction::Right2Left
+    }
+
+    fn get_type_info_table(&self) -> TypeInfoTable {
+        use super::TypeInfo;
+        use crate::parser::TypeNode::*;
+        TypeInfoTable {
+            char: TypeInfo {
+                size: 1,
+                align: 1,
+                stack_align: 4,
+                irsize: IRSize::S8,
+            },
+            short: TypeInfo {
+                size: 2,
+                align: 2,
+                stack_align: 4,
+                irsize: IRSize::S16,
+            },
+            int: TypeInfo {
+                size: 4,
+                align: 4,
+                stack_align: 4,
+                irsize: IRSize::S32,
+            },
+            long: TypeInfo {
+                size: 8,
+                align: 8,
+                stack_align: 8,
+                irsize: IRSize::S64,
+            },
+            pointer: TypeInfo {
+                size: 8,
+                align: 8,
+                stack_align: 8,
+                irsize: IRSize::S64,
+            },
+
+            size_t: Long,
+        }
     }
 
     fn get_size(&self, typ: &crate::parser::TypeNode) -> IRSize {

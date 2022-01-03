@@ -41,16 +41,28 @@ pub struct TypeInfo {
     pub size: usize,
     pub align: usize,
     pub stack_align: usize,
+    pub irsize: IRSize,
 }
 
 impl TypeInfo {
     pub fn new(size: usize, align: usize, stack_align: usize) -> TypeInfo {
         TypeInfo {
+            irsize: IRSize::B(0),
             size: size,
             align: align,
             stack_align: stack_align,
         }
     }
+}
+
+pub struct TypeInfoTable {
+    char: TypeInfo,
+    short: TypeInfo,
+    int: TypeInfo,
+    long: TypeInfo,
+    pointer: TypeInfo,
+
+    size_t: TypeNode,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -98,6 +110,8 @@ pub trait Backend {
 
     fn argument_evaluation_direction_registers(&self) -> Direction;
     fn argument_evaluation_direction_stack(&self) -> Direction;
+
+    fn get_type_info_table(&self) -> TypeInfoTable;
 
     fn get_size(&self, typ: &TypeNode) -> IRSize;
     fn sizeof_pointer(&self) -> u32;
