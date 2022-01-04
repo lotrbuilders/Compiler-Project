@@ -15,7 +15,9 @@ name = "utcc"
 path = "src/main.rs"
 
 [dependencies]
-clap = "~2.33.3"
-colored = "~2.0.0"
-log = "~0.4.14"
+clap = "~2.33.3"                                            #apache 2.0 or MIT
+colored = "~2.0.0"                                          #MPL 2.0
+log = "~0.4.14"                                             #apache 2.0 or MIT
+bitvec = ~"0.22.3"                                          #MIT
+smallvec = {version = ~"1.0.49", features = union}          #apache 2.0 or MIT
 rburg = {path = "./src/rburg"}
