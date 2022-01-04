@@ -198,7 +198,7 @@ impl BackendAMD64 {
                         match variable_types[i].size {
                             IRSize::S8 | IRSize::S16 | IRSize::S32 => -4,
                             IRSize::P | IRSize::S64 => -8,
-                            IRSize::B(size) => -(std::cmp::min(size, 16) as i32),
+                            IRSize::B(size) => -(std::cmp::max(size, 4) as i32),
                             IRSize::V => unreachable!(),
                         },
                     );
