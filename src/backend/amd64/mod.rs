@@ -1,4 +1,5 @@
 use super::ir::*;
+use smallvec::SmallVec;
 use std::collections::HashSet;
 
 mod backend;
@@ -126,92 +127,16 @@ mcon64:  m mem64                    "{m}"
 %ireg:  Cvp (_r %ireg)              #"#extend/truncuate" {2}
 %ireg:  Cvs s64s32s16s8(_r %ireg)   #"#extend/truncuate" {2}
 
-:       Arg pi32i64(r %ireg)        #"push {r:.64}\n" {1}
+:       Arg pi32i64(r %ireg)         #"push {r:.64}\n" {1}
 %eax:   Call pi64i32i16i8v(#name)    #"#call {name}\n" {20}
 %eax:   CallV pi64i32i16i8v(r %ireg) #"#call {r}\n"    {20}
 }
 
 impl BackendAMD64 {
-    /*
-    // Should be automatically generated
-    // Gets the rule that is assocatiated with the specific non_terminal used
-    fn get_rule(&self, index: u32, non_terminal: usize) -> u16 {
-        let state = &self.instruction_states[index as usize];
-        let rule = state.rule[non_terminal];
-        if rule == 0xffff {
-            log::warn!(
-                "No valid rule for instruction{} with non_terminal {}:",
-                index,
-                non_terminal
-            );
-            log::warn!("{}", self.instructions[index as usize],);
-        }
-        rule
-    }*/
-
     super::rburg_template::get_rule! {}
     super::rburg_template::reduce_instruction! {}
-
-    /*
-    // Selects the rule for a specific instruction and propogates upwards in the DAG
-    // Should be automatically generated
-    fn reduce_instruction(&mut self, instruction: u32, non_terminal: usize) -> () {
-        if self.rules[instruction as usize] != 0xffff {
-            log::trace!("{} already reduced correctly", instruction);
-            return ();
-        }
-
-        let rule_number = self.get_rule(instruction, non_terminal);
-        self.reduce_terminals(instruction, rule_number);
-
-        let child_non_terminals: Vec<usize> =
-            self.get_child_non_terminals(instruction, rule_number);
-        let kids: Vec<u32> = self.get_kids(instruction, rule_number);
-        for i in 0..kids.len() {
-            self.reduce_instruction(kids[i], child_non_terminals[i]);
-        }
-        self.rules[instruction as usize] = rule_number;
-    }*/
-
     super::rburg_template::emit_asm! {}
-    /*
-        // Should be automatically generated
-        // Emits handwritten assembly if necessary, otherwise uses the automatic generated function
-        fn emit_asm(&mut self, strings: &Vec<String>) -> String {
-            let mut result = self.emit_prologue();
-            for instruction in 0..self.instructions.len() {
-                for modification in &self.reg_relocations[instruction] {
-                    result.push_str(&self.emit_move(modification));
-                    //use RegisterLocation::*;
-                    use RegisterRelocation::*;
-                    match modification {
-                        Move(..) => continue, //  self.vreg2reg[vreg as usize] = Reg(to),
-                        TwoAddressMove(..) => continue,
-                        Spill(..) => continue,
-                        Reload(..) => continue,
-                        MemMove(..) => continue,
-                        _ => unimplemented!(),
-                    }
-                }
-                let rule = self.rules[instruction];
-                if self.is_instruction(rule) {
-                    let procede = if self.custom_print[rule as usize] {
-                        let (handwritten, procede) = self.emit_asm2(instruction);
-                        result.push_str(&handwritten);
-                        procede
-                    } else {
-                        true
-                    };
-                    if procede {
-                        result.push_str(&self.gen_asm(instruction));
-                    }
-                }
-            }
-            result.push_str(&self.emit_epilogue());
-            result.push_str(&self.emit_strings(strings));
-            result
-        }
-    */
+
     fn get_stack_alignment(&self, arguments: &IRArguments) -> i32 {
         let length = arguments.count as i32;
         let extra_stack_size = (std::cmp::max(length, 6) - 6) * 8;
