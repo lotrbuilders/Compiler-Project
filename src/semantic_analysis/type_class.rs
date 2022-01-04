@@ -51,12 +51,12 @@ impl SemanticAnalyzer {
 
 impl Type {
     pub fn is_in(&self, class: TypeClass) -> bool {
-        use TypeNode::*;
+        //use TypeNode::*;
         match self.nodes.get(0) {
-            Some(Name(_)) => {
+            /*Some(Name(_)) => {
                 log::error!("Name should not be passed to is_in");
                 true
-            }
+            }*/
             None => {
                 log::error!("Type was improperly passed");
                 true

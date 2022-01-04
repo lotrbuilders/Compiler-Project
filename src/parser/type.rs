@@ -33,7 +33,6 @@ pub enum TypeNode {
     Pointer,
     Struct(usize),
     Array(usize),
-    Name(String),
     Function(Vec<Type>),
 }
 
@@ -55,15 +54,18 @@ impl PartialEq for Type {
     fn eq(&self, other: &Self) -> bool {
         let mut lhs = self.nodes.iter().peekable();
         let mut rhs = other.nodes.iter().peekable();
-        use TypeNode::*;
+
         while lhs.peek().is_some() && rhs.peek().is_some() {
-            if let Some(Name(_)) = lhs.peek() {
+            //use TypeNode::*;
+            /*if let Some(Name(_)) = lhs.peek() {
                 lhs.next();
                 continue;
-            } else if let Some(Name(_)) = rhs.peek() {
+            } else
+            if let Some(Name(_)) = rhs.peek() {
                 rhs.next();
                 continue;
-            } else {
+            }else*/
+            {
                 if lhs.next() != rhs.next() {
                     return false;
                 }
@@ -161,7 +163,6 @@ impl Type {
 
     fn is_function2(input: &[TypeNode]) -> bool {
         match input.get(0) {
-            Some(TypeNode::Name(_)) => Type::is_function2(&input[1..]),
             Some(TypeNode::Function(_)) => true,
             _ => false,
         }
@@ -174,18 +175,16 @@ impl Type {
 
     fn get_function_arguments2<'a>(input: &'a [TypeNode]) -> Option<&'a Vec<Type>> {
         match input.get(0) {
-            Some(TypeNode::Name(_)) => Type::get_function_arguments2(&input[1..]),
             Some(TypeNode::Function(arguments)) => Some(arguments),
             _ => None,
         }
     }
 
-    pub fn has_name(&self) -> bool {
-        matches!(self.nodes.get(0), Some(TypeNode::Name(..)))
+    pub fn _has_name(&self) -> bool {
+        false
     }
-    pub fn get_name(&self) -> Option<String> {
+    pub fn _get_name(&self) -> Option<String> {
         match self.nodes.get(0) {
-            Some(TypeNode::Name(name)) => Some(name.clone()),
             _ => None,
         }
     }
@@ -202,10 +201,7 @@ impl Type {
     }
 
     pub fn remove_name(self) -> Type {
-        match self.nodes.get(0) {
-            Some(TypeNode::Name(_)) => self.nodes[1..].into(),
-            _ => self.clone(),
-        }
+        self
     }
 
     pub fn get_return_type<'a>(&'a self) -> Option<&'a [TypeNode]> {
@@ -218,7 +214,6 @@ impl Type {
 
     fn get_return_type2<'a>(input: &'a [TypeNode]) -> Option<&'a [TypeNode]> {
         match input.get(0) {
-            Some(TypeNode::Name(_)) => Type::get_return_type2(&input[1..]),
             Some(TypeNode::Function(_)) => Some(&input[1..]),
             Some(_) => Some(&input[0..]),
             _ => None,
@@ -282,7 +277,6 @@ impl From<Token> for TypeNode {
             Short => TypeNode::Short,
             Asterisk => TypeNode::Pointer,
             Void => TypeNode::Void,
-            Ident(name) => TypeNode::Name(name),
             _ => {
                 log::error!("From<Token> for Type called on unqualified type");
                 std::process::exit(1);
@@ -328,9 +322,7 @@ fn format_type(
             Short => write!(f, "short ")?,
             Void => write!(f, "void ")?,
             Pointer => write!(f, "* ")?,
-            Name(name) => write!(f, "{}", name)?,
             Function(arguments) => {
-                //Extend later when functions are fully implemented
                 format_type(&typ[0..i], f, table)?;
                 write!(f, "(")?;
                 if let Some(arg) = arguments.get(0) {
@@ -343,7 +335,6 @@ fn format_type(
                 break;
             }
             Array(size) => {
-                //Extend later when functions are fully implemented
                 format_type(&typ[0..i], f, table)?;
                 write!(f, "[{}]", size)?;
                 break;

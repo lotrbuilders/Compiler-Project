@@ -318,10 +318,7 @@ impl SemanticAnalyzer {
                     type_specifier = Some(node.clone());
                 }
 
-                TypeNode::Function(..)
-                | TypeNode::Name(..)
-                | TypeNode::Array(..)
-                | TypeNode::Pointer => unreachable!(),
+                TypeNode::Function(..) | TypeNode::Array(..) | TypeNode::Pointer => unreachable!(),
             }
         }
         vec![type_specifier.expect("failure to check for type specifer")].into()
