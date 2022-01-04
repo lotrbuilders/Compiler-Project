@@ -116,13 +116,32 @@ impl BackendAMD64 {
     }
 
     pub fn emit_global_definition(&self, name: &String, value: i128, size: &IRSize) -> String {
-        let _ = size;
-        format!("section .data\n{}:\n\tdq {}\n", name, value)
+        let (align, c) = match size {
+            IRSize::S8 => (1, 'b'),
+            IRSize::S16 => (2, 'w'),
+            IRSize::S32 => (4, 'd'),
+            IRSize::P | IRSize::S64 => (8, 'q'),
+            IRSize::V | IRSize::B(_) => unreachable!(),
+        };
+        format!(
+            "section .data\n\talign {}\n{}:\n\td{} {}\n",
+            align, name, c, value
+        )
     }
 
     pub fn emit_common(&self, name: &String, size: &IRSize) -> String {
-        let _ = size;
-        format!("section .bss\n{}:\n\tresb 4\n", name)
+        let (align, size) = match size {
+            IRSize::S8 => (1, 1),
+            IRSize::S16 => (2, 2),
+            IRSize::S32 => (4, 4),
+            IRSize::P | IRSize::S64 => (8, 8),
+            IRSize::B(size) => (std::cmp::min(*size, 16) as i32, *size as i32),
+            IRSize::V => unreachable!(),
+        };
+        format!(
+            "section .bss\n\talignb {}\n{}:\n\tresb {}\n",
+            align, name, size
+        )
     }
 
     // Should be handwritten for any backend
@@ -134,7 +153,7 @@ impl BackendAMD64 {
             self.function_name, self.function_name
         );
         if self.stack_size != 0 {
-            prologue.push_str(&format!("\tpush rbp\n\tmov rbp,rsp\n"));
+            prologue.push_str("\tpush rbp\n\tmov rbp,rsp\n");
             prologue.push_str(&format!("\tsub rsp, {}\n", self.stack_size));
         }
         prologue

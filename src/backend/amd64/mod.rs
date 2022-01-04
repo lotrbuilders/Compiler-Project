@@ -1,3 +1,5 @@
+use crate::utility::padding;
+
 use super::ir::*;
 use smallvec::SmallVec;
 use std::collections::HashSet;
@@ -190,22 +192,27 @@ impl BackendAMD64 {
             let count = variable_types[i].count as i32;
             result.push(match arguments.arguments.get(i) {
                 // Either a normal variable or an argument passed via register
-                None | Some(Some(..)) => match variable_types[i].size {
-                    IRSize::S32 | IRSize::S8 | IRSize::S16 => {
-                        offset += -4 * count; // Wrong for types smaller then S32 at the moment
-                        offset //+ 4 * (count - 1)
-                    }
-                    IRSize::P | IRSize::S64 => {
-                        offset += -8 * count;
-                        offset //+ 4 * (count - 1)
-                    }
-                    IRSize::B(size) => {
-                        let size = size as i32;
-                        offset += -size * count;
-                        offset
-                    }
-                    IRSize::V => unreachable!(),
-                },
+                None | Some(Some(..)) => {
+                    offset += padding(
+                        offset,
+                        match variable_types[i].size {
+                            IRSize::S8 | IRSize::S16 | IRSize::S32 => -4,
+                            IRSize::P | IRSize::S64 => -8,
+                            IRSize::B(size) => -(std::cmp::min(size, 16) as i32),
+                            IRSize::V => unreachable!(),
+                        },
+                    );
+                    offset += count
+                        * match variable_types[i].size {
+                            IRSize::S8 => -1,
+                            IRSize::S16 => -2,
+                            IRSize::S32 => -4,
+                            IRSize::P | IRSize::S64 => -8,
+                            IRSize::B(size) => -(size as i32),
+                            IRSize::V => unreachable!(),
+                        };
+                    offset
+                }
                 // Stack argument
                 Some(None) => {
                     arg_offset += 8;
