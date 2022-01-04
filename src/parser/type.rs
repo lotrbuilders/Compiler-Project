@@ -45,34 +45,9 @@ impl TypeNode {
 // Type contains  C Type used by something
 // The Name if any should be the highest
 // This is followed in order of dereferencing/calling
-#[derive(Debug, Clone, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Type {
     pub nodes: Vec<TypeNode>,
-}
-
-impl PartialEq for Type {
-    fn eq(&self, other: &Self) -> bool {
-        let mut lhs = self.nodes.iter().peekable();
-        let mut rhs = other.nodes.iter().peekable();
-
-        while lhs.peek().is_some() && rhs.peek().is_some() {
-            //use TypeNode::*;
-            /*if let Some(Name(_)) = lhs.peek() {
-                lhs.next();
-                continue;
-            } else
-            if let Some(Name(_)) = rhs.peek() {
-                rhs.next();
-                continue;
-            }else*/
-            {
-                if lhs.next() != rhs.next() {
-                    return false;
-                }
-            }
-        }
-        lhs.next().is_none() && rhs.next().is_none()
-    }
 }
 
 impl Type {
@@ -105,6 +80,12 @@ impl Type {
         }
     }
 
+    pub fn is_declaration(&self) -> bool {
+        self.get_function_arguments()
+            .map(|args| args.len() == 0)
+            .unwrap_or(false)
+    }
+
     pub fn is_char(&self) -> bool {
         match self.nodes.get(0) {
             Some(TypeNode::Char) => true,
@@ -113,12 +94,6 @@ impl Type {
     }
     pub fn is_void(&self) -> bool {
         matches!(self.nodes.get(0), Some(TypeNode::Void))
-    }
-
-    pub fn is_declaration(&self) -> bool {
-        self.get_function_arguments()
-            .map(|args| args.len() == 0)
-            .unwrap_or(false)
     }
 
     pub fn is_void_pointer(&self) -> bool {
@@ -149,12 +124,12 @@ impl Type {
         }
     }
 
-    pub fn is_function_pointer(&self) -> bool {
-        matches!(self.nodes.get(0), Some(TypeNode::Pointer)) && Type::is_function2(&self.nodes[1..])
-    }
-
     pub fn is_callable(&self) -> bool {
         self.is_function() || self.is_function_pointer()
+    }
+
+    pub fn is_function_pointer(&self) -> bool {
+        matches!(self.nodes.get(0), Some(TypeNode::Pointer)) && Type::is_function2(&self.nodes[1..])
     }
 
     pub fn is_function(&self) -> bool {
@@ -176,15 +151,6 @@ impl Type {
     fn get_function_arguments2<'a>(input: &'a [TypeNode]) -> Option<&'a Vec<Type>> {
         match input.get(0) {
             Some(TypeNode::Function(arguments)) => Some(arguments),
-            _ => None,
-        }
-    }
-
-    pub fn _has_name(&self) -> bool {
-        false
-    }
-    pub fn _get_name(&self) -> Option<String> {
-        match self.nodes.get(0) {
             _ => None,
         }
     }

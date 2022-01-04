@@ -53,15 +53,11 @@ impl Type {
     pub fn is_in(&self, class: TypeClass) -> bool {
         //use TypeNode::*;
         match self.nodes.get(0) {
-            /*Some(Name(_)) => {
-                log::error!("Name should not be passed to is_in");
-                true
-            }*/
+            Some(_) => Type::is_in2(&self.nodes, class),
             None => {
                 log::error!("Type was improperly passed");
                 true
             }
-            Some(_) => Type::is_in2(&self.nodes, class),
         }
     }
 
