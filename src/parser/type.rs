@@ -35,7 +35,7 @@ pub enum TypeNode {
     Pointer,
     Struct(usize),
     Array(usize),
-    Function(Vec<Type>),
+    Function(Box<Vec<Type>>),
 }
 
 impl TypeNode {

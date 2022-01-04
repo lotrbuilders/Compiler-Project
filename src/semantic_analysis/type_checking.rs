@@ -150,7 +150,7 @@ impl ASTType {
                 }
                 AST::Function(arguments) => {
                     let (arguments, _) = ASTType::tranform_function_arguments(arguments, analyzer);
-                    declarator.push(TypeNode::Function(arguments));
+                    declarator.push(TypeNode::Function(Box::new(arguments)));
                 }
                 AST::Array(exp) => {
                     exp.analyze(analyzer);
