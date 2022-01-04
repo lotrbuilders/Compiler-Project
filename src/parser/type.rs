@@ -1,3 +1,5 @@
+use smallvec::{smallvec, SmallVec};
+
 use crate::{
     table::StructTable,
     token::{Token, TokenType},
@@ -47,21 +49,23 @@ impl TypeNode {
 // This is followed in order of dereferencing/calling
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Type {
-    pub nodes: Vec<TypeNode>,
+    pub nodes: SmallVec<[TypeNode; 2]>,
 }
 
 impl Type {
     pub fn empty() -> Type {
-        Type { nodes: Vec::new() }
+        Type {
+            nodes: SmallVec::new(),
+        }
     }
     pub fn int() -> Type {
         Type {
-            nodes: vec![TypeNode::Int],
+            nodes: smallvec![TypeNode::Int],
         }
     }
     pub fn pointer() -> Type {
         Type {
-            nodes: vec![TypeNode::Pointer],
+            nodes: smallvec![TypeNode::Pointer],
         }
     }
     pub fn error() -> Type {
@@ -253,7 +257,9 @@ impl From<Token> for TypeNode {
 
 impl From<Vec<TypeNode>> for Type {
     fn from(nodes: Vec<TypeNode>) -> Type {
-        Type { nodes }
+        Type {
+            nodes: nodes.into_iter().collect(),
+        }
     }
 }
 
