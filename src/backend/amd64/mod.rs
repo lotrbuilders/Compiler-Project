@@ -89,7 +89,7 @@ mcon64:  m mem64                    "{m}"
 %ireg:  Mul s32(a %ireg , b %ireg)  ?"imul {res}, {b} ; {res} = {a} * {b}\n"  {1}
 %eax:   Div s32(a %eax  , b %ireg)  ?"cdq\n\tidiv {b} ; {res} = {a} / {b}\n"  {1}
 %ireg:  Mul s64(a %ireg , b %ireg)  ?"imul {res:.64}, {b:.64} ; {res:.64} = {a:.64} * {b:.64}\n"  {1}
-%eax:   Div s64(a %eax  , b %ireg)  ?"cdq\n\tidiv {b:.64}     ; {res:.64} = {a:.64} / {b:.64}\n"  {1}
+%eax:   Div s64(a %eax  , b %ireg)  ?"cqo\n\tidiv {b:.64}     ; {res:.64} = {a:.64} / {b:.64}\n"  {1}
 
 %ireg:  And(a %ireg , b %ireg)      ?"and {res}, {b} ; {res} = {a} & {b}\n"   {1}
 %ireg:  Or(a %ireg , b %ireg)       ?"or  {res}, {b} ; {res} = {a} | {b}\n"   {1}
