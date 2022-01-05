@@ -56,12 +56,21 @@ impl ExternalDeclaration {
         result: &mut Vec<IRInstruction>,
         context: &mut EvaluationContext,
     ) -> IRArguments {
-        let arguments = self.decl_type.get_function_arguments().unwrap();
+        let arguments: Vec<_> = self
+            .decl_type
+            .get_function_arguments()
+            .unwrap()
+            .iter()
+            .filter(|&t| !t.is_void())
+            .cloned()
+            .collect();
+
         let count = arguments.len();
         let ir_arguments = arguments
             .iter()
             .map(|arg| context.get_size(&arg.clone().remove_name().array_promotion()))
             .collect();
+
         let in_register = context.backend.get_arguments_in_registers(&ir_arguments);
         let vreg_count = in_register.iter().filter(|&&in_reg| in_reg).count() as u32;
         context.vreg_counter += vreg_count * 2;

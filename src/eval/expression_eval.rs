@@ -53,6 +53,7 @@ impl Evaluate for Expression {
                 let sizes = if !sizes.is_empty() {
                     sizes
                         .iter()
+                        .filter(|&t| !t.is_void())
                         .map(|t| context.get_size(&t.clone().remove_name().array_promotion()))
                         .collect()
                 } else {
@@ -66,9 +67,9 @@ impl Evaluate for Expression {
                 );
                 let in_registers = context.backend.get_arguments_in_registers(&sizes);
                 let count = arguments.len();
-                use crate::backend::Direction;
                 let mut first = true;
                 let mut arg_index = None;
+                use crate::backend::Direction;
                 match context.backend.argument_evaluation_direction_stack() {
                     Direction::Left2Right => {
                         for arg in 0..arguments.len() {

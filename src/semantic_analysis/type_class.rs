@@ -20,6 +20,21 @@ pub enum TypeClass {
 }
 
 impl SemanticAnalyzer {
+    pub fn assert_function_arguments(&mut self, span: &Span, types: &[Type]) {
+        if types.len() > 1 && types[0].is_void() {
+            self.errors
+                .push(error!(span, "Unexpected arguments after a void argumnet"))
+        }
+        for (i, typ) in types.iter().enumerate() {
+            if typ.is_void() && i != 0 {
+                self.errors.push(error!(
+                    span,
+                    "Void argument, which is not in the first place"
+                ))
+            }
+        }
+    }
+
     pub fn assert_in(&mut self, span: &Span, typ: &Type, class: TypeClass) {
         if !typ.is_in(class) {
             self.errors

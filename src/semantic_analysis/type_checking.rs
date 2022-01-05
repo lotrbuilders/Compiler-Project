@@ -25,6 +25,18 @@ pub fn check_arguments_function(
         return;
     }
 
+    // Functions can have a special void argument, which means that function actually has no arguments
+    if argument_type[0].is_void() {
+        if arguments.len() != 0 {
+            analyzer.errors.push(error!(
+                span,
+                "The amount of arguments in the function(0) does not match the amount supplied({})",
+                arguments.len()
+            ))
+        }
+        return;
+    }
+
     if argument_type.len() != arguments.len() {
         analyzer.errors.push(error!(
             span,
@@ -153,6 +165,7 @@ impl ASTType {
                 }
                 AST::Function(arguments) => {
                     let (arguments, _) = ASTType::tranform_function_arguments(arguments, analyzer);
+                    analyzer.assert_function_arguments(&self.span, &arguments);
                     declarator.push(TypeNode::Function(Box::new(arguments)));
                 }
                 AST::Array(exp) => {
