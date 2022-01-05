@@ -44,7 +44,9 @@ impl Evaluate for Statement {
                 };
                 context.variables.push(variable);
                 if let Some(exp) = init {
+                    let exp_size = context.get_size(&exp.ast_type.array_promotion());
                     let vreg = exp.eval(result, context);
+                    let vreg = context.promote(result, size, exp_size, vreg);
                     let addr = context.next_vreg();
                     result.push(IRInstruction::AddrL(IRSize::P, addr, index));
                     result.push(IRInstruction::Store(size, vreg, addr));
