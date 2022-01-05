@@ -252,7 +252,7 @@ impl BinaryExpressionType {
                         left_type
                     } else if left_type.is_in(Pointer) && right_type.is_in(Pointer) {
                         analyzer.assert_compatible(span, &left_type, &right_type);
-                        right_type
+                        analyzer.type_info.size_t()
                     } else {
                         analyzer.assert_both_in(
                             span,
