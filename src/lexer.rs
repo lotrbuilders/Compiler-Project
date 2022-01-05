@@ -295,6 +295,7 @@ impl Lexer {
         match self.next(input) {
             Some('\\') => match self.next(input) {
                 Some('\'') => ('\'', Ok(())),
+                Some('\\') => ('\\', Ok(())),
                 Some('"') => ('"', Ok(())),
                 Some('a') => ('\x07', Ok(())),
                 Some('b') => ('\x08', Ok(())),

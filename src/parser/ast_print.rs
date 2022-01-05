@@ -151,7 +151,7 @@ impl Display for Expression {
         use ExpressionVariant::*;
         match &self.variant {
             ConstI(value) => write!(f, "{}", value)?,
-            CString(value) => write!(f, "{:?}", value)?,
+            CString(value) => write!(f, "\"{}\"", print_c_string::format_c_string(value))?,
             Ident(name, ..) => write!(f, "{}", name)?,
             Sizeof(typ) => write!(f, "sizeof {}", typ)?,
 
@@ -332,4 +332,62 @@ fn format_type(typ: &[ASTTypeNode], f: &mut std::fmt::Formatter<'_>) -> std::fmt
         };
     }
     Ok(())
+}
+
+// This module mimic the functionality in the crate either, which might have been better to use
+// EitherIterator is used to flatten something that will either be a string or a char to an iterator of char
+mod print_c_string {
+    enum Either {
+        Char(char),
+        String(&'static str),
+    }
+
+    enum EitherIterator {
+        Char(std::iter::Once<char>),
+        String(std::str::Chars<'static>),
+    }
+
+    impl Iterator for EitherIterator {
+        type Item = char;
+        fn next(&mut self) -> Option<Self::Item> {
+            match self {
+                EitherIterator::Char(it) => it.next(),
+                EitherIterator::String(it) => it.next(),
+            }
+        }
+    }
+
+    impl IntoIterator for Either {
+        type IntoIter = EitherIterator;
+        type Item = char;
+        fn into_iter(self) -> Self::IntoIter {
+            match self {
+                Either::Char(c) => EitherIterator::Char(std::iter::once(c)),
+                Either::String(str) => EitherIterator::String(str.chars()),
+            }
+        }
+    }
+
+    pub fn format_c_string(string: &String) -> String {
+        use Either::{Char, String};
+        string
+            .chars()
+            .flat_map(|c| {
+                match c {
+                    '\x07' => String("\\a"),
+                    '\x08' => String("\\b"),
+                    '\x0b' => String("\\v"),
+                    '\x0e' => String("\\f"),
+                    '\\' => String("\\\\"),
+                    '\'' => String("\\'"),
+                    '\"' => String("\\\""),
+                    '\n' => String("\\n"),
+                    '\r' => String("\\r"),
+                    '\t' => String("\\t"),
+                    c => Char(c),
+                }
+                .into_iter()
+            })
+            .collect()
+    }
 }
