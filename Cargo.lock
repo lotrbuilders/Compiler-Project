@@ -198,6 +198,7 @@ dependencies = [
  "bitvec",
  "clap",
  "colored",
+ "lazy_static",
  "log",
  "rburg",
  "smallvec",

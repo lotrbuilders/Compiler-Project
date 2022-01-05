@@ -16,9 +16,9 @@ pub struct Lexer {
 
 impl Lexer {
     pub fn new(filename: &String) -> Lexer {
-        file_table::add_sourcefile(filename);
+        let file_index = file_table::add_sourcefile(filename) as u32;
         Lexer {
-            file_index: 0,
+            file_index,
             line: 1,
             column: 1,
             offset: 0,
