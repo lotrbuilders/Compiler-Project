@@ -33,6 +33,9 @@ pub fn check_arguments_function(
             arguments.len()
         ))
     }
+    for (argument, argument_type) in arguments.iter().zip(argument_type.iter()) {
+        analyzer.assert_compatible(span, &argument.ast_type, argument_type)
+    }
 }
 
 pub fn compare_arguments(
