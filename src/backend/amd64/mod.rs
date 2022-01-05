@@ -132,6 +132,8 @@ mcon64:  m mem64                    "{m}"
 :       Arg pi32i64(r %ireg)         #"push {r:.64}\n" {1}
 %eax:   Call pi64i32i16i8v(#name)    #"#call {name}\n" {20}
 %eax:   CallV pi64i32i16i8v(r %ireg) #"#call {r}\n"    {20}
+:   Call v(#name)                    #"#call {name}\n" {20}
+:   CallV v(r %ireg)                 #"#call {r}\n"    {20}
 }
 
 impl BackendAMD64 {

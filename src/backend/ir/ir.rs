@@ -251,7 +251,6 @@ impl IRInstruction {
     pub fn get_result(&self) -> Option<IRReg> {
         match self {
             &Self::Call(IRSize::V, ..) | &Self::CallV(IRSize::V, ..) => None,
-
             &Self::Imm(_, result, ..)
             | &Self::AddrL(_, result, ..)
             | &Self::AddrG(_, result, ..)
@@ -311,6 +310,23 @@ impl IRInstruction {
             }
 
             Self::Jmp(_) | Self::Label(..) | Self::PhiSrc(..) | Self::Phi(..) => IRSize::P,
+        }
+    }
+
+    // Returns the size of the result of an instruction
+    // Automatically upgrades to int_size
+    pub fn get_result_size(&self, int_size: IRSize) -> IRSize {
+        match self {
+            Self::Eq(..)
+            | Self::Ne(..)
+            | Self::Lt(..)
+            | Self::Le(..)
+            | Self::Gt(..)
+            | Self::Ge(..) => int_size,
+
+            ins => {
+                return std::cmp::max(ins.get_size(), int_size);
+            }
         }
     }
 }
