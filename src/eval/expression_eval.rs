@@ -275,21 +275,23 @@ impl Evaluate for Expression {
             {
                 let int_ptr_size = context.int_ptr(true);
                 let left_vreg = left.eval(result, context);
-                let mut right = right.eval(result, context);
+                let right = right.eval(result, context);
+
+                let vreg = context.next_vreg();
+                result.push(IRInstruction::Sub(IRSize::P, vreg, left_vreg, right));
 
                 // IF we are subtracting two pointers we need to devide their distance by the sizeof the pointed-to object
                 let size = context.sizeof(&left.ast_type.clone().deref());
                 if size != 1 {
                     let constant = context.next_vreg();
+                    let right = vreg;
                     let vreg = context.next_vreg();
                     result.push(IRInstruction::Imm(int_ptr_size, constant, size as i128));
                     result.push(IRInstruction::Div(int_ptr_size, vreg, right, constant));
-                    right = vreg
+                    vreg
+                } else {
+                    vreg
                 }
-
-                let vreg = context.next_vreg();
-                result.push(IRInstruction::Sub(IRSize::P, vreg, left_vreg, right));
-                vreg
             }
 
             Binary(op @ (Subtract | Add | Index), left, right)
