@@ -139,6 +139,15 @@ macro_rules! generate {
                 self.reduce_instruction(i as u32, stmt_NT);
             }
 
+            if cfg!(debug_assertions)
+            {
+                let bad_instruction=self.rules.iter().any(|&rule| rule==0xffff);
+                if bad_instruction
+                {
+                    std::process::exit(2);
+                }
+            }
+
             log::info!("definitive rules:\n{:?}", self.rules);
             log::info!("Starting register allocation");
             RegisterAllocatorSimple::allocate_registers(self);
