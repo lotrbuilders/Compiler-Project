@@ -234,6 +234,8 @@ tests! {
     full_scale_stage_20: ("src/stage_20",test_valid_full_scale,test_invalid_full_scale)
     full_scale_stage_21: ("src/stage_21",test_valid_full_scale,test_invalid_full_scale)
     full_scale_stage_22: ("src/stage_22",test_valid_full_scale,test_invalid_full_scale)
+
+    full_scale_precedence: ("src/precedence",test_valid_full_scale,test_invalid_full_scale)
 }
 
 fn test_valid_parser(path: PathBuf, failures: &mut Vec<String>, fail_count: &mut i32) {
