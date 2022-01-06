@@ -98,6 +98,20 @@ macro_rules! default_utility {
                 }
             }
         }
+
+        #[allow(dead_code)]
+        pub fn empty_jump_target(&self, index : u32) -> u16 {
+            let ins: &IRInstruction = &self.instructions[index as usize];
+            if let IRInstruction::Jmp(target) = ins {
+                if let Some(IRInstruction::Label(_, label)) = self.instructions.get((index + 1) as usize) {
+                    if label == target {
+                        return 0;
+                    }
+                }
+            }
+            0xfff
+        }
+
         // Automatically generated
         // Checks if the instruction at index is the last instruction of the function for return optimization
         #[allow(dead_code)]

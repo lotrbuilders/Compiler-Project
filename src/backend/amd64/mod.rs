@@ -31,7 +31,8 @@ rburg::rburg_main! {
 :       Store Pi64(Imm(#i),a %ireg)  "mov qword[{a:.64}],{i}\n"
 :       Label(#i)                    ".L{i}:\n"
 %ireg:  Label(#i)                    ".L{i}:\n"
-:       Jmp(#i)                      "jmp .L{i}\n"
+:       Jmp(#i)                      "jmp .L{i}\n" {2}
+:       Jmp(#i)                      ";jmp .L{}\n" {self.empty_jump_target(index)}
 :       Jcc(r %ireg,#l)              "test {r},{r}\n\tjnz .L{l}\n" {2}
 :       Jnc(r %ireg,#l)              "test {r},{r}\n\tjz .L{l}\n"  {2}
 :       Jcc pi64(r %ireg,#l)         "test {r:.64},{r:.64}\n\tjnz .L{l}\n" {2}
