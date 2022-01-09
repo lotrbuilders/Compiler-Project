@@ -325,7 +325,7 @@ impl IRInstruction {
             | Self::Ge(..) => int_size,
 
             ins => {
-                return std::cmp::max(ins.get_size(), int_size);
+                return ins.get_size();//std::cmp::max(ins.get_size(), int_size);
             }
         }
     }
