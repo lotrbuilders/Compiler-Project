@@ -122,17 +122,7 @@ impl Parser<'_> {
         F: Fn(&mut Self) -> Result<T, ()>,
     {
         let (left, right) = recovery::get_braces(c);
-        expect!(
-            self,
-            left,
-            RecoveryStrategy::or(
-                RecoveryStrategy::or(
-                    RecoveryStrategy::UntilBraced(')'),
-                    RecoveryStrategy::UpTo(';')
-                ),
-                RecoveryStrategy::UntilBraced('}')
-            )
-        )?;
+        expect!(self, left, RecoveryStrategy::Nothing)?;
         let result = f(self);
         expect!(self, right, RecoveryStrategy::Nothing)?;
 

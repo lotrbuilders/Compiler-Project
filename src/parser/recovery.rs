@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use super::Parser;
+use super::{is_closed_delimiter, is_open_delimiter, to_closed_delimiter, Parser};
 use crate::token::{punct, Token, TokenType};
 
 /* The RecoveryStrategy is used to specify how the parser might recover from an error
@@ -19,6 +19,7 @@ pub enum RecoveryStrategy {
     Until(char),
     UntilBraced(char),
     Or(Box<RecoveryStrategy>, Box<RecoveryStrategy>),
+    Next,
     Nothing,
 }
 
@@ -30,6 +31,35 @@ impl RecoveryStrategy {
 }
 
 impl Parser<'_> {
+    pub fn next_braced(&mut self) {
+        let token = self.peek().unwrap();
+        let typ = token.token();
+
+        if is_open_delimiter(typ) {
+            let mut delim_stack = Vec::new();
+            loop {
+                let token = self.peek().unwrap();
+                let typ = token.token();
+                if is_open_delimiter(typ.clone()) {
+                    delim_stack.push(to_closed_delimiter(typ));
+                    self.next();
+                } else if *delim_stack.last().unwrap() == typ {
+                    self.next();
+                    delim_stack.pop();
+                    if delim_stack.is_empty() {
+                        break;
+                    }
+                } else if is_closed_delimiter(typ) {
+                    break;
+                } else {
+                    self.next();
+                }
+            }
+        } else {
+            self.next();
+        }
+    }
+
     pub(super) fn recover(&mut self, strategy: &RecoveryStrategy) {
         log::debug!("Recovering from parsing error");
         log::debug!("Strategy: {}", strategy);
@@ -38,7 +68,7 @@ impl Parser<'_> {
                 log::debug!("Succesfully recovered");
                 break;
             }
-            self.next();
+            self.next_braced();
         }
     }
 
@@ -48,29 +78,25 @@ impl Parser<'_> {
             &RecoveryStrategy::Until(c) => {
                 let result = token.token() == punct(c);
                 if result {
-                    self.next();
+                    self.next_braced();
                 }
                 result
             }
-            &RecoveryStrategy::UntilBraced(c) => {
-                let result =
-                    (token.token() == punct(c)) || (token.token() == punct(to_open_brace(c)));
-                if result {
-                    if !is_closed_brace(c) {
-                        self.next();
-                    }
-                    self.recover_braced(c);
-                }
-                result
+            &RecoveryStrategy::UntilBraced(_c) => {
+                unreachable!()
             }
             RecoveryStrategy::Or(left, right) => {
                 self.try_recover(token, &**left) || self.try_recover(token, &**right)
+            }
+            &RecoveryStrategy::Next => {
+                self.next_braced();
+                true
             }
             RecoveryStrategy::Nothing => true,
         }
     }
 
-    fn recover_braced(&mut self, c: char) {
+    fn _recover_braced(&mut self, c: char) {
         let (left, right) = get_braces(c);
         let mut counter = 1;
         while let Some(token) = self.next() {
@@ -102,14 +128,14 @@ pub fn get_braces(c: char) -> (TokenType, TokenType) {
     }
 }
 
-fn is_closed_brace(c: char) -> bool {
+fn _is_closed_brace(c: char) -> bool {
     match c {
         '}' | ']' | ')' => true,
         _ => false,
     }
 }
 
-fn to_open_brace(c: char) -> char {
+fn _to_open_brace(c: char) -> char {
     match c {
         '}' => '{',
         ']' => '[',
@@ -126,6 +152,7 @@ impl Display for RecoveryStrategy {
             RecoveryStrategy::UntilBraced(c) => write!(f, "until braced {}", c),
             RecoveryStrategy::Or(left, right) => write!(f, "{} or {}", left, right),
             RecoveryStrategy::Nothing => write!(f, "nothing"),
+            &RecoveryStrategy::Next => write!(f, "next"),
         }
     }
 }

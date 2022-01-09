@@ -121,14 +121,7 @@ impl Parser<'_> {
                 }
                 Some(t @ (Arrow | Period)) => {
                     self.next();
-                    let token = expect!(
-                        self,
-                        TokenType::Ident(..),
-                        &RecoveryStrategy::or(
-                            RecoveryStrategy::UpTo(')'),
-                            RecoveryStrategy::UpTo(';'),
-                        )
-                    )?;
+                    let token = expect!(self, TokenType::Ident(..), &RecoveryStrategy::UpTo(';'))?;
                     let name = match token.token() {
                         Ident(name) => name,
                         _ => unreachable!(),
@@ -156,11 +149,7 @@ impl Parser<'_> {
             Some(TokenType::LParenthesis) => {
                 self.next();
                 let expr = self.parse_expression();
-                let _ = expect!(
-                    self,
-                    TokenType::RParenthesis,
-                    RecoveryStrategy::or(RecoveryStrategy::Until(')'), RecoveryStrategy::UpTo(';'))
-                );
+                let _ = expect!(self, TokenType::RParenthesis, &RecoveryStrategy::UpTo(';'));
                 expr
             }
             Some(TokenType::ConstI(value)) => {
@@ -193,10 +182,8 @@ impl Parser<'_> {
                     "Expected expression. Found {}",
                     self.peek().unwrap()
                 ));
-                self.recover(&RecoveryStrategy::or(
-                    RecoveryStrategy::UpTo(')'),
-                    RecoveryStrategy::UpTo(';'),
-                ));
+                // Could be replaced by error AST
+                self.recover(&RecoveryStrategy::UpTo(';'));
                 Err(())
             }
             None => {

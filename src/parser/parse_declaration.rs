@@ -25,7 +25,7 @@ impl<'a> Parser<'a> {
                 "Expected type qualifier in declaration, found {}",
                 token
             ));
-            self.next();
+            self.recover(&RecoveryStrategy::Next);
             return Err(());
         }
         let mut result = Vec::<ASTTypeNode>::new();

@@ -4,10 +4,15 @@ use crate::{
 };
 use TokenType::*;
 
-fn is_open_delimiter(token: TokenType) -> bool {
+pub fn is_open_delimiter(token: TokenType) -> bool {
     matches!(token, LBrace | LParenthesis | LSquare)
 }
-fn to_closed_delimiter(open: TokenType) -> TokenType {
+
+pub fn is_closed_delimiter(token: TokenType) -> bool {
+    matches!(token, RBrace | RParenthesis | RSquare)
+}
+
+pub fn to_closed_delimiter(open: TokenType) -> TokenType {
     match open {
         LBrace => RBrace,
         LParenthesis => RParenthesis,
