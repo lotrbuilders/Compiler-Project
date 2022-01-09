@@ -1,6 +1,7 @@
 pub mod ast;
 pub mod ast_graph;
 pub mod ast_print;
+pub mod parse_delimiters;
 pub mod r#type;
 
 mod parse_declaration;
@@ -10,6 +11,7 @@ mod parse_statement;
 mod parse_struct;
 mod recovery;
 
+pub use self::parse_delimiters::*;
 pub use self::r#type::{Type, TypeNode};
 use self::recovery::RecoveryStrategy;
 use crate::backend::Backend;

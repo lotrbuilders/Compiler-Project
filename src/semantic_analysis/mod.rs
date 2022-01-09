@@ -30,11 +30,11 @@ pub struct SemanticAnalyzer {
 }
 
 impl SemanticAnalyzer {
-    pub fn new(struct_table: StructTable, backend: &dyn Backend) -> SemanticAnalyzer {
+    pub fn new(backend: &dyn Backend) -> SemanticAnalyzer {
         SemanticAnalyzer {
             errors: Vec::new(),
             symbol_table: SymbolTable::new(),
-            struct_table,
+            struct_table: StructTable::new(),
             loop_depth: 0,
             function_return_type: Type::empty(),
             type_info: backend.get_type_info_table(),

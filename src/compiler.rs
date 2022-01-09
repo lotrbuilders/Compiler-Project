@@ -68,19 +68,24 @@ pub fn compile(filename: String, output: String) -> Result<(), String> {
     let (tokens, lexer_errors) = lexer.lex(&mut file.chars());
     log::trace!(target: "lexer","Lexed tokens: {:?}", tokens);
 
-    let (mut ast, parse_errors, struct_table) = {
+    let brace_errors = crate::parser::parse_delimiters(&tokens);
+
+    if lexer_errors.is_err() || brace_errors.is_err() {
+        log::info!("Exited due to errors");
+        return Err("Error in lexing or brace parsing".to_string());
+    }
+
+    let (mut ast, parse_errors) = {
         log::info!("Parser started");
         let mut parser = Parser::new(&*backend);
-        let (ast, parse_errors) = parser.parse(tokens);
-        let struct_table = parser.get_struct_table();
-        (ast, parse_errors, struct_table)
+        parser.parse(tokens)
     };
     log::debug!("Parser result:\n {}", ast);
     let _ = crate::parser::ast_graph::print_graph("graph.gv", &ast);
 
     let (analysis_errors, global_table, struct_table) = {
         log::info!("Analyzer started");
-        let mut analyzer = SemanticAnalyzer::new(struct_table, &*backend);
+        let mut analyzer = SemanticAnalyzer::new(&*backend);
         (
             analyzer.analyze(&mut ast),
             analyzer.get_global_table(),
@@ -88,7 +93,7 @@ pub fn compile(filename: String, output: String) -> Result<(), String> {
         )
     };
 
-    if lexer_errors.is_err() || parse_errors.is_err() || analysis_errors.is_err() {
+    if parse_errors.is_err() || analysis_errors.is_err() {
         log::info!("Exited due to errors");
         return Err("Error in lexing parsing or analysis".to_string());
     }
