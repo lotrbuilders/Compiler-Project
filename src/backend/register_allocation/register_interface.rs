@@ -1,8 +1,6 @@
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
-use smallvec::SmallVec;
-
 use crate::backend::{
     ir::IRInstruction,
     register_allocation::{RegisterAllocation, RegisterClass, RegisterRelocation, RegisterUse},
@@ -43,7 +41,7 @@ pub trait RegisterBackend {
         index: u32,
         rule: u16,
     ) -> (
-        SmallVec<[(u32, &'static RegisterClass<Self::RegisterType>); 4]>,
-        Option<(u32, &'static RegisterClass<Self::RegisterType>)>,
+        smallvec::SmallVec<[(u32, RegisterClass<Self::RegisterType>); 4]>,
+        Option<(u32, RegisterClass<Self::RegisterType>)>,
     );
 }

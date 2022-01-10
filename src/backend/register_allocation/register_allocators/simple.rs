@@ -1,15 +1,13 @@
 use std::collections::HashSet;
 
-use super::RegisterAllocation;
-use super::RegisterBackend;
-use super::RegisterClass;
-use super::RegisterInterface;
+use super::super::{
+    ralloc::*, RegisterAllocation, RegisterBackend, RegisterClass, RegisterInterface,
+    RegisterLocation::*,
+};
+
+use super::{RegisterAllocator, RegisterAllocatorSimple};
 use crate::backend::ir::control_flow_graph::ControlFlowGraph;
 use crate::backend::ir::IRInstruction;
-
-//use super::is_two_address;
-use super::ralloc::*;
-use super::RegisterLocation::*;
 
 impl<R: RegisterInterface, B: RegisterBackend<RegisterType = R>> RegisterAllocator<R, B>
     for RegisterAllocatorSimple
@@ -127,7 +125,7 @@ fn allocate_register<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>
 
     // perform register allocation if necessary
     if let Some((vreg, result_class)) = result_vreg {
-        let reg = *try_allocate2(result_class).unwrap();
+        let reg = *try_allocate2(&result_class).unwrap();
         let mem = backend.simple_get_spot(vreg);
         assignments.reg_relocations[(index + 1) as usize].push(RegisterRelocation::Spill(reg, mem));
         assignments.allocation[vreg as usize].start(reg, index);

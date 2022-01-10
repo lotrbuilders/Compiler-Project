@@ -1,7 +1,6 @@
 use std::fmt::Display;
 use std::ops::Range;
 
-use crate::backend::register_allocation::RegisterBackend;
 use crate::backend::register_allocation::RegisterInterface;
 
 use super::RegisterClass;
@@ -12,7 +11,7 @@ use super::{RegisterAllocation, RegisterLocation};
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub enum RegisterRelocation<R: RegisterInterface> {
-    MemMove(u32, u32, R), //from to
+    MemMove(u32, u32, R), //from to using
     Move(R, R),           // from to
     TwoAddressMove(R, R), // from to
     Spill(R, u32),
@@ -25,7 +24,7 @@ pub struct RegisterUse<R: RegisterInterface + 'static> {
     pub creation: Vec<u32>,
     pub uses: Vec<Vec<u32>>,
     pub last_use: Vec<u32>,
-    pub preferred_class: Vec<&'static RegisterClass<R>>,
+    pub preferred_class: Vec<RegisterClass<R>>,
 }
 
 #[derive(Debug, Clone)]
@@ -50,12 +49,6 @@ pub struct RegisterAssignment<R: RegisterInterface> {
     pub reg_relocations: Vec<Vec<RegisterRelocation<R>>>,
 }
 
-pub struct RegisterAllocatorSimple {}
-#[allow(dead_code)]
-pub struct RegisterAllocatorLinear {}
-pub trait RegisterAllocator<R: RegisterInterface, B: RegisterBackend<RegisterType = R>> {
-    fn allocate_registers(backend: &mut B) -> ();
-}
 #[allow(dead_code)]
 impl<R: RegisterInterface> RegisterAssignment<R> {
     // Registers that are in use at the start of the function
