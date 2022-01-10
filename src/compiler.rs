@@ -7,6 +7,7 @@ use colored::Colorize;
 use crate::backend;
 use crate::eval::evaluate;
 use crate::lexer::Lexer;
+use crate::options::Options;
 use crate::parser::Parser;
 use crate::semantic_analysis::SemanticAnalyzer;
 
@@ -57,7 +58,7 @@ pub fn write(filename: String, content: String) -> Result<(), String> {
 // - (Unimplemented optimizations)
 // - Generating assembly from the IR
 // - Writing the result back to another file
-pub fn compile(filename: String, output: String) -> Result<(), String> {
+pub fn compile(filename: String, output: String, options: &Options) -> Result<(), String> {
     let mut lexer = Lexer::new(&filename);
     let file = open(filename)?;
 
@@ -113,7 +114,13 @@ pub fn compile(filename: String, output: String) -> Result<(), String> {
 
     log::info!("Started the backend");
     log::info!("Using backend amd64");
-    let assembly = backend::generate_code(&mut *backend, ir_functions, ir_globals, function_names)?;
+    let assembly = backend::generate_code(
+        &mut *backend,
+        ir_functions,
+        ir_globals,
+        function_names,
+        &options,
+    )?;
 
     write(output, assembly)?;
     Ok(())

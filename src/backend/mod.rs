@@ -5,7 +5,7 @@ mod register_allocation;
 
 use std::collections::HashSet;
 
-use crate::parser::TypeNode;
+use crate::{options::Options, parser::TypeNode};
 
 use self::ir::*;
 
@@ -16,11 +16,16 @@ pub fn generate_code(
     functions: Vec<IRFunction>,
     globals: Vec<IRGlobal>,
     function_names: HashSet<String>,
+    options: &Options,
 ) -> Result<String, String> {
     let mut assembly = backend.generate_global_prologue();
 
     for function in &functions {
-        assembly.push_str(&backend.generate(&function, &function_names));
+        assembly.push_str(&backend.generate(
+            &function,
+            &function_names,
+            &options.register_allocator,
+        ));
     }
     assembly.push_str(&backend.generate_globals(&globals));
 
@@ -87,8 +92,13 @@ pub trait Backend {
     }
 
     // Generates the assembly for a function
-    fn generate(&mut self, function: &IRFunction, function_names: &HashSet<String>) -> String {
-        let _ = function_names;
+    fn generate(
+        &mut self,
+        function: &IRFunction,
+        function_names: &HashSet<String>,
+        register_allocator: &str,
+    ) -> String {
+        let _ = (function_names, register_allocator);
         log::error!("Generate is not implemented for this backend");
         format!(
             "/*This is not a properly implemented backend. Cannot implement {}*/",

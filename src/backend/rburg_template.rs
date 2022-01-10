@@ -126,7 +126,7 @@ macro_rules! generate {
         // Generates assembly for a single function
         // Should be generated automatically
         // Modifies the storage for the backend to allow for this
-        fn generate(&mut self, function: &IRFunction, function_names: &HashSet<String>) -> String {
+        fn generate(&mut self, function: &IRFunction, function_names: &HashSet<String>,register_allocator:&str) -> String {
             self.function_name = function.name.clone();
             self.instructions = function.instructions.clone();
             self.definition_index = get_definition_indices(&function);
@@ -164,7 +164,8 @@ macro_rules! generate {
 
             log::info!("definitive rules:\n{:?}", self.rules);
             log::info!("Starting register allocation");
-            RegisterAllocatorSimple::allocate_registers(self);
+            use crate::backend::register_allocation;
+            register_allocation::allocate_registers(self,register_allocator);
             log::debug!(
                 "vreg2reg at start \n[\n{}]",
                 self.allocation

@@ -50,7 +50,7 @@ fn new_or_final<'a>(
 // - Linking
 pub fn drive(options: Options) -> Result<(), ()> {
     log::info!("driver started");
-    for filename in options.input {
+    for filename in options.input.clone() {
         let file_stem = Path::new(&filename)
             .file_stem()
             .and_then(OsStr::to_str)
@@ -63,7 +63,7 @@ pub fn drive(options: Options) -> Result<(), ()> {
             .collect::<String>();
 
         let begin_stage = filename2stage(&filename);
-        let last_stage = options.last_stage;
+        let last_stage = options.last_stage.clone();
         let last_filename = options.output.clone();
         let parent = Path::new(&filename)
             .parent()
@@ -102,7 +102,8 @@ pub fn drive(options: Options) -> Result<(), ()> {
                 compiler_filename
             );
 
-            compiler::compile(compiler_filename, assembler_filename.clone()).map_err(|_| ())?;
+            compiler::compile(compiler_filename, assembler_filename.clone(), &options)
+                .map_err(|_| ())?;
             log::info!("Compiler finished");
         }
         if begin_stage >= Stage::Asm && last_stage < Stage::Asm {
