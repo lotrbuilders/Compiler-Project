@@ -1,67 +1,43 @@
-use super::register_allocation::RegisterClass;
+use crate::backend::register_allocation::{RegisterClass, RegisterInterface};
+
 use std::fmt::Display;
 
 // Registers classes that are used. Should be automatically generated
 pub const REG_COUNT: usize = 14;
 #[allow(dead_code)]
 
-pub const REG_CLASS_EAX: RegisterClass = RegisterClass {
-    registers: [
-        true, false, false, false, false, false, false, false, false, false, false, false, false,
-        false,
-    ],
-};
-pub const REG_CLASS_EDI: RegisterClass = RegisterClass {
-    registers: [
-        false, false, false, true, false, false, false, false, false, false, false, false, false,
-        false,
-    ],
-};
-pub const REG_CLASS_ESI: RegisterClass = RegisterClass {
-    registers: [
-        false, false, false, false, true, false, false, false, false, false, false, false, false,
-        false,
-    ],
-};
-pub const REG_CLASS_ECX: RegisterClass = RegisterClass {
-    registers: [
-        false, true, false, false, false, false, false, false, false, false, false, false, false,
-        false,
-    ],
-};
-pub const REG_CLASS_EDX: RegisterClass = RegisterClass {
-    registers: [
-        false, false, true, false, false, false, false, false, false, false, false, false, false,
-        false,
-    ],
-};
-pub const REG_CLASS_R8: RegisterClass = RegisterClass {
-    registers: [
-        false, false, false, false, false, true, false, false, false, false, false, false, false,
-        false,
-    ],
-};
-pub const REG_CLASS_R9: RegisterClass = RegisterClass {
-    registers: [
-        false, false, false, false, false, false, true, false, false, false, false, false, false,
-        false,
-    ],
-};
-
-pub const CALL_REGS: [&'static RegisterClass; 6] = [
-    &REG_CLASS_EDI,
-    &REG_CLASS_ESI,
-    &REG_CLASS_ECX,
-    &REG_CLASS_EDX,
-    &REG_CLASS_R8,
-    &REG_CLASS_R9,
+pub const REG_CLASS_EAX: RegisterClass<Register> = RegisterClass::new(&[
+    true, false, false, false, false, false, false, false, false, false, false, false, false, false,
+]);
+pub const REG_CLASS_EDI: RegisterClass<Register> = RegisterClass::new(&[
+    false, false, false, true, false, false, false, false, false, false, false, false, false, false,
+]);
+pub const REG_CLASS_ESI: RegisterClass<Register> = RegisterClass::new(&[
+    false, false, false, false, true, false, false, false, false, false, false, false, false, false,
+]);
+pub const REG_CLASS_ECX: RegisterClass<Register> = RegisterClass::new(&[
+    false, true, false, false, false, false, false, false, false, false, false, false, false, false,
+]);
+pub const REG_CLASS_EDX: RegisterClass<Register> = RegisterClass::new(&[
+    false, false, true, false, false, false, false, false, false, false, false, false, false, false,
+]);
+pub const REG_CLASS_R8: RegisterClass<Register> = RegisterClass::new(&[
+    false, false, false, false, false, true, false, false, false, false, false, false, false, false,
+]);
+pub const REG_CLASS_R9: RegisterClass<Register> = RegisterClass::new(&[
+    false, false, false, false, false, false, true, false, false, false, false, false, false, false,
+]);
+pub const CALL_REGS: &'static [RegisterClass<Register>] = &[
+    REG_CLASS_EDI,
+    REG_CLASS_ESI,
+    REG_CLASS_ECX,
+    REG_CLASS_EDX,
+    REG_CLASS_R8,
+    REG_CLASS_R9,
 ];
-pub const REG_CLASS_IREG: RegisterClass = RegisterClass {
-    registers: [true; REG_COUNT],
-};
-pub const REG_CLASS_EMPTY: RegisterClass = RegisterClass {
-    registers: [false; REG_COUNT],
-};
+pub const REG_CLASS_IREG: RegisterClass<Register> = RegisterClass::new(&[true; REG_COUNT]);
+#[allow(dead_code)]
+pub const REG_CLASS_EMPTY: RegisterClass<Register> = RegisterClass::new(&[false; REG_COUNT]);
 
 pub const REG_LOOKUP: [Register; REG_COUNT] = {
     use Register::*;
@@ -70,9 +46,18 @@ pub const REG_LOOKUP: [Register; REG_COUNT] = {
     ]
 };
 
+impl RegisterClass<Register> {
+    pub const fn new(registers: &'static [bool]) -> RegisterClass<Register> {
+        RegisterClass {
+            phantom: std::marker::PhantomData,
+            registers,
+        }
+    }
+}
+
 // Currently only caller safed registers
 // An enum for all available registers to show effects
-#[derive(Clone, Debug, Copy, PartialEq, Eq)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
 pub enum Register {
     Rax = 0,
     Rcx = 1,
@@ -183,4 +168,18 @@ impl Display for Register {
         }
         Ok(())
     }
+}
+
+impl Into<usize> for Register {
+    fn into(self) -> usize {
+        self as usize
+    }
+}
+
+impl RegisterInterface for Register {
+    const REG_COUNT: usize = REG_COUNT;
+    const REG_LOOKUP: &'static [Self] = &REG_LOOKUP;
+    const REG_DEFAULT: Self = Register::Rax;
+    const REG_DEFAULT_CLASS: RegisterClass<Self> = REG_CLASS_IREG;
+    const CALL_REGS: &'static [RegisterClass<Self>] = CALL_REGS;
 }

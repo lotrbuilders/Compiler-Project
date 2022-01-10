@@ -1,4 +1,4 @@
-use super::BackendAMD64;
+use super::{registers::Register, BackendAMD64};
 use crate::backend::ir::*;
 
 impl BackendAMD64 {
@@ -185,7 +185,7 @@ impl BackendAMD64 {
         result
     }
 
-    pub fn emit_move(&self, modification: &super::RegisterRelocation) -> String {
+    pub fn emit_move(&self, modification: &super::RegisterRelocation<Register>) -> String {
         use super::RegisterRelocation::*;
         match modification {
             &TwoAddressMove(from, to) => format!("\tmov {:.64},{:.64}\n", to, from),

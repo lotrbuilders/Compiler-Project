@@ -1,16 +1,16 @@
 use crate::utility::padding;
 
 use super::ir::*;
+use super::register_allocation::RegisterInterface;
 use smallvec::SmallVec;
 use std::collections::HashSet;
 
 mod backend;
 mod emit;
-mod register_allocation;
 mod registers;
 mod utility;
-use self::register_allocation::*;
 use self::registers::*;
+use super::register_allocation::*;
 
 pub use self::emit::*;
 
@@ -147,12 +147,12 @@ impl BackendAMD64 {
         }
     }
 
-    fn get_call_regs(&self, sizes: &Vec<IRSize>) -> Vec<&'static RegisterClass> {
+    fn get_call_regs(&self, sizes: &Vec<IRSize>) -> Vec<&'static RegisterClass<Register>> {
         let mut result = Vec::with_capacity(sizes.len());
         let mut ireg_index = 0usize;
         for _size in sizes {
             if ireg_index < 6 {
-                result.push(CALL_REGS[ireg_index]);
+                result.push(&Register::CALL_REGS[ireg_index]);
                 ireg_index += 1;
             }
         }

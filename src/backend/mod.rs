@@ -1,6 +1,7 @@
 mod amd64;
 pub mod ir;
 mod rburg_template;
+mod register_allocation;
 
 use std::collections::HashSet;
 
