@@ -2,9 +2,7 @@ use std::collections::HashSet;
 
 use super::registers::Register;
 use super::{stmt_NT, BackendAMD64, State};
-use crate::backend::register_allocation::{
-    ralloc::RegisterAllocator, RegisterAllocatorSimple, RegisterBackend, RegisterInterface,
-};
+use crate::backend::register_allocation::{RegisterBackend, RegisterInterface};
 use crate::backend::register_allocation::{RegisterClass, RegisterUse};
 use crate::backend::{self, ir::*, Backend, TypeInfoTable};
 
@@ -104,8 +102,8 @@ impl RegisterBackend for BackendAMD64 {
         let mut creation = vec![u32::MAX; length];
         let mut uses = vec![Vec::new(); length];
         let mut last_use = vec![0u32; length];
-        let mut preferred_class: Vec<&'static RegisterClass<Self::RegisterType>> =
-            vec![&Self::RegisterType::REG_DEFAULT_CLASS; length];
+        let mut preferred_class: Vec<RegisterClass<Self::RegisterType>> =
+            vec![Self::RegisterType::REG_DEFAULT_CLASS; length];
 
         for arg in self.arguments.arguments.iter().filter_map(|arg| *arg) {
             creation[arg as usize] = 0;
@@ -124,8 +122,8 @@ impl RegisterBackend for BackendAMD64 {
                     if last_use[vreg as usize] == 0 {
                         last_use[vreg as usize] = i as u32;
                     }
-                    if class != &Self::RegisterType::REG_DEFAULT_CLASS {
-                        preferred_class[vreg as usize] = &class;
+                    if class != Self::RegisterType::REG_DEFAULT_CLASS {
+                        preferred_class[vreg as usize] = class;
                     }
                 }
             }
@@ -175,8 +173,8 @@ impl RegisterBackend for BackendAMD64 {
         index: u32,
         rule: u16,
     ) -> (
-        smallvec::SmallVec<[(u32, &'static RegisterClass<Self::RegisterType>); 4]>,
-        Option<(u32, &'static RegisterClass<Self::RegisterType>)>,
+        smallvec::SmallVec<[(u32, RegisterClass<Self::RegisterType>); 4]>,
+        Option<(u32, RegisterClass<Self::RegisterType>)>,
     ) {
         BackendAMD64::get_vregisters(&self, index, rule)
     }
