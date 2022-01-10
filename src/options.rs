@@ -7,6 +7,8 @@ pub struct Options {
     pub input: Vec<String>,
     pub output: String,
     pub last_stage: Stage,
+    pub optimization_level: i32,
+    pub register_allocator: String,
 }
 
 /// Gets command line options and input using clap.
@@ -16,7 +18,7 @@ pub fn get() -> Options {
     let matches = App::new("UTCC - A C compiler")
         .version("0.1")
         .author("Daan O.")
-        .about("Compiles the subset A of C where union(A,C)<=>epsilon")
+        .about("Compiles a subset A of C where union(A,C)<=>epsilon")
         .arg(
             Arg::with_name("until-assembled")
                 .short("c")
@@ -47,9 +49,26 @@ pub fn get() -> Options {
         )
         .arg(
             Arg::with_name("input")
-                .help("Sets the input file(s) to use")
                 .required(true)
-                .multiple(true),
+                .multiple(true)
+                .help("Sets the input file(s) to use"),
+        )
+        .arg(
+            Arg::with_name("register-allocation")
+                .long("reg-alloc")
+                .possible_values(&["simple", "briggs"])
+                .default_value("simple")
+                .value_name("allocator")
+                .help("Selects the register allocator algorithm used"),
+        )
+        .arg(
+            Arg::with_name("optimization-level")
+                .short("O")
+                .long("opt")
+                .takes_value(true)
+                .possible_values(&["-1", "0", "1", "2", "3"])
+                .default_value("0")
+                .help("Optimization level used"),
         )
         .get_matches();
 
@@ -70,6 +89,7 @@ pub fn get() -> Options {
         .unwrap()
         .map(|x| x.to_string())
         .collect::<Vec<String>>();
+
     //Gets the output file as String
     let output = matches.value_of("output").unwrap_or("a.out").to_string();
 
@@ -84,9 +104,19 @@ pub fn get() -> Options {
         Stage::Exe
     };
 
+    let optimization_level = matches
+        .value_of("optimization-level")
+        .unwrap()
+        .parse()
+        .unwrap();
+
+    let register_allocator = matches.value_of("register-allocation").unwrap().to_string();
+
     Options {
         input,
         output,
         last_stage,
+        optimization_level,
+        register_allocator,
     }
 }

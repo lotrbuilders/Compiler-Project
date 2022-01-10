@@ -20,6 +20,8 @@ fn get_options(path: &PathBuf) -> utcc::options::Options {
         input: vec![path.to_str().unwrap().to_string()],
         output,
         last_stage: utcc::driver::Stage::Exe,
+        optimization_level: 0,
+        register_allocator: String::from("simple"),
     }
 }
 
