@@ -15,7 +15,7 @@ name = "utcc"
 path = "src/main.rs"
 
 [dependencies]
-bitvec = "~0.22.3" #MIT
+bitvec = "~1.0.0" #MIT
 clap = "~2.33.3" #apache 2.0 or MIT
 colored = "~2.0.0" #MPL 2.0
 lazy_static = "1.4.0" #apache 2.0 or MIT
