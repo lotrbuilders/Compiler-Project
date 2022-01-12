@@ -158,6 +158,9 @@ impl RegisterBackend for BackendAMD64 {
     fn get_arguments<'a>(&'a self) -> &'a Vec<Option<u32>> {
         &self.arguments.arguments
     }
+    fn get_vreg_count(&self) -> u32 {
+        self.vreg_count
+    }
 
     fn set_reg_relocations(
         &mut self,
@@ -177,6 +180,10 @@ impl RegisterBackend for BackendAMD64 {
         Option<(u32, RegisterClass<Self::RegisterType>)>,
     ) {
         BackendAMD64::get_vregisters(&self, index, rule)
+    }
+
+    fn is_two_address(&self, rule: u16) -> bool {
+        crate::backend::amd64::is_two_address(rule)
     }
 
     fn get_function_length(&self) -> usize {

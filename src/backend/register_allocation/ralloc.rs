@@ -109,7 +109,7 @@ impl<R: RegisterInterface + Display> RegisterAssignment<R> {
         if let Some(&reg) = try_allocate2(class) {
             log::debug!("Reloading {} to {} at {}", vreg, reg, index);
             self.reg_relocations[index as usize].push(RegisterRelocation::ReloadTemp(reg, vreg));
-            self.reg_occupied_by[reg.into()] = Some(vreg);
+            self.reg_occupied_by[<R as Into<usize>>::into(reg)] = Some(vreg);
             self.vreg2reg[vreg as usize] = Reg(reg);
             true
         } else {
@@ -162,7 +162,7 @@ impl<R: RegisterInterface + Display> RegisterAssignment<R> {
         self.allocation[vreg as usize].end_prev(index);
         //self.allocation[vreg as usize].start(Vreg(0), index);
         self.vreg2reg[vreg as usize] = Vreg(0); //TODO!!
-        self.reg_occupied_by[reg.into()] = None;
+        self.reg_occupied_by[<R as Into<usize>>::into(reg)] = None;
     }
 
     pub fn two_address_move(&mut self, index: u32, from: R, to: R) {
@@ -183,7 +183,7 @@ pub fn assign_register<R: RegisterInterface + Display>(
     index: u32,
 ) {
     log::trace!("Using register {} for vreg {}", reg.to_string(), vreg);
-    assignments.reg_occupied_by[reg.into()] = Some(vreg);
+    assignments.reg_occupied_by[<R as Into<usize>>::into(reg)] = Some(vreg);
     assignments.vreg2reg[vreg as usize] = Reg(reg);
     assignments.allocation[vreg as usize].start(reg, index);
 }

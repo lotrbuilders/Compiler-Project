@@ -9,6 +9,7 @@ pub struct IRFunction {
     pub arguments: IRArguments,
     pub variables: Vec<IRVariable>,
     pub strings: Vec<String>,
+    pub vreg_count: u32,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -325,7 +326,7 @@ impl IRInstruction {
             | Self::Ge(..) => int_size,
 
             ins => {
-                return ins.get_size();//std::cmp::max(ins.get_size(), int_size);
+                return ins.get_size(); //std::cmp::max(ins.get_size(), int_size);
             }
         }
     }

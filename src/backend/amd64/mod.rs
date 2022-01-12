@@ -22,17 +22,17 @@ rburg::rburg_main! {
         i32i16i8 => 32,
     }
     instructions:
-:       Ret pi64i32i16i8v(_a %eax)    #"return\n"
-:       Store i8(r %ireg, a %ireg)   "mov [{a:.64}],{r:.8}\n"
-:       Store i8(r %ireg, a adr)     "mov [{a}],{r:.8}\n"
-:       Store i16(r %ireg, a %ireg)  "mov [{a:.64}],{r:.16}\n"
-:       Store i16(r %ireg, a adr)    "mov [{a}],{r:.16}\n"
-:       Store pi64i32(r %ireg, a %ireg)  "mov [{a:.64}],{r}\n"
-:       Store pi64i32(r %ireg, a adr)    "mov [{a}],{r}\n"
-:       Store i32(Imm(#i),a %ireg)   "mov dword[{a:.64}],{i}\n"
-:       Store i32(Imm(#i),a adr)     "mov dword[{a}],{i}\n"
-:       Store Pi64(Imm(#i),a adr)    "mov qword[{a}],{i}\n"
-:       Store Pi64(Imm(#i),a %ireg)  "mov qword[{a:.64}],{i}\n"
+:       Ret pi64i32i16i8v(_a %eax)     #"return\n"
+:       Store i8(r %ireg, a %ireg)      "mov [{a:.64}],{r:.8}\n"
+:       Store i8(r %ireg, a adr)        "mov [{a}],{r:.8}\n"
+:       Store i16(r %ireg, a %ireg)     "mov [{a:.64}],{r:.16}\n"
+:       Store i16(r %ireg, a adr)       "mov [{a}],{r:.16}\n"
+:       Store pi64i32(r %ireg, a %ireg) "mov [{a:.64}],{r}\n"
+:       Store pi64i32(r %ireg, a adr)   "mov [{a}],{r}\n"
+:       Store i32(Imm(#i),a %ireg)      "mov dword[{a:.64}],{i}\n"
+:       Store i32(Imm(#i),a adr)        "mov dword[{a}],{i}\n"
+:       Store Pi64(Imm(#i),a adr)       "mov qword[{a}],{i}\n"
+:       Store Pi64(Imm(#i),a %ireg)     "mov qword[{a:.64}],{i}\n"
 :       Label(#i)                    ".L{i}:\n"
 %ireg:  Label(#i)                    ".L{i}:\n"
 :       Jmp(#i)                      "jmp .L{i}\n" {2}

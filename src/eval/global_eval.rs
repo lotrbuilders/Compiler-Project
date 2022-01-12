@@ -42,6 +42,7 @@ impl ExternalDeclaration {
                     arguments,
                     variables: context.variables,
                     strings: context.strings,
+                    vreg_count: context.vreg_counter,
                 })
             }
             None => {

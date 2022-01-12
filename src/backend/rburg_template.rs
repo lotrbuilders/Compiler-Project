@@ -135,6 +135,7 @@ macro_rules! generate {
             self.rules = vec![0xffff; self.instructions.len()];
             self.arguments = function.arguments.clone();
             self.function_names = function_names.clone();
+            self.vreg_count = function.vreg_count;
 
             let (local_offsets, stack_size) =
                 BackendAMD64::find_local_offsets(&function.variables, &function.arguments);

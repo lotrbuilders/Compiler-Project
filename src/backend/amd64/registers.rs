@@ -176,6 +176,12 @@ impl Into<usize> for Register {
     }
 }
 
+impl Into<u32> for Register {
+    fn into(self) -> u32 {
+        self as u32
+    }
+}
+
 impl RegisterInterface for Register {
     const REG_COUNT: usize = REG_COUNT;
     const REG_LOOKUP: &'static [Self] = &REG_LOOKUP;

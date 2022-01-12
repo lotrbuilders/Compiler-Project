@@ -8,7 +8,17 @@ use crate::backend::{
 
 pub trait RegisterInterface
 where
-    Self: Sized + 'static + Into<usize> + PartialEq + Display + Debug + Clone + Copy + Hash + Eq,
+    Self: Sized
+        + 'static
+        + Into<usize>
+        + Into<u32>
+        + PartialEq
+        + Display
+        + Debug
+        + Clone
+        + Copy
+        + Hash
+        + Eq,
 {
     const REG_COUNT: usize;
     const REG_LOOKUP: &'static [Self];
@@ -20,6 +30,7 @@ where
 pub trait RegisterBackend {
     type RegisterType: RegisterInterface;
     fn is_instruction(&self, rule: u16) -> bool;
+    fn is_two_address(&self, rule: u16) -> bool;
     fn set_allocation(&mut self, allocation: Vec<RegisterAllocation<Self::RegisterType>>);
     fn get_clobbered(&self, index: u32) -> Vec<Self::RegisterType>;
     fn find_uses(&mut self) -> RegisterUse<Self::RegisterType>;
@@ -27,6 +38,7 @@ pub trait RegisterBackend {
     fn get_rule(&self, index: usize) -> u16;
     fn get_arguments<'a>(&'a self) -> &'a Vec<Option<u32>>;
     fn get_function_length(&self) -> usize;
+    fn get_vreg_count(&self) -> u32;
 
     fn simple_get_spot(&self, vreg: u32) -> u32;
     fn simple_adjust_stack_size(&mut self, vreg: i32);
