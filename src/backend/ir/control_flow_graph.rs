@@ -3,7 +3,7 @@ use std::{
     ops::{Index, IndexMut, Range},
 };
 
-use super::IRInstruction;
+use super::{ir_phi::IRPhi, IRInstruction};
 
 pub struct ControlFlowNode {
     pub predecessors: Vec<u32>,
@@ -33,6 +33,16 @@ impl ControlFlowNode {
     }
     pub fn last(&self) -> u32 {
         return (self.instructions.end - 1) as u32;
+    }
+}
+
+impl<'a> ControlFlowNode {
+    pub fn phi(&self, instructions: &'a Vec<IRInstruction>) -> Option<&'a IRPhi> {
+        if let IRInstruction::Label(Some(phi), _) = &instructions[self.instructions.start] {
+            Some(phi)
+        } else {
+            None
+        }
     }
 }
 
