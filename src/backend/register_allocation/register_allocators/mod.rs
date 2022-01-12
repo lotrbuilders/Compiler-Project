@@ -11,6 +11,10 @@ pub fn allocate_registers<R: RegisterInterface, B: RegisterBackend<RegisterType 
     backend: &mut B,
     register_allocator: &str,
 ) -> () {
+    log::info!(
+        "Allocating registers using {} register allocator",
+        register_allocator
+    );
     match register_allocator {
         "briggs" => RegisterAllocatorBriggs::allocate_registers(backend),
         "simple" => RegisterAllocatorSimple::allocate_registers(backend),
