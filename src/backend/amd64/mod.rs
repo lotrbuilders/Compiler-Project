@@ -137,12 +137,24 @@ impl BackendAMD64 {
         }
     }
 
+    // Returns the set of registers which are clobbered before an instruction
+    // Or during an instruction with multiple steps(see x86-64 divide for example)
     fn clobber(&self, index: usize) -> Vec<Register> {
         let instruction = &self.instructions[index];
         use IRInstruction::*;
         match instruction {
             Div(..) => vec![Register::Rdx],
-            Call(..) => vec![],
+            _ => Vec::new(),
+        }
+    }
+
+    // Returns the set of registers which are clobbered at the end of an instruction
+    fn clobber_after(&self, index: usize) -> Vec<Register> {
+        let instruction = &self.instructions[index];
+        use IRInstruction::*;
+        use Register::*;
+        match instruction {
+            Call(..) => vec![Rcx, Rdx, Rsi, Rdi, R8, R9, R10, R11],
             _ => Vec::new(),
         }
     }
@@ -162,12 +174,15 @@ impl BackendAMD64 {
     // Should depend on sizes and allignment as given by the backend
     // Is currently handwritten for x86-64
     fn find_local_offsets(
+        &self,
         variable_types: &Vec<IRVariable>,
         arguments: &IRArguments,
     ) -> (Vec<i32>, i32) {
         let mut arg_offset = 8;
         let mut offset = 0;
         let mut result = Vec::new();
+        let callee_saved_registers = self.get_callee_saved_registers();
+        let saved_offset = -8 * callee_saved_registers.len() as i32;
 
         for i in 0..variable_types.len() {
             let count = variable_types[i].count as i32;
@@ -192,7 +207,7 @@ impl BackendAMD64 {
                             IRSize::B(size) => -(size as i32),
                             IRSize::V => unreachable!(),
                         };
-                    offset
+                    offset + saved_offset
                 }
                 // Stack argument
                 Some(None) => {
@@ -202,6 +217,6 @@ impl BackendAMD64 {
             });
         }
 
-        (result, -offset + 8)
+        (result, -offset)
     }
 }

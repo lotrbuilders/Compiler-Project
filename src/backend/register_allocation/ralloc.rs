@@ -13,11 +13,18 @@ use super::{RegisterAllocation, RegisterLocation};
 pub enum RegisterRelocation<R: RegisterInterface> {
     MemMove(u32, u32, R), //from to using
     Move(R, R),           // from to
+    MoveAfter(R, R),      // from to
     TwoAddressMove(R, R), // from to
     Spill(R, u32),
     Reload(R, u32),
     ReloadTemp(R, u32), // Reload temp is currently still the same as reload: Should be removed again after reloading
     Jump(Vec<RegisterLocation<R>>),
+}
+
+impl<R: RegisterInterface> RegisterRelocation<R> {
+    pub fn after(&self) -> bool {
+        matches!(self, Self::MoveAfter(..))
+    }
 }
 
 pub struct RegisterUse<R: RegisterInterface + 'static> {

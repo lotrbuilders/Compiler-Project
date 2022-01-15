@@ -31,8 +31,9 @@ pub trait RegisterBackend {
     type RegisterType: RegisterInterface;
     fn is_instruction(&self, rule: u16) -> bool;
     fn is_two_address(&self, rule: u16) -> bool;
-    fn set_allocation(&mut self, allocation: Vec<RegisterAllocation<Self::RegisterType>>);
+
     fn get_clobbered(&self, index: u32) -> Vec<Self::RegisterType>;
+    fn get_clobbered_after(&self, index: u32) -> Vec<Self::RegisterType>;
     fn find_uses(&mut self) -> RegisterUse<Self::RegisterType>;
     fn get_instructions<'a>(&'a self) -> &Vec<IRInstruction>;
     fn get_rule(&self, index: usize) -> u16;
@@ -43,6 +44,8 @@ pub trait RegisterBackend {
     fn simple_get_spot(&self, vreg: u32) -> u32;
     fn simple_adjust_stack_size(&mut self, vreg: i32);
 
+    fn set_used_registers(&mut self, used_registers: Vec<bool>);
+    fn set_allocation(&mut self, allocation: Vec<RegisterAllocation<Self::RegisterType>>);
     fn set_reg_relocations(
         &mut self,
         reg_relocations: Vec<Vec<RegisterRelocation<Self::RegisterType>>>,

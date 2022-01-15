@@ -44,16 +44,9 @@ macro_rules! emit_asm {
             let mut result = self.emit_prologue();
             for instruction in 0..self.instructions.len() {
                 for modification in &self.reg_relocations[instruction] {
-                    result.push_str(&self.emit_move(modification));
-                    //use RegisterLocation::*;
-                    use RegisterRelocation::*;
-                    match modification {
-                        Move(..) => continue, //  self.vreg2reg[vreg as usize] = Reg(to),
-                        TwoAddressMove(..) => continue,
-                        Spill(..) => continue,
-                        Reload(..) => continue,
-                        MemMove(..) => continue,
-                        _ => unimplemented!(),
+                    if !modification.after()
+                    {
+                        result.push_str(&self.emit_move(modification));
                     }
                 }
                 let rule = self.rules[instruction];
@@ -67,6 +60,12 @@ macro_rules! emit_asm {
                     };
                     if procede {
                         result.push_str(&self.gen_asm(instruction));
+                    }
+                }
+                for modification in &self.reg_relocations[instruction] {
+                    if modification.after()
+                    {
+                        result.push_str(&self.emit_move(modification));
                     }
                 }
             }
@@ -137,13 +136,7 @@ macro_rules! generate {
             self.function_names = function_names.clone();
             self.vreg_count = function.vreg_count;
 
-            let (local_offsets, stack_size) =
-                BackendAMD64::find_local_offsets(&function.variables, &function.arguments);
 
-            log::info!("Local offsets: {:?}", local_offsets);
-            log::info!("Stack size: {}", stack_size);
-            self.local_offsets = local_offsets;
-            self.stack_size = stack_size;
             for instruction in (0..function.instructions.len()).rev() {
                 log::trace!("Labeling instruction tree starting at {}", instruction);
                 self.label(instruction as u32);
@@ -176,6 +169,13 @@ macro_rules! generate {
                     .collect::<String>()
             );
 
+            let (local_offsets, stack_size) =
+                self.find_local_offsets(&function.variables, &function.arguments);
+            log::info!("Local offsets: {:?}", local_offsets);
+            log::info!("Stack size: {}", stack_size);
+            self.local_offsets = local_offsets;
+            self.stack_size = stack_size;
+
             log::info!("Starting assembly generation");
             let assembly = self.emit_asm(&function.strings);
             log::info!("Assembly:\n{}", assembly);
@@ -203,5 +203,5 @@ macro_rules! generate {
 pub(super) use default_utility;
 pub(super) use emit_asm;
 pub(super) use generate;
-pub(super) use get_rule; // <-- the trick
-pub(super) use reduce_instruction; // <-- the trick // <-- the trick
+pub(super) use get_rule;
+pub(super) use reduce_instruction;

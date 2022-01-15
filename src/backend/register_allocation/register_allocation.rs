@@ -1,5 +1,7 @@
 use std::fmt::Display;
-use std::ops::Index;
+use std::ops::{Index, Range};
+
+use smallvec::{smallvec, SmallVec};
 
 use crate::backend::register_allocation::RegisterInterface;
 
@@ -9,19 +11,19 @@ use super::RegisterRange;
 
 #[derive(Debug, Clone)]
 pub struct RegisterAllocation<R: RegisterInterface> {
-    pub locations: Vec<RegisterRange<R>>,
+    pub locations: SmallVec<[RegisterRange<R>; 1]>,
 }
 
 #[allow(dead_code)]
 impl<R: RegisterInterface> RegisterAllocation<R> {
     pub fn empty() -> RegisterAllocation<R> {
         RegisterAllocation {
-            locations: Vec::new(),
+            locations: SmallVec::new(),
         }
     }
     pub fn new(loc: R, start: u32) -> RegisterAllocation<R> {
         RegisterAllocation {
-            locations: vec![RegisterRange::new(loc, start..start)],
+            locations: smallvec![RegisterRange::new(loc, start..start)],
         }
     }
     pub fn live_at(&self, index: u32) -> bool {
@@ -43,6 +45,35 @@ impl<R: RegisterInterface> RegisterAllocation<R> {
         let reg = self.locations.last_mut().unwrap();
         let start = reg.range.start;
         reg.range = start..end;
+    }
+
+    pub fn range(loc: R, range: Range<u32>) -> RegisterAllocation<R> {
+        RegisterAllocation {
+            locations: smallvec![RegisterRange::new(loc, range)],
+        }
+    }
+
+    pub fn insert(&mut self, reg: R, loc: u32) {
+        for (i, location) in self.locations.iter().enumerate() {
+            if location.range.contains(&loc) {
+                let normal_reg = location.loc;
+                let end = location.range.end;
+
+                self.locations[i].range.end = loc;
+                let during = RegisterRange {
+                    range: loc..loc + 1,
+                    loc: Some(reg),
+                };
+                let after = RegisterRange {
+                    range: (loc + 1)..end,
+                    loc: normal_reg,
+                };
+                self.locations.push(during);
+                self.locations.push(after);
+                return;
+            }
+        }
+        unreachable!()
     }
 }
 

@@ -21,7 +21,7 @@ fn get_options(path: &PathBuf) -> utcc::options::Options {
         output,
         last_stage: utcc::driver::Stage::Exe,
         optimization_level: 0,
-        register_allocator: String::from("simple"),
+        register_allocator: String::from("briggs"),
     }
 }
 

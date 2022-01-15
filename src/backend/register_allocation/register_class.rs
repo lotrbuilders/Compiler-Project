@@ -17,10 +17,10 @@ impl<R: RegisterInterface> RegisterClass<R> {
         let mut result = R::REG_DEFAULT;
         for reg in 0..self.registers.len() {
             if self.registers[reg] {
-                result = R::REG_LOOKUP[count];
+                result = R::REG_LOOKUP[reg];
                 count += 1;
             }
-            if count >= 1 {
+            if count > 1 {
                 return None;
             }
         }

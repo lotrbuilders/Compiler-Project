@@ -1,5 +1,5 @@
 use super::{registers::Register, BackendAMD64};
-use crate::backend::ir::*;
+use crate::{backend::ir::*, utility::padding};
 
 impl BackendAMD64 {
     // Should be handwritten for any backend
@@ -104,7 +104,21 @@ impl BackendAMD64 {
                 from_r,
             ) => {
                 let _ = (to_s, to_r, from_s, from_r);
-                (String::new(), false)
+                let width = if *to_s == IRSize::S64 || *from_s == IRSize::S64 {
+                    64
+                } else {
+                    32
+                };
+                let to = self.allocation[*to_r as usize][index].unwrap();
+                let from = self.allocation[*from_r as usize][index].unwrap();
+                if to != from {
+                    (
+                        format!("\tmov {:.width$},{:.width$}\n", to, from, width = width),
+                        false,
+                    )
+                } else {
+                    (String::new(), false)
+                }
             }
 
             _ => (String::new(), true),
@@ -144,17 +158,46 @@ impl BackendAMD64 {
         )
     }
 
+    pub fn get_callee_saved_registers(&self) -> Vec<Register> {
+        use Register::*;
+        let callee_saved_registers = [Rbx, R12, R13, R14, R15];
+        let callee_saved_registers: Vec<_> = callee_saved_registers
+            .iter()
+            .filter(|&&r| {
+                let r: usize = r.into();
+                self.used_registers[r]
+            })
+            .cloned()
+            .collect();
+        callee_saved_registers
+    }
+
     // Should be handwritten for any backend
     // Might use a macro to generate parts
     // Emits the prologue for a function, such that it will be correct for the compiler
-    pub fn emit_prologue(&self) -> String {
+    pub fn emit_prologue(&mut self) -> String {
         let mut prologue = format!(
             "global {}\nsection .text\n{}:\n",
             self.function_name, self.function_name
         );
-        if self.stack_size != 0 {
+
+        let callee_saved_registers = self.get_callee_saved_registers();
+
+        if self.stack_size != 0 || !callee_saved_registers.is_empty() {
             prologue.push_str("\tpush rbp\n\tmov rbp,rsp\n");
-            prologue.push_str(&format!("\tsub rsp, {}\n", self.stack_size));
+        }
+        for reg in &callee_saved_registers {
+            self.stack_size += 8;
+            prologue.push_str(&format!("\tpush {:.64}\n", reg));
+        }
+
+        self.stack_size += padding(self.stack_size, 16);
+
+        if self.stack_size != 0 {
+            prologue.push_str(&format!(
+                "\tsub rsp, {}\n",
+                self.stack_size - 8 * callee_saved_registers.len() as i32
+            ));
         }
         prologue
     }
@@ -164,8 +207,18 @@ impl BackendAMD64 {
     // Emits the epilogue for a function, such that it will be correct for the compiler
     pub fn emit_epilogue(&self) -> String {
         let mut epilogue = ".end:\n".to_string();
+
+        let callee_saved_registers = self.get_callee_saved_registers();
         if self.stack_size != 0 {
-            epilogue.push_str(&format!("\tadd rsp, {}\n", self.stack_size));
+            epilogue.push_str(&format!(
+                "\tadd rsp, {}\n",
+                self.stack_size - 8 * callee_saved_registers.len() as i32
+            ));
+        }
+        for reg in callee_saved_registers.iter().rev() {
+            epilogue.push_str(&format!("\tpop {:.64}\n", reg));
+        }
+        if self.stack_size != 0 || !callee_saved_registers.is_empty() {
             epilogue.push_str(&format!("\tpop rbp\n"));
         }
         epilogue.push_str(&format!("\tret\n"));
@@ -189,7 +242,7 @@ impl BackendAMD64 {
         use super::RegisterRelocation::*;
         match modification {
             &TwoAddressMove(from, to) => format!("\tmov {:.64},{:.64}\n", to, from),
-            &Move(from, to) => {
+            &Move(from, to) | &MoveAfter(from, to) => {
                 format!("\tmov {:.64},{:.64}\n", to, from)
             }
             &Reload(reg, mem) => format!("\tmov {:.64}, [rbp-{}]\n", reg, mem),

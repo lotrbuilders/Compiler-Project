@@ -95,6 +95,10 @@ impl RegisterBackend for BackendAMD64 {
         self.clobber(index as usize)
     }
 
+    fn get_clobbered_after(&self, index: u32) -> Vec<Self::RegisterType> {
+        self.clobber_after(index as usize)
+    }
+
     fn find_uses(
         &mut self,
     ) -> crate::backend::register_allocation::RegisterUse<Self::RegisterType> {
@@ -196,5 +200,9 @@ impl RegisterBackend for BackendAMD64 {
 
     fn simple_adjust_stack_size(&mut self, vreg: i32) {
         self.stack_size += 8 * vreg;
+    }
+
+    fn set_used_registers(&mut self, used_registers: Vec<bool>) {
+        self.used_registers = used_registers;
     }
 }

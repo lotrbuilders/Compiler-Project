@@ -17,6 +17,7 @@ impl<R: RegisterInterface, B: RegisterBackend<RegisterType = R>> RegisterAllocat
     fn allocate_registers(backend: &mut B) -> () {
         let length = backend.get_function_length();
         let register_use = backend.find_uses();
+
         log::debug!("Initialization of vregisters:\n{:?}", register_use.creation);
         log::debug!("Last use of vregisters:\n{:?}", register_use.last_use);
 
@@ -26,6 +27,7 @@ impl<R: RegisterInterface, B: RegisterBackend<RegisterType = R>> RegisterAllocat
             allocation: vec![RegisterAllocation::empty(); length],
             reg_relocations: vec![Vec::new(); backend.get_instructions().len()],
         };
+        let mut used_registers = vec![false; R::REG_COUNT];
 
         let mut index = 0;
         for arg in backend.get_arguments() {
@@ -47,12 +49,15 @@ impl<R: RegisterInterface, B: RegisterBackend<RegisterType = R>> RegisterAllocat
                     instruction as u32,
                     &register_use,
                     &mut assignments,
+                    &mut used_registers,
                 )
             }
             if let IRInstruction::Label(Some(phi), _lbl) =
                 backend.get_instructions()[instruction].clone()
             {
                 for (&block, source) in phi.locations.iter().zip(phi.sources.iter()) {
+                    let register_index: usize = R::REG_DEFAULT.into();
+                    used_registers[register_index] = true;
                     let last = cfg[block as usize].last();
                     let index = last;
                     let last = &mut assignments.reg_relocations[last as usize];
@@ -73,6 +78,7 @@ impl<R: RegisterInterface, B: RegisterBackend<RegisterType = R>> RegisterAllocat
         peephole_optimization(&mut assignments.reg_relocations);
         log::debug!("After optimization {:?}", assignments.reg_relocations);
         backend.set_reg_relocations(assignments.reg_relocations);
+        backend.set_used_registers(used_registers);
     }
 }
 fn find_possible_registers<R: RegisterInterface>(
@@ -93,6 +99,7 @@ fn allocate_register<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>
     index: u32,
     _register_use: &RegisterUse<R>,
     assignments: &mut RegisterAssignment<R>,
+    global_used_register: &mut Vec<bool>,
 ) {
     // Clobber registers if necessary
     let clobbered_registers = backend.get_clobbered(index);
@@ -103,6 +110,8 @@ fn allocate_register<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>
 
     for (vreg, class) in used_vregs {
         let reg = if let Some(reg) = assignments.allocation[vreg as usize][index] {
+            let i: usize = reg.into();
+            global_used_register[i] = true;
             reg
         } else {
             let reg = try_allocate2(&find_possible_registers(
@@ -112,6 +121,10 @@ fn allocate_register<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>
             ))
             .unwrap()
             .clone();
+
+            let i: usize = reg.into();
+            global_used_register[i] = true;
+
             let mem = backend.simple_get_spot(vreg);
             assignments.reg_relocations[index as usize].push(RegisterRelocation::Reload(reg, mem));
 
@@ -127,6 +140,8 @@ fn allocate_register<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>
     if let Some((vreg, result_class)) = result_vreg {
         let reg = *try_allocate2(&result_class).unwrap();
         let mem = backend.simple_get_spot(vreg);
+        let i: usize = reg.into();
+        global_used_register[i] = true;
         assignments.reg_relocations[(index + 1) as usize].push(RegisterRelocation::Spill(reg, mem));
         assignments.allocation[vreg as usize].start(reg, index);
         assignments.allocation[vreg as usize].end(index);
