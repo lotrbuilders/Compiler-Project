@@ -1,11 +1,11 @@
-int printf(char *format);
+int puts(char *format);
 int hello_world()
 {
-	return printf("Hello World!\n");;
+	return puts("Hello World!\n");
 }
 
 int main()
 {
-	int (*test)()=&hello_world;
+	int (*test)() = &hello_world;
 	return test();
 }

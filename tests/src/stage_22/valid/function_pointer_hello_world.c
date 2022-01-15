@@ -1,13 +1,13 @@
-int printf(char *format);
+int puts(char *format);
 void hello_world()
 {
-	printf("Hello World!\n");
+	puts("Hello World!\n");
 	return;
 }
 
 int main()
 {
-	void (*test)()=hello_world;
+	void (*test)() = hello_world;
 	test();
 	return 34;
 }
