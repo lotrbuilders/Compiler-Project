@@ -138,11 +138,8 @@ fn get_use_count(instructions: &Vec<IRInstruction>, definitions: &Vec<u32>) -> V
     );
     let mut use_count = vec![0u32; definitions.len()];
     for instruction in instructions {
-        if let Some(left) = instruction.get_left() {
-            use_count[left as usize] += 1;
-        }
-        if let Some(right) = instruction.get_right() {
-            use_count[right as usize] += 1;
+        for vreg in instruction.get_used_vreg() {
+            use_count[vreg as usize] += 1;
         }
     }
     log::debug!("Use count: {:?}", use_count);
