@@ -1,3 +1,5 @@
+use smallvec::SmallVec;
+
 use super::ir_phi::IRPhi;
 
 /// Stores a function and all the associated information
@@ -328,6 +330,29 @@ impl IRInstruction {
             ins => {
                 return ins.get_size(); //std::cmp::max(ins.get_size(), int_size);
             }
+        }
+    }
+
+    pub fn get_used_vreg(&self) -> SmallVec<[u32; 4]> {
+        use std::iter::once;
+        use IRInstruction::*;
+        match self {
+            Label(Some(phi), _) => phi.sources.iter().flat_map(|v| v.iter()).cloned().collect(),
+
+            Call(_, _, _, arg) => arg.arguments.iter().filter_map(|&arg| arg).collect(),
+
+            CallV(_, _, vreg, arg) => arg
+                .arguments
+                .iter()
+                .cloned()
+                .chain(once(Some(*vreg)))
+                .filter_map(|arg| arg)
+                .collect(),
+
+            _ => [self.get_left(), self.get_right()]
+                .iter()
+                .filter_map(|&v| v)
+                .collect(),
         }
     }
 }
