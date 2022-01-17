@@ -142,7 +142,7 @@ fn allocate_register<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>
         let mem = backend.simple_get_spot(vreg);
         let i: usize = reg.into();
         global_used_register[i] = true;
-        assignments.reg_relocations[(index + 1) as usize].push(RegisterRelocation::Spill(reg, mem));
+        assignments.reg_relocations[(index) as usize].push(RegisterRelocation::Spill(reg, mem));
         assignments.allocation[vreg as usize].start(reg, index);
         assignments.allocation[vreg as usize].end(index);
     }

@@ -16,6 +16,7 @@ pub enum RegisterRelocation<R: RegisterInterface> {
     MoveAfter(R, R),      // from to
     TwoAddressMove(R, R), // from to
     Spill(R, u32),
+    SpillEarly(R, u32),
     Reload(R, u32),
     ReloadTemp(R, u32), // Reload temp is currently still the same as reload: Should be removed again after reloading
     Jump(Vec<RegisterLocation<R>>),
@@ -23,7 +24,7 @@ pub enum RegisterRelocation<R: RegisterInterface> {
 
 impl<R: RegisterInterface> RegisterRelocation<R> {
     pub fn after(&self) -> bool {
-        matches!(self, Self::MoveAfter(..))
+        matches!(self, Self::MoveAfter(..) | Self::Spill(..))
     }
 }
 

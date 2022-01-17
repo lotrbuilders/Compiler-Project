@@ -246,7 +246,9 @@ impl BackendAMD64 {
                 format!("\tmov {:.64},{:.64}\n", to, from)
             }
             &Reload(reg, mem) => format!("\tmov {:.64}, [rbp-{}]\n", reg, mem),
-            &Spill(reg, mem) => format!("\tmov [rbp-{}],{:.64} \n", mem, reg),
+            &Spill(reg, mem) | &SpillEarly(reg, mem) => {
+                format!("\tmov [rbp-{}],{:.64} \n", mem, reg)
+            }
             &MemMove(from, to, reg) => {
                 format!(
                     "\tmov {:.64}, [rbp-{}]\n\tmov [rbp-{}], {:.64}\n",
