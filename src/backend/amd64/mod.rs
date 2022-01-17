@@ -217,6 +217,6 @@ impl BackendAMD64 {
             });
         }
 
-        (result, -offset)
+        (result, -offset + -saved_offset)
     }
 }

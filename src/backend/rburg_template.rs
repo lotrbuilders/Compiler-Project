@@ -40,6 +40,24 @@ macro_rules! reduce_instruction  {
 
 macro_rules! emit_asm {
     {} => {
+        fn fix_stack_size(&mut self, old_stack_size: i32) {
+            let stack_growth = self.stack_size;
+            self.stack_size += old_stack_size;
+
+            for instruction in &mut self.reg_relocations {
+                for copy in instruction {
+                    match copy {
+                        RegisterRelocation::Reload(_, spot)
+                        | RegisterRelocation::Spill(_, spot)
+                        | RegisterRelocation::SpillEarly(_, spot) => {
+                            *spot += i32::abs(stack_growth) as u32;
+                        }
+                        _ => (),
+                    }
+                }
+            }
+        }
+
         fn emit_asm(&mut self, strings: &Vec<String>) -> String {
             let mut result = self.emit_prologue();
             for instruction in 0..self.instructions.len() {
@@ -169,18 +187,22 @@ macro_rules! generate {
                     .collect::<String>()
             );
 
+            let old_stack_size=self.stack_size;
             let (local_offsets, stack_size) =
                 self.find_local_offsets(&function.variables, &function.arguments);
             log::info!("Local offsets: {:?}", local_offsets);
             log::info!("Stack size: {}", stack_size);
             self.local_offsets = local_offsets;
             self.stack_size = stack_size;
+            self.fix_stack_size(old_stack_size);
 
             log::info!("Starting assembly generation");
             let assembly = self.emit_asm(&function.strings);
             log::info!("Assembly:\n{}", assembly);
             assembly
         }
+
+
 
         // Generates assembly for globals
         // Should be generated automatically
