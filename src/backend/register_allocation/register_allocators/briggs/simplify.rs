@@ -8,6 +8,7 @@ use super::Graph;
 // This allows easy draining of all elements that get a lower degree by selection
 // The precolored nodes are filter out as they cannot be spilled. Their degree is updated
 pub fn simplify<R: RegisterInterface>(graph: &mut Graph<R>) -> Vec<u32> {
+    log::debug!("Starting simplify phase");
     let reg_count = R::REG_COUNT as u32;
     let mut stack = Vec::with_capacity(graph.length);
     let (mut low, mut high): (Vec<_>, _) = (0..graph.live_ranges.len())
@@ -17,7 +18,7 @@ pub fn simplify<R: RegisterInterface>(graph: &mut Graph<R>) -> Vec<u32> {
 
     high.sort_unstable_by_key(|&i| u32::MAX - graph.degree[i]);
 
-    log::trace!("low:{:?}\nhigh:{:?}", low, high);
+    //log::trace!("low:{:?}\nhigh:{:?}", low, high);
 
     loop {
         while low.len() > 0 {
@@ -32,7 +33,7 @@ pub fn simplify<R: RegisterInterface>(graph: &mut Graph<R>) -> Vec<u32> {
 
             // Update high to account for the degree chance
             high.sort_unstable_by_key(|&i| u32::MAX - graph.degree[i]);
-            log::trace!("high: {:?}", high);
+            //log::trace!("high: {:?}", high);
             let start = high
                 .iter()
                 .enumerate()
@@ -53,7 +54,7 @@ pub fn simplify<R: RegisterInterface>(graph: &mut Graph<R>) -> Vec<u32> {
             .iter()
             .enumerate()
             .map(|(i, &j)| (i, graph.cost(j)))
-            .inspect(|&(i, cost)| log::trace!("cost of live range {} is {}", high[i], cost))
+            //.inspect(|&(i, cost)| log::trace!("cost of live range {} is {}", high[i], cost))
             .fold((0, f32::INFINITY), |(min_i, min), (i, cost)| {
                 if cost < min {
                     (i, cost)
@@ -62,7 +63,7 @@ pub fn simplify<R: RegisterInterface>(graph: &mut Graph<R>) -> Vec<u32> {
                 }
             });
         let m = high[index];
-        log::debug!("removing {}", m);
+        log::debug!("Removing spill candidate {}", m);
         low.push(m);
         high.remove(index);
     }
@@ -74,12 +75,12 @@ impl<R: RegisterInterface> Graph<R> {
         let spill_cost = self.live_ranges[i].spill_cost;
         let degree = self.degree[i] as f32;
         let result = spill_cost / degree;
-        log::trace!(
+        /*log::trace!(
             "spill_cost: {}\tdegree: {}\tresult: {}",
             spill_cost,
             degree,
             result
-        );
+        );*/
         result
     }
 }

@@ -35,9 +35,9 @@ pub(super) fn write_back<R: RegisterInterface, B: RegisterBackend<RegisterType =
     let mut relocation = vec![Vec::new(); instruction_count];
     let mut used_registers = vec![false; R::REG_COUNT];
 
-    log::debug!("writeback");
-    log::debug!("copies: {:?}", copies);
-    log::debug!("spill_code: {:?}", spill_code);
+    //log::debug!("writeback");
+    //log::debug!("copies: {:?}", copies);
+    //log::debug!("spill_code: {:?}", spill_code);
 
     for (i, live_range) in graph.live_ranges.iter().enumerate() {
         for &vreg in &live_range.vregs {

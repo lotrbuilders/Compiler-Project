@@ -20,16 +20,17 @@ pub fn build<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
     spill_code: &SpillCode,
     mut numbers: Renumber<R>,
 ) -> (Graph<R>, Vec<SmallVec<[VregCopy; 2]>>) {
+    log::debug!("Starting build stage");
     let mut graph = Graph::new(
         numbers.live_ranges.clone(),
         numbers.vreg2live.clone(),
         numbers.length,
     );
-    log::trace!("Copies:{:?}", numbers.copies);
+    //log::trace!("Copies:{:?}", numbers.copies);
 
     build_first_iteration(backend, ins_info, cfg, &numbers, &mut graph, spill_code);
     graph.fill_adjacency_list();
-    log::trace!("Graph:{:?}", graph);
+    //log::trace!("Graph:{:?}", graph);
 
     for i in 0..10 {
         let improved = graph.coalesce(
@@ -40,7 +41,7 @@ pub fn build<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
                 coalesce_argument: true,
             },
         );
-        log::trace!("Coalesce stage: {}\timproved: {}", i, improved);
+        log::debug!("Coalesce stage: {}\timproved: {}", i, improved);
         if !improved {
             break;
         }
@@ -96,8 +97,8 @@ fn build_first_iteration<R: RegisterInterface, B: RegisterBackend<RegisterType =
             .clone()
             .filter(|&i| ins_info.is_instruction[i])
         {
-            log::trace!("First build {}", index);
-            log::trace!("live_in: {:?}", live_in);
+            //log::trace!("First build {}", index);
+            //log::trace!("live_in: {:?}", live_in);
             let location = index as u32;
             let used = &ins_info.used[index];
             let defined = &ins_info.result[index];
@@ -225,7 +226,7 @@ fn build_first_iteration<R: RegisterInterface, B: RegisterBackend<RegisterType =
             }
 
             for &clobber in clobbered_after {
-                log::trace!("clobber {}", clobber);
+                //log::trace!("clobber {}", clobber);
                 for &interference in &live_in {
                     graph.let_interfere(clobber.into(), interference);
                 }
@@ -233,8 +234,8 @@ fn build_first_iteration<R: RegisterInterface, B: RegisterBackend<RegisterType =
 
             for copy in &numbers.copies[index] {
                 if let VregCopy::TargetAfter { reg, vreg } = copy {
-                    log::trace!("Target after {}", R::REG_LOOKUP[*reg as usize]);
-                    log::trace!("Live in: {:?}", live_in);
+                    //log::trace!("Target after {}", R::REG_LOOKUP[*reg as usize]);
+                    //log::trace!("Live in: {:?}", live_in);
                     let from = *reg;
                     let to = numbers.translate(*vreg, location);
                     graph.copy_interfer_live(&live_in, to, from);

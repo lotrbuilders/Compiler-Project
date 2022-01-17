@@ -24,7 +24,7 @@ impl<R: RegisterInterface, B: RegisterBackend<RegisterType = R>> RegisterAllocat
             let renumber = renumber(backend, &ins_info, &cfg, &spill_code);
             let (mut graph, copies) = build(backend, &ins_info, &cfg, &spill_code, renumber);
             let stack = simplify(&mut graph);
-            log::trace!("stack:{:?}", stack);
+            //log::trace!("stack:{:?}", stack);
             let color = select(&mut graph, stack);
             log::trace!("Color result:\n{:?}", color);
             match color {

@@ -8,6 +8,7 @@ pub fn select<R: RegisterInterface>(
     graph: &mut Graph<R>,
     mut stack: Vec<u32>,
 ) -> Result<Vec<R>, HashSet<u32>> {
+    log::debug!("Starting select phase");
     // Spill capacity pre-allocated. Inspired by arXiv:1412.7664
     let mut spill = HashSet::with_capacity(graph.length / 8);
     let mut color = vec![R::REG_DEFAULT; graph.length];

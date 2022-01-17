@@ -150,6 +150,8 @@ pub(super) fn renumber<R: RegisterInterface, B: RegisterBackend<RegisterType = R
     let mut vreg2live_old = vec![None; backend.get_vreg_count() as usize];
     let mut vreg2live = Vreg2Live::new(backend.get_vreg_count());
 
+    log::debug!("Starting renumber phase");
+
     for &reg in R::REG_LOOKUP {
         live_ranges.push(LiveRange::reg(reg))
     }
@@ -267,16 +269,6 @@ pub(super) fn renumber<R: RegisterInterface, B: RegisterBackend<RegisterType = R
             }
         }
     }
-
-    /*if cfg!(debug_assertions) {
-        for index in 0..live_ranges.len() {
-            let range = &live_ranges[index];
-            if range.is_vreg() {
-                let vreg = range.vregs[0];
-                assert_eq!(vreg2live_old[vreg as usize], Some(index as u32))
-            }
-        }
-    }*/
 
     let length = live_ranges.len();
     Renumber {

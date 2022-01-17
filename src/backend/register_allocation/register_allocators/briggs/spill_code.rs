@@ -80,6 +80,7 @@ impl SpillCode {
         cfg: &ControlFlowGraph,
         spills: HashSet<u32>,
     ) {
+        log::debug!("Starting spill code phase");
         for &spill in &spills {
             self.insert(spill)
         }
