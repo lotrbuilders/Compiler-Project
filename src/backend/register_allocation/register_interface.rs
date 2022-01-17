@@ -31,6 +31,7 @@ pub trait RegisterBackend {
     type RegisterType: RegisterInterface;
     fn is_instruction(&self, rule: u16) -> bool;
     fn is_two_address(&self, rule: u16) -> bool;
+    fn is_jump(&self, index: usize) -> bool;
 
     fn get_clobbered(&self, index: u32) -> Vec<Self::RegisterType>;
     fn get_clobbered_after(&self, index: u32) -> Vec<Self::RegisterType>;

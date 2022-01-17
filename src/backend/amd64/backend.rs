@@ -205,4 +205,11 @@ impl RegisterBackend for BackendAMD64 {
     fn set_used_registers(&mut self, used_registers: Vec<bool>) {
         self.used_registers = used_registers;
     }
+
+    fn is_jump(&self, index: usize) -> bool {
+        matches!(
+            &self.instructions[index],
+            IRInstruction::Jcc(..) | IRInstruction::Jnc(..) | IRInstruction::Jmp(..),
+        )
+    }
 }
