@@ -49,17 +49,20 @@ pub fn simplify<R: RegisterInterface>(graph: &mut Graph<R>) -> Vec<u32> {
         // Fold is necessary because f32 does not implement ord
         // We get the index via enumerate to later delete this member
         // This can be done more efficiently, but is not necessary now
-        let (index, _) = high.iter().map(|&i| graph.cost(i)).enumerate().fold(
-            (0, f32::NEG_INFINITY),
-            |(min_i, min), (i, cost)| {
+        let (index, _) = high
+            .iter()
+            .enumerate()
+            .map(|(i, &j)| (i, graph.cost(j)))
+            .inspect(|&(i, cost)| log::trace!("cost of live range {} is {}", high[i], cost))
+            .fold((0, f32::INFINITY), |(min_i, min), (i, cost)| {
                 if cost < min {
                     (i, cost)
                 } else {
                     (min_i, min)
                 }
-            },
-        );
+            });
         let m = high[index];
+        log::debug!("removing {}", m);
         low.push(m);
         high.remove(index);
     }
@@ -68,6 +71,15 @@ pub fn simplify<R: RegisterInterface>(graph: &mut Graph<R>) -> Vec<u32> {
 
 impl<R: RegisterInterface> Graph<R> {
     fn cost(&self, i: usize) -> f32 {
-        self.live_ranges[i].spill_cost / (self.degree[i] as f32)
+        let spill_cost = self.live_ranges[i].spill_cost;
+        let degree = self.degree[i] as f32;
+        let result = spill_cost / degree;
+        log::trace!(
+            "spill_cost: {}\tdegree: {}\tresult: {}",
+            spill_cost,
+            degree,
+            result
+        );
+        result
     }
 }

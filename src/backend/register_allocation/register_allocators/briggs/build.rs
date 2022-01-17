@@ -3,7 +3,10 @@ use std::collections::HashSet;
 use bitvec::prelude::BitVec;
 use smallvec::SmallVec;
 
-use super::{coalesce::CoalesceSettings, renumber::VregCopy, Graph, Renumber};
+use super::{
+    coalesce::CoalesceSettings, instruction_information::InstructionInformation,
+    renumber::VregCopy, spill_code::SpillCode, Graph, Renumber,
+};
 use crate::backend::{
     ir::control_flow_graph::ControlFlowGraph,
     register_allocation::{RegisterBackend, RegisterInterface},
@@ -12,7 +15,9 @@ use crate::backend::{
 // The build function covers both the build-coalesce loop and also keeps track of the spill cost directly
 pub fn build<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
     backend: &B,
+    ins_info: &InstructionInformation<R>,
     cfg: &ControlFlowGraph,
+    spill_code: &SpillCode,
     mut numbers: Renumber<R>,
 ) -> (Graph<R>, Vec<SmallVec<[VregCopy; 2]>>) {
     let mut graph = Graph::new(
@@ -22,7 +27,7 @@ pub fn build<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
     );
     log::trace!("Copies:{:?}", numbers.copies);
 
-    build_first_iteration(backend, cfg, &numbers, &mut graph);
+    build_first_iteration(backend, ins_info, cfg, &numbers, &mut graph, spill_code);
     graph.fill_adjacency_list();
     log::trace!("Graph:{:?}", graph);
 
@@ -51,15 +56,17 @@ pub fn build<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
 // Later (coalesce) iteration only modify this
 fn build_first_iteration<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
     backend: &B,
+    ins_info: &InstructionInformation<R>,
     cfg: &ControlFlowGraph,
     numbers: &Renumber<R>,
     graph: &mut Graph<R>,
+    spill_code: &SpillCode,
 ) {
     let LiveIn {
         live_in,
         last_used,
         loop_depth,
-    } = find_live_in(backend, cfg, numbers);
+    } = find_live_in(backend, ins_info, cfg, numbers, spill_code);
 
     let loop_cost: Vec<_> = loop_depth
         .iter()
@@ -84,111 +91,143 @@ fn build_first_iteration<R: RegisterInterface, B: RegisterBackend<RegisterType =
             })
             .collect();
 
-        for index in block.instructions.clone() {
+        for index in block
+            .instructions
+            .clone()
+            .filter(|&i| ins_info.is_instruction[i])
+        {
             log::trace!("First build {}", index);
-            let rule = backend.get_rule(index);
-            if backend.is_instruction(rule) {
-                let (used, defined) = backend.get_vregisters(index as u32, rule);
-                let clobbered_before = backend.get_clobbered(index as u32);
-                let clobbered_after = backend.get_clobbered_after(index as u32);
+            log::trace!("live_in: {:?}", live_in);
+            let location = index as u32;
+            let used = &ins_info.used[index];
+            let defined = &ins_info.result[index];
+            let clobbered_before = &ins_info.clobber[index];
+            let clobbered_after = &ins_info.clobber_after[index];
 
-                // Copies before should interfer
-                //      everything that's live outside from
-                //      from if this is the last use of from
-                for copy in &numbers.copies[index] {
-                    match copy {
-                        VregCopy::ArgumentCopy { reg, vreg } => {
-                            let from = *reg;
-                            let to = numbers.translate(*vreg);
-                            graph.copy_interfer_live(&live_in, from, to);
-                            graph.adjust_spill_cost(to, block_cost);
-                            live_in.remove(&from);
-                        }
-                        VregCopy::TwoAddress { from, to } => {
-                            let from = numbers.translate(*from);
-                            let to = numbers.translate(*to);
-                            graph.copy_interfer_live(&live_in, from, to);
-                            graph.adjust_spill_cost(to, block_cost);
-                            graph.adjust_spill_cost(from, block_cost);
-                            //Can interfer later, but this is handled as normal
-                        }
-                        VregCopy::PhiCopy { from, to } => {
-                            let from = numbers.translate(*from);
-                            let to = numbers.translate(*to);
-                            graph.copy_interfer_live(&live_in, from, to);
-                            graph.adjust_spill_cost(to, block_cost);
-                            graph.adjust_spill_cost(from, block_cost);
-                            // If the vreg is last used in this instruction
-                            // and only used by the phicopy
-                            // it won't interfer with to
-                            if !(last_used[from as usize].contains(&(index as u32))
-                                && !used.iter().find(|(r, _)| *r == from).is_some())
-                            {
-                                graph.let_interfere(to, from);
-                            }
-                        }
-                        VregCopy::TargetBefore { vreg, reg } => {
-                            let from = numbers.translate(*vreg);
-                            let to = *reg;
-                            graph.copy_interfer_live(&live_in, from, to);
-                            graph.adjust_spill_cost(from, block_cost);
-                        }
-                        VregCopy::TargetAfter { .. } => {}
-                        VregCopy::Coalesced => unreachable!(),
-                    }
+            // Reloading is processed first, because it is possible for copies to use the reload result
+            for reload in spill_code.code[index]
+                .iter()
+                .filter(|&spill| spill.is_reload())
+            {
+                let vreg = reload.vreg();
+                let live_range = numbers.translate(vreg, location);
+                graph.live_ranges[live_range as usize].spill_cost = f32::MAX;
+                for &interference in &live_in {
+                    graph.let_interfere(live_range, interference)
                 }
+                live_in.insert(live_range);
+            }
 
-                for clobber in clobbered_before {
-                    for &interference in &live_in {
-                        graph.let_interfere(clobber.into(), interference);
+            // Copies before should interfer
+            //      everything that's live outside from
+            //      from if this is the last use of from
+            for copy in &numbers.copies[index] {
+                match copy {
+                    VregCopy::ArgumentCopy { reg, vreg } => {
+                        let from = *reg;
+                        let to = numbers.translate(*vreg, location);
+                        graph.copy_interfer_live(&live_in, from, to);
+                        graph.adjust_spill_cost(to, block_cost);
+                        live_in.remove(&from);
                     }
+                    VregCopy::TwoAddress { from, to } => {
+                        let from = numbers.translate(*from, location);
+                        let to = numbers.translate(*to, location);
+                        graph.copy_interfer_live(&live_in, from, to);
+                        graph.adjust_spill_cost(to, block_cost);
+                        graph.adjust_spill_cost(from, block_cost);
+                        //Can interfer later, but this is handled as normal
+                    }
+                    VregCopy::PhiCopy { from, to } => {
+                        let from = numbers.translate(*from, location);
+                        let to = numbers.translate(*to, location);
+                        graph.copy_interfer_live(&live_in, from, to);
+                        graph.adjust_spill_cost(to, block_cost);
+                        graph.adjust_spill_cost(from, block_cost);
+                        // If the vreg is last used in this instruction
+                        // and only used by the phicopy
+                        // it won't interfer with to
+                        if !(last_used[from as usize].contains(&(index as u32))
+                            && !used.iter().find(|(r, _)| *r == from).is_some())
+                        {
+                            graph.let_interfere(to, from);
+                        }
+                    }
+                    VregCopy::TargetBefore { vreg, reg } => {
+                        let from = numbers.translate(*vreg, location);
+                        let to = *reg;
+                        graph.copy_interfer_live(&live_in, from, to);
+                        graph.adjust_spill_cost(from, block_cost);
+                    }
+                    VregCopy::TargetAfter { .. } => {}
+                    VregCopy::Coalesced => unreachable!(),
                 }
+            }
 
-                for (vreg, class) in used {
-                    let live_range = numbers.translate(vreg);
-                    // Interfer with all register outside this registerclass
-                    if let Some(_target) = class.is_target() {
-                    } else {
-                        for reg in !class {
-                            let reg: u32 = reg.into();
-                            graph.let_interfere(live_range, reg);
-                        }
-                        graph.adjust_spill_cost(live_range, block_cost);
-                    }
-
-                    // If this is the last use drop it from live
-                    if last_used[live_range as usize].contains(&(index as u32)) {
-                        live_in.remove(&live_range);
-                    }
+            for &clobber in clobbered_before {
+                for &interference in &live_in {
+                    graph.let_interfere(clobber.into(), interference);
                 }
-                for (vreg, class) in defined {
-                    let _ = (&vreg, &class);
-                    let live_range = numbers.translate(vreg);
-                    if let Some(_target) = class.is_target() {
-                    } else {
-                        // Interfer with all register outside this registerclass
-                        for reg in !class {
-                            let reg: u32 = reg.into();
-                            graph.let_interfere(live_range, reg);
-                        }
-                        // Interfer with everything that is currently live
-                        for &interference in &live_in {
-                            graph.let_interfere(live_range, interference);
-                        }
+            }
+
+            for (vreg, class) in used.iter() {
+                let vreg = *vreg;
+                let live_range = numbers.translate(vreg, location);
+                // Interfer with all register outside this registerclass
+                if let Some(_target) = class.is_target() {
+                } else {
+                    for reg in !class.clone() {
+                        let reg: u32 = reg.into();
+                        graph.let_interfere(live_range, reg);
                     }
-                    // Add defined register to life
                     graph.adjust_spill_cost(live_range, block_cost);
-                    live_in.insert(live_range);
-                    if last_used[live_range as usize].contains(&(index as u32)) {
-                        live_in.remove(&live_range);
-                    }
                 }
 
-                for clobber in clobbered_after {
-                    log::trace!("clobber {}", clobber);
-                    for &interference in &live_in {
-                        graph.let_interfere(clobber.into(), interference);
+                // If this is the last use drop it from live
+                if last_used[live_range as usize].contains(&(index as u32)) {
+                    live_in.remove(&live_range);
+                }
+            }
+            for (vreg, class) in defined {
+                let vreg = *vreg;
+                let _ = (&vreg, &class);
+                let live_range = numbers.translate(vreg, location);
+                if let Some(_target) = class.is_target() {
+                } else {
+                    // Interfer with all register outside this registerclass
+                    for reg in !class.clone() {
+                        let reg: u32 = reg.into();
+                        graph.let_interfere(live_range, reg);
                     }
+                    // Interfer with everything that is currently live
+                    for &interference in &live_in {
+                        graph.let_interfere(live_range, interference);
+                    }
+                }
+                // Add defined register to life
+                graph.adjust_spill_cost(live_range, block_cost);
+                live_in.insert(live_range);
+                if last_used[live_range as usize].contains(&(index as u32)) {
+                    live_in.remove(&live_range);
+                }
+            }
+
+            // Reloaded registers are removed before clobber after is processed
+            // Since these registers are currently never saved they can savely be clobbered
+            for reload in spill_code.code[index]
+                .iter()
+                .filter(|&spill| spill.is_reload())
+            {
+                let vreg = reload.vreg();
+                let live_range = numbers.translate(vreg, location);
+
+                live_in.remove(&live_range);
+            }
+
+            for &clobber in clobbered_after {
+                log::trace!("clobber {}", clobber);
+                for &interference in &live_in {
+                    graph.let_interfere(clobber.into(), interference);
                 }
             }
 
@@ -197,12 +236,21 @@ fn build_first_iteration<R: RegisterInterface, B: RegisterBackend<RegisterType =
                     log::trace!("Target after {}", R::REG_LOOKUP[*reg as usize]);
                     log::trace!("Live in: {:?}", live_in);
                     let from = *reg;
-                    let to = numbers.translate(*vreg);
+                    let to = numbers.translate(*vreg, location);
                     graph.copy_interfer_live(&live_in, to, from);
-                    //graph.copy_interfer_live(&live_in, to, from);
-                    //graph.adjust_spill_cost(to, block_cost);
-                    //live_in.insert(numbers.translate(*vreg));
                 }
+            }
+
+            // Spills are processed last
+            // They can still be targeted by target after or clobbered
+            for spill in spill_code.code[index]
+                .iter()
+                .filter(|&spill| spill.is_spill())
+            {
+                let vreg = spill.vreg();
+                let live_range = numbers.translate(vreg, location);
+                graph.live_ranges[live_range as usize].spill_cost = f32::MAX;
+                live_in.remove(&live_range);
             }
         }
     }
@@ -232,8 +280,10 @@ struct LiveIn {
 
 fn find_live_in<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
     backend: &B,
+    ins_info: &InstructionInformation<R>,
     cfg: &ControlFlowGraph,
     numbers: &Renumber<R>,
+    spill_code: &SpillCode,
 ) -> LiveIn {
     let mut live_in = vec![BitVec::repeat(false, numbers.length); cfg.len()]; //live_ranges x blocks
     let mut last_used = vec![SmallVec::new(); numbers.length]; //n x live_ranges
@@ -272,8 +322,9 @@ fn find_live_in<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
                 .filter(|(_, &label)| label == block.label)
             {
                 let last_instruction = block.instructions.end - 1;
+                let location = last_instruction as u32;
                 for &target in &phi.sources[index] {
-                    let target = numbers.translate(target) as usize;
+                    let target = numbers.translate(target, location) as usize;
                     if !live.get(target).unwrap() {
                         last_used[target].push(last_instruction as u32);
                         live.set(target, true);
@@ -284,33 +335,56 @@ fn find_live_in<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
 
         // live |= block.operands.input
         // live -= block.operands.output
+        for index in block
+            .instructions
+            .clone()
+            .rev()
+            .filter(|&i| ins_info.is_instruction[i])
+        {
+            let used = &ins_info.used[index];
+            let result = &ins_info.result[index];
+            let location = index as u32;
 
-        for index in block.instructions.clone().rev() {
-            let rule = backend.get_rule(index);
-            if backend.is_instruction(rule) {
-                let (used, result) = backend.get_vregisters(index as u32, rule);
-                for (result, _) in result {
-                    let result = numbers.translate(result) as usize;
-                    if !live.get(result).unwrap() {
-                        last_used[result].push(index as u32);
-                    }
-                    live.set(result, false);
+            for &(result, _) in result {
+                let result = numbers.translate(result, location) as usize;
+                if !live.get(result).unwrap() {
+                    last_used[result].push(index as u32);
                 }
-                for (vreg, _) in used {
-                    let vreg = numbers.translate(vreg) as usize;
-                    if !live.get(vreg).unwrap() {
-                        last_used[vreg].push(index as u32);
-                        live.set(vreg, true);
-                    }
+                live.set(result, false);
+            }
+            for &(vreg, _) in used {
+                let vreg = numbers.translate(vreg, location) as usize;
+                if !live.get(vreg).unwrap() {
+                    last_used[vreg].push(index as u32);
+                    live.set(vreg, true);
                 }
             }
+            //}
         }
 
         // live -= block.phi.output
         if let Some(phi) = block.phi(instructions) {
             for &target in &phi.targets {
-                let target = numbers.translate(target) as usize;
-                live.set(target, false);
+                for &location in &phi.locations {
+                    let location = cfg[location].last();
+                    let target = numbers.translate(target, location) as usize;
+                    live.set(target, false);
+                }
+            }
+        }
+
+        // live -= spilled variables
+        for index in block
+            .instructions
+            .clone()
+            .rev()
+            .filter(|&i| ins_info.is_instruction[i])
+        {
+            let location = index as u32;
+            for copy in &spill_code.code[index] {
+                let vreg = copy.vreg();
+                let live_range = numbers.translate(vreg, location) as usize;
+                live.set(live_range, false);
             }
         }
 

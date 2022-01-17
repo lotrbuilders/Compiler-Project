@@ -5,23 +5,19 @@ use smallvec::SmallVec;
 
 use crate::backend::register_allocation::RegisterInterface;
 
-use super::LiveRange;
+use super::{renumber::Vreg2Live, LiveRange};
 
 pub struct Graph<R: RegisterInterface> {
     pub bit_matrix: BitMatrix,
     pub live_ranges: Vec<LiveRange<R>>,
-    pub vreg2live: Vec<Option<u32>>,
+    pub vreg2live: Vreg2Live,
     pub adjacency_list: Vec<SmallVec<[u32; 4]>>,
     pub degree: Vec<u32>,
     pub length: usize,
 }
 
 impl<R: RegisterInterface> Graph<R> {
-    pub fn new(
-        live_ranges: Vec<LiveRange<R>>,
-        vreg2live: Vec<Option<u32>>,
-        length: usize,
-    ) -> Graph<R> {
+    pub fn new(live_ranges: Vec<LiveRange<R>>, vreg2live: Vreg2Live, length: usize) -> Graph<R> {
         let mut bit_matrix = BitMatrix::new(length);
         let adjacency_list = Vec::new();
         let mut degree = vec![0; length];
@@ -114,8 +110,8 @@ impl<R: RegisterInterface> Debug for Graph<R> {
         }
         writeln!(f, "vreg2live:")?;
         for (vreg, live) in self.vreg2live.iter().enumerate() {
-            if let Some(live) = live {
-                writeln!(f, "\t{} => {}", vreg, live)?;
+            for (range, live) in live {
+                writeln!(f, "\t{}[{:?}] => {}", vreg, range, live)?;
             }
         }
         writeln!(f, "adjecency lists:")?;

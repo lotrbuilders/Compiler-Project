@@ -2,6 +2,7 @@ pub mod briggs;
 mod build;
 mod coalesce;
 mod graph;
+mod instruction_information;
 mod live_range;
 mod renumber;
 mod select;

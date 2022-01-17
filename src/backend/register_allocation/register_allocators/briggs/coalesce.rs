@@ -21,57 +21,70 @@ impl<R: RegisterInterface> Graph<R> {
         settings: CoalesceSettings,
     ) -> bool {
         let mut modified = false;
-        for instruction in copies {
+        for (i, instruction) in copies.iter_mut().enumerate() {
+            let location = i as u32;
             for copy in instruction {
                 if settings.conservative {
-                    modified |= self.conservative_coalesce(copy, &settings)
+                    modified |= self.conservative_coalesce(&settings, copy, location)
                 } else {
-                    modified |= self.liberal_coalesce(copy, &settings)
+                    modified |= self.liberal_coalesce(&settings, copy, location)
                 }
             }
         }
         modified
     }
 
-    fn conservative_coalesce(&mut self, copy: &mut VregCopy, settings: &CoalesceSettings) -> bool {
+    fn conservative_coalesce(
+        &mut self,
+        settings: &CoalesceSettings,
+        copy: &mut VregCopy,
+        location: u32,
+    ) -> bool {
         match copy {
             VregCopy::ArgumentCopy { reg, .. }
-                if self.significant_neighbors(copy) < R::REG_COUNT
+                if self.significant_neighbors(copy, location) < R::REG_COUNT
                     && settings.coalesce_argument =>
             {
                 let _ = reg;
-                self.coalesce_copy(copy)
+                self.coalesce_copy(copy, location)
             }
 
             VregCopy::TargetBefore { reg, .. } | VregCopy::TargetAfter { reg, .. }
-                if self.significant_neighbors(copy) < R::REG_COUNT =>
+                if self.significant_neighbors(copy, location) < R::REG_COUNT =>
             {
                 let _ = reg;
-                self.coalesce_copy(copy)
+                self.coalesce_copy(copy, location)
             }
 
             VregCopy::PhiCopy { .. } | VregCopy::TwoAddress { .. }
-                if self.significant_neighbors(copy) < R::REG_COUNT =>
+                if self.significant_neighbors(copy, location) < R::REG_COUNT =>
             {
-                self.coalesce_copy(copy)
+                self.coalesce_copy(copy, location)
             }
             _ => false,
         }
     }
 
-    fn liberal_coalesce(&mut self, copy: &mut VregCopy, settings: &CoalesceSettings) -> bool {
+    fn liberal_coalesce(
+        &mut self,
+        settings: &CoalesceSettings,
+        copy: &mut VregCopy,
+        location: u32,
+    ) -> bool {
         match copy {
-            VregCopy::ArgumentCopy { .. } if settings.coalesce_argument => self.coalesce_copy(copy),
+            VregCopy::ArgumentCopy { .. } if settings.coalesce_argument => {
+                self.coalesce_copy(copy, location)
+            }
             VregCopy::TargetBefore { .. }
             | VregCopy::TargetAfter { .. }
             | VregCopy::PhiCopy { .. }
-            | VregCopy::TwoAddress { .. } => self.coalesce_copy(copy),
+            | VregCopy::TwoAddress { .. } => self.coalesce_copy(copy, location),
             _ => false,
         }
     }
 
-    fn significant_neighbors(&self, copy: &VregCopy) -> usize {
-        let (i, j) = copy.destination::<R>(&self.vreg2live);
+    fn significant_neighbors(&self, copy: &VregCopy, location: u32) -> usize {
+        let (i, j) = copy.destination::<R>(&self.vreg2live, location);
         //let i = self.vreg2live[i as usize].unwrap();
         //let j = self.vreg2live[j as usize].unwrap();
         let neighbors: HashSet<_> = self.merged_neighbors(i, j);
@@ -81,8 +94,8 @@ impl<R: RegisterInterface> Graph<R> {
             .count()
     }
 
-    fn coalesce_copy(&mut self, copy: &mut VregCopy) -> bool {
-        let (destination, source) = copy.destination::<R>(&self.vreg2live);
+    fn coalesce_copy(&mut self, copy: &mut VregCopy, location: u32) -> bool {
+        let (destination, source) = copy.destination::<R>(&self.vreg2live, location);
         if destination == source {
             *copy = VregCopy::Coalesced;
             return true;
@@ -118,8 +131,9 @@ impl<R: RegisterInterface> Graph<R> {
             SmallVec::new(),
         );
         for vreg in source_vregs {
-            self.vreg2live[vreg as usize] = Some(destination);
+            self.vreg2live[vreg as usize][location] = destination;
             self.live_ranges[destination as usize].vregs.push(vreg);
+            //todo!("Add relocation");
         }
 
         self.live_ranges[destination as usize].spill_cost +=

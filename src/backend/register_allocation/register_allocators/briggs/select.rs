@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::backend::register_allocation::RegisterInterface;
 
 use super::Graph;
@@ -5,9 +7,9 @@ use super::Graph;
 pub fn select<R: RegisterInterface>(
     graph: &mut Graph<R>,
     mut stack: Vec<u32>,
-) -> Result<Vec<R>, Vec<u32>> {
+) -> Result<Vec<R>, HashSet<u32>> {
     // Spill capacity pre-allocated. Inspired by arXiv:1412.7664
-    let mut spill = Vec::with_capacity(graph.length / 8);
+    let mut spill = HashSet::with_capacity(graph.length / 8);
     let mut color = vec![R::REG_DEFAULT; graph.length];
 
     let precolored = graph
@@ -31,7 +33,9 @@ pub fn select<R: RegisterInterface>(
         if let Some((found_color, _)) = used_colors.iter().enumerate().find(|&(_, &b)| !b) {
             color[index] = R::REG_LOOKUP[found_color];
         } else {
-            spill.push(node);
+            for &vregs in &graph.live_ranges[index].vregs {
+                spill.insert(vregs);
+            }
         }
     }
 
