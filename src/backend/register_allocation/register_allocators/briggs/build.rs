@@ -201,9 +201,9 @@ fn build_first_iteration<R: RegisterInterface, B: RegisterBackend<RegisterType =
                         graph.let_interfere(live_range, reg);
                     }
                     // Interfer with everything that is currently live
-                    for &interference in &live_in {
-                        graph.let_interfere(live_range, interference);
-                    }
+                }
+                for &interference in &live_in {
+                    graph.let_interfere(live_range, interference);
                 }
                 // Add defined register to life
                 graph.adjust_spill_cost(live_range, block_cost);
