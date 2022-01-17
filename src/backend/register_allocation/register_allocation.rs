@@ -73,7 +73,10 @@ impl<R: RegisterInterface> RegisterAllocation<R> {
                 return;
             }
         }
-        unreachable!()
+        self.locations.push(RegisterRange {
+            range: loc..loc + 1,
+            loc: Some(reg),
+        })
     }
 }
 
