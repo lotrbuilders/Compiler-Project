@@ -11,14 +11,16 @@ use crate::backend::register_allocation::RegisterInterface;
 #[derive(Clone, Debug)]
 pub struct LiveRange<R: RegisterInterface> {
     pub vregs: SmallVec<[u32; 4]>,
+    pub range: SmallVec<[Range<u32>; 4]>,
     pub spill_cost: f32,
     pub precolor: Option<R>,
 }
 
 impl<R: RegisterInterface> LiveRange<R> {
-    pub fn new(vreg: u32) -> LiveRange<R> {
+    pub fn new(vreg: u32, range: Range<u32>) -> LiveRange<R> {
         LiveRange {
             vregs: smallvec![vreg],
+            range: smallvec![range],
             spill_cost: 0.,
             precolor: None,
         }
@@ -26,6 +28,7 @@ impl<R: RegisterInterface> LiveRange<R> {
     pub fn reg(reg: R) -> LiveRange<R> {
         LiveRange {
             vregs: SmallVec::new(),
+            range: SmallVec::new(),
             spill_cost: f32::MAX,
             precolor: Some(reg),
         }

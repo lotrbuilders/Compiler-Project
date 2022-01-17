@@ -81,6 +81,16 @@ impl SpillCode {
         spills: HashSet<u32>,
     ) {
         log::debug!("Starting spill code phase");
+        let spills: HashSet<_> = spills
+            .into_iter()
+            .inspect(|&vreg| {
+                if self.contains(vreg) {
+                    log::warn!("vreg {} is spilled multiple times", vreg)
+                }
+            })
+            .filter(|&vreg| !self.contains(vreg))
+            .collect();
+
         for &spill in &spills {
             self.insert(spill)
         }

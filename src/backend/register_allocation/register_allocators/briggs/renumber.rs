@@ -168,12 +168,12 @@ pub(super) fn renumber<R: RegisterInterface, B: RegisterBackend<RegisterType = R
             match copy {
                 &MemoryCopy::Spill(vreg) => {
                     let live_range = live_ranges.len() as u32;
-                    live_ranges.push(LiveRange::new(vreg));
+                    live_ranges.push(LiveRange::new(vreg, range.clone()));
                     vreg2live[vreg].insert(range.clone(), live_range);
                 }
                 &MemoryCopy::Reload(vreg) => {
                     let live_range = live_ranges.len() as u32;
-                    live_ranges.push(LiveRange::new(vreg));
+                    live_ranges.push(LiveRange::new(vreg, range.clone()));
                     vreg2live[vreg].insert(range.clone(), live_range);
                 }
             }
@@ -185,8 +185,9 @@ pub(super) fn renumber<R: RegisterInterface, B: RegisterBackend<RegisterType = R
         if let Some(arg) = *arg {
             let live_range = live_ranges.len() as u32;
             vreg2live_old[arg as usize] = Some(live_range);
-            vreg2live.insert(arg, range.clone(), live_range);
-            live_ranges.push(LiveRange::new(arg));
+            if vreg2live.insert(arg, range.clone(), live_range) {
+                live_ranges.push(LiveRange::new(arg, range.clone()));
+            }
 
             let source = R::CALL_REGS[index].is_target().unwrap();
             let source: usize = source.into();
@@ -211,7 +212,7 @@ pub(super) fn renumber<R: RegisterInterface, B: RegisterBackend<RegisterType = R
                 let live = live_ranges.len() as u32;
                 vreg2live_old[result as usize] = Some(live);
                 if vreg2live.insert(result, range.clone(), live) {
-                    live_ranges.push(LiveRange::new(result as u32));
+                    live_ranges.push(LiveRange::new(result as u32, range.clone()));
                 }
 
                 //let sources = &phi.sources[i];
@@ -244,7 +245,7 @@ pub(super) fn renumber<R: RegisterInterface, B: RegisterBackend<RegisterType = R
                 let live = live_ranges.len() as u32;
                 vreg2live_old[result as usize] = Some(live);
                 if vreg2live.insert(result, range.clone(), live) {
-                    live_ranges.push(LiveRange::new(result));
+                    live_ranges.push(LiveRange::new(result, range.clone()));
                 }
 
                 if let Some(source) = class.is_target() {
