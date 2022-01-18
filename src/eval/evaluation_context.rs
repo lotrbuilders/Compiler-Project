@@ -7,6 +7,8 @@ use crate::{
     },
 };
 
+use super::jump_eval::JumpType;
+
 pub struct EvaluationContext<'a> {
     pub vreg_counter: u32,
     pub label_counter: u32,
@@ -104,6 +106,20 @@ impl<'a> EvaluationContext<'a> {
     }
 
     pub fn fix_jumps(
+        &mut self,
+        result: &mut Vec<IRInstruction>,
+        jumps: &[(usize, u32, IRSize, JumpType)],
+        label: u32,
+    ) {
+        for &(index, vreg, size, jump_type) in jumps {
+            result[index] = match jump_type {
+                JumpType::Jcc => IRInstruction::Jcc(size, vreg, label),
+                JumpType::Jnc => IRInstruction::Jnc(size, vreg, label),
+            }
+        }
+    }
+
+    pub fn fix_break_continue(
         &mut self,
         result: &mut Vec<IRInstruction>,
         break_label: u32,

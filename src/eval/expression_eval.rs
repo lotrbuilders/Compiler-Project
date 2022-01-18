@@ -1,6 +1,7 @@
 use super::{Evaluate, EvaluationContext};
 use crate::backend::ir::*;
 use crate::eval::evaluation_context::EvaluateSize;
+use crate::eval::jump_eval::JumpType;
 use crate::parser::{ast::*, Type};
 use crate::semantic_analysis::type_promotion::TypePromotion;
 
@@ -189,14 +190,15 @@ impl Evaluate for Expression {
 
             #[allow(unused_variables)]
             Ternary(cond, left, right) => {
-                let cond_size = context.get_size(&cond.ast_type);
+                //let cond_size = context.get_size(&cond.ast_type);
                 let size = context.get_size(&self.ast_type);
                 let left_size = context.get_size(&left.ast_type);
                 let right_size = context.get_size(&right.ast_type);
 
-                let cond = cond.eval(result, context);
+                //let cond = cond.eval(result, context);
+                let cond = cond.condition_eval(result, context, JumpType::Jnc);
 
-                let (if_index, _) = context.insert_place_holder_jump(result);
+                //let (if_index, _) = context.insert_place_holder_jump(result);
                 let left = left.eval(result, context);
                 let left = context.promote(result, size, left_size, left);
 
@@ -213,7 +215,8 @@ impl Evaluate for Expression {
                     IRPhi::ternary(size, (if_label, else_label), vreg, (left, right)),
                 );
 
-                result[if_index] = IRInstruction::Jnc(cond_size, cond, else_label);
+                //result[if_index] = IRInstruction::Jnc(cond_size, cond, else_label);
+                context.fix_jumps(result, &cond, else_label);
                 result[else_index] = IRInstruction::Jmp(label);
                 result[last_index] = IRInstruction::Jmp(label);
                 vreg

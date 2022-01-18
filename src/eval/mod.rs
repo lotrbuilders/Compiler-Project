@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::backend::{ir::*, Backend, TypeInfo, TypeInfoTable};
+use crate::options::OptimizationSettings;
 use crate::parser::ast::*;
 use crate::parser::r#type::StructType;
 use crate::table::struct_table::StructTable;
@@ -12,6 +13,7 @@ use self::evaluation_context::EvaluationContext;
 pub mod evaluation_context;
 mod expression_eval;
 mod global_eval;
+mod jump_eval;
 mod statement_eval;
 
 // This module is used to evaluate the AST into an IR
@@ -29,11 +31,17 @@ pub fn evaluate(
     map: &HashMap<String, Symbol>,
     backend: &mut dyn Backend,
     struct_table: StructTable,
+    optimization_settings: &OptimizationSettings,
 ) -> (Vec<IRFunction>, Vec<IRGlobal>, HashSet<String>) {
     let mut functions = Vec::<IRFunction>::new();
     let mut function_names = HashSet::<String>::new();
     for global in &ast.global_declarations {
-        if let Some(declaration) = global.eval(&struct_table.info, &struct_table.offsets, backend) {
+        if let Some(declaration) = global.eval(
+            &struct_table.info,
+            &struct_table.offsets,
+            backend,
+            optimization_settings,
+        ) {
             function_names.insert(declaration.name.clone());
             functions.push(declaration);
         }
