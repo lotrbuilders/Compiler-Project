@@ -246,6 +246,7 @@ tests! {
     full_scale_stage_22: ("src/stage_22",test_valid_full_scale,test_invalid_full_scale)
 
     full_scale_precedence: ("src/precedence",test_valid_full_scale,test_invalid_full_scale)
+    full_scale_jump: ("src/jump",test_valid_full_scale,test_invalid_full_scale)
     full_scale_register_stress_test: ("src/register_stress_tests",test_valid_full_scale,test_invalid_full_scale)
 }
 
