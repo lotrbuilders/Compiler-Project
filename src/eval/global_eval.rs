@@ -1,5 +1,6 @@
 use super::{evaluation_context::EvaluateSize, Evaluate, EvaluationContext};
 use crate::backend::{ir::*, Backend, TypeInfo};
+use crate::options::OptimizationSettings;
 use crate::parser::ast::*;
 use crate::parser::r#type::DeclarationType;
 use crate::table::Symbol;
@@ -11,6 +12,7 @@ impl ExternalDeclaration {
         struct_size_table: &Vec<TypeInfo>,
         struct_offset_table: &Vec<Vec<usize>>,
         backend: &mut dyn Backend,
+        optimization_settings: &OptimizationSettings,
     ) -> Option<IRFunction> {
         match &self.function_body {
             Some(statements) => {
@@ -27,6 +29,7 @@ impl ExternalDeclaration {
                     struct_size_table,
                     struct_offset_table,
                     type_info: backend.get_type_info_table(),
+                    optimization_settings,
                 };
                 instructions.push(IRInstruction::Label(None, 0));
 

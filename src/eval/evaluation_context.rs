@@ -1,5 +1,6 @@
 use crate::{
     backend::{ir::*, Backend, TypeInfo, TypeInfoTable},
+    options::OptimizationSettings,
     parser::{
         ast::{BinaryExpressionType, SizeofType},
         Type, TypeNode,
@@ -18,6 +19,8 @@ pub struct EvaluationContext<'a> {
     pub struct_offset_table: &'a Vec<Vec<usize>>,
     pub backend: &'a dyn Backend,
     pub type_info: TypeInfoTable,
+
+    pub optimization_settings: &'a OptimizationSettings,
 }
 
 impl<'a> EvaluationContext<'a> {

@@ -100,8 +100,13 @@ pub fn compile(filename: String, output: String, options: &Options) -> Result<()
     }
 
     log::info!("Evaluation started");
-    let (ir_functions, ir_globals, function_names) =
-        evaluate(&ast, &global_table, &mut *backend, struct_table);
+    let (ir_functions, ir_globals, function_names) = evaluate(
+        &ast,
+        &global_table,
+        &mut *backend,
+        struct_table,
+        &options.optimization_settings,
+    );
     for ir in &ir_functions {
         log::debug!("Evaluation result:\n{}", ir);
     }

@@ -3,6 +3,7 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
 };
+use utcc::options::{OptimizationSettings, OptionStage};
 use utcc_lib as utcc;
 
 fn get_options(path: &PathBuf) -> utcc::options::Options {
@@ -19,8 +20,15 @@ fn get_options(path: &PathBuf) -> utcc::options::Options {
     utcc::options::Options {
         input: vec![path.to_str().unwrap().to_string()],
         output,
-        last_stage: utcc::driver::Stage::Exe,
-        optimization_level: 0,
+        last_stage: OptionStage {
+            ppc: false,
+            asm: false,
+            obj: false,
+        },
+        optimization_settings: OptimizationSettings {
+            optimization_level: 0,
+            optimizations: Vec::new(),
+        },
         register_allocator: String::from("briggs"),
     }
 }
