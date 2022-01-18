@@ -1,60 +1,103 @@
-use crate::driver::Stage;
-use clap::{App, Arg, ArgGroup};
-use colored::Colorize;
+use clap::{clap_derive::Parser, ArgGroup, Args, StructOpt};
+// use clap::{App,Arg}
+// use colored::Colorize;
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Parser)]
+#[clap(author, version, about)]
 pub struct Options {
+    /// Input files
+    #[clap(required = true)]
     pub input: Vec<String>,
+
+    /// Output files
+    #[clap(short, long, default_value_t = String::from("./a.out"))]
     pub output: String,
-    pub last_stage: Stage,
-    pub optimization_level: i32,
+
+    #[clap(flatten)]
+    pub last_stage: OptionStage,
+
+    #[clap(flatten)]
+    pub optimization_settings: OptimizationSettings,
+
+    /// Register allocator to use. Normally use briggs
+    #[clap(long="reg-alloc", default_value_t = String::from("simple"), possible_values(&["simple", "briggs"]))]
     pub register_allocator: String,
+}
+
+#[derive(Clone, Debug, Args)]
+#[clap(group(
+    ArgGroup::new("vers")
+        .required(false)
+        .args(& ["obj", "asm", "ppc"])
+))]
+pub struct OptionStage {
+    /// Compiles and assembles code, but does link
+    #[clap(short = 'c')]
+    pub obj: bool,
+
+    /// Compiles code, but does not assemble
+    #[clap(short = 'S')]
+    pub asm: bool,
+
+    /// Only preprocess code
+    #[clap(short = 'E')]
+    pub ppc: bool,
+}
+#[derive(Clone, Debug, Args)]
+pub struct OptimizationSettings {
+    /// Optimization level to use
+    #[clap(short = 'O', default_value_t = 0,possible_values(&["-1", "0", "1", "2", "3"]))]
+    pub optimization_level: i32,
+
+    /// Explicit enable or disable of optimizations
+    #[clap(long = "opt")]
+    pub optimizations: Vec<String>,
 }
 
 /// Gets command line options and input using clap.
 /// Checks for illegal combinations.
 /// Returns an Options struct representing the fully parsed options
 pub fn get() -> Options {
-    let matches = App::new("UTCC - A C compiler")
+    /*let matches = App::new("UTCC - A C compiler")
         .version("0.1")
         .author("Daan O.")
         .about("Compiles a subset A of C where union(A,C)<=>epsilon")
         .arg(
-            Arg::with_name("until-assembled")
-                .short("c")
+            Arg::new("until-assembled")
+                .short('c')
                 .help("Compiles and assembles code, but does link"),
         )
         .arg(
-            Arg::with_name("until-compiled")
-                .short("S")
+            Arg::new("until-compiled")
+                .short('S')
                 .help("Compiles code, but does not assemble"),
         )
         .arg(
-            Arg::with_name("until-preprocessed")
-                .short("E")
+            Arg::new("until-preprocessed")
+                .short('E')
                 .help("Preprocesses code, but does not compile"),
         )
-        .group(ArgGroup::with_name("until-stage").args(&[
+        .group(ArgGroup::new("until-stage").args(&[
             "until-assembled",
             "until-compiled",
             "until-preprocessed",
         ]))
         .arg(
-            Arg::with_name("output")
-                .short("o")
+            Arg::new("output")
+                .short('o')
                 .long("output")
                 .takes_value(true)
                 .value_name("file")
                 .help("The output file to output. Defaults to './a.out'"),
         )
         .arg(
-            Arg::with_name("input")
+            Arg::new("input")
                 .required(true)
-                .multiple(true)
+                .multiple_occurrences(true)
                 .help("Sets the input file(s) to use"),
         )
         .arg(
-            Arg::with_name("register-allocation")
+            Arg::new("register-allocation")
                 .long("reg-alloc")
                 .possible_values(&["simple", "briggs"])
                 .default_value("simple")
@@ -62,9 +105,8 @@ pub fn get() -> Options {
                 .help("Selects the register allocator algorithm used"),
         )
         .arg(
-            Arg::with_name("optimization-level")
-                .short("O")
-                .long("opt")
+            Arg::new("optimization-level")
+                .short('O')
                 .takes_value(true)
                 .possible_values(&["-1", "0", "1", "2", "3"])
                 .default_value("0")
@@ -118,5 +160,6 @@ pub fn get() -> Options {
         last_stage,
         optimization_level,
         register_allocator,
-    }
+    }*/
+    Options::parse()
 }

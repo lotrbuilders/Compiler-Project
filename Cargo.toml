@@ -16,7 +16,7 @@ path = "src/main.rs"
 
 [dependencies]
 bitvec = "~1.0.0" #MIT
-clap = "~2.33.3" #apache 2.0 or MIT
+clap = {version = "~3.0.9", features = ["derive"]}#apache 2.0 or MIT 
 colored = "~2.0.0" #MPL 2.0
 lazy_static = "1.4.0" #apache 2.0 or MIT
 log = "~0.4.14" #apache 2.0 or MIT

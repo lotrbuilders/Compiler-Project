@@ -3,7 +3,7 @@ use std::path::Path;
 use std::process::Command;
 
 use crate::compiler;
-use crate::options::Options;
+use crate::options::{OptionStage, Options};
 
 #[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
 pub enum Stage {
@@ -12,6 +12,20 @@ pub enum Stage {
     Asm,
     Ppc,
     C,
+}
+
+impl From<OptionStage> for Stage {
+    fn from(stage: OptionStage) -> Self {
+        if stage.ppc {
+            Stage::Ppc
+        } else if stage.asm {
+            Stage::Asm
+        } else if stage.obj {
+            Stage::Obj
+        } else {
+            Stage::Exe
+        }
+    }
 }
 
 /// Derive the starting stage from the filename
@@ -50,6 +64,8 @@ fn new_or_final<'a>(
 // - Linking
 pub fn drive(options: Options) -> Result<(), ()> {
     log::info!("driver started");
+    let last_stage = options.last_stage.clone().into();
+    let last_filename = options.output.clone();
     for filename in options.input.clone() {
         let file_stem = Path::new(&filename)
             .file_stem()
@@ -63,8 +79,7 @@ pub fn drive(options: Options) -> Result<(), ()> {
             .collect::<String>();
 
         let begin_stage = filename2stage(&filename);
-        let last_stage = options.last_stage.clone();
-        let last_filename = options.output.clone();
+
         let parent = Path::new(&filename)
             .parent()
             .expect("")
@@ -136,7 +151,7 @@ pub fn drive(options: Options) -> Result<(), ()> {
                 return Err(());
             }
         }
-        if begin_stage >= Stage::Obj && last_stage < Stage::Obj {
+        if last_stage < Stage::Obj {
             // Invoke linker
             let linker_filename = next_filename;
             let result = last_filename.clone();
