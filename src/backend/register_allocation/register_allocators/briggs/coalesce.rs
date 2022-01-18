@@ -53,7 +53,7 @@ impl<R: RegisterInterface> Graph<R> {
                 if self.significant_neighbors(copy, location) < R::REG_COUNT =>
             {
                 let _ = reg;
-                log::trace!("Coalescing {:?}@{}", copy, location);
+
                 self.coalesce_copy(copy, location)
             }
 
@@ -139,7 +139,6 @@ impl<R: RegisterInterface> Graph<R> {
         for (vreg, range) in iter {
             //Issue: some vregs can be coalesced that are not live at this point
             //Solution: find the place where they were coalesced from
-            log::trace!("v:{},l:{},d:{}", vreg, location, destination);
             self.vreg2live[vreg as usize][range.start] = destination;
             self.live_ranges[destination as usize].vregs.push(vreg);
             self.live_ranges[destination as usize].range.push(range);
