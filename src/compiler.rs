@@ -101,7 +101,7 @@ pub fn compile(filename: String, output: String, options: &Options) -> Result<()
 
     log::info!("Evaluation started");
     let (ir_functions, ir_globals, function_names) = evaluate(
-        &ast,
+        &mut ast,
         &global_table,
         &mut *backend,
         struct_table,

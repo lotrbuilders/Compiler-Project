@@ -18,6 +18,15 @@ pub struct Span {
 
 #[allow(dead_code)]
 impl Span {
+    pub fn empty() -> Self {
+        Span {
+            file_index: 0,
+            line: 0,
+            column: 0,
+            offset: 0,
+            length: 0,
+        }
+    }
     pub fn new(file_index: u32, line: u32, column: u32, offset: u32, length: u32) -> Self {
         Span {
             file_index,

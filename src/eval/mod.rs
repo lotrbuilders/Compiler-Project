@@ -14,6 +14,7 @@ pub mod evaluation_context;
 mod expression_eval;
 mod global_eval;
 mod jump_eval;
+mod optimize;
 mod statement_eval;
 
 // This module is used to evaluate the AST into an IR
@@ -27,12 +28,14 @@ trait Evaluate {
 
 // The public function used to evaluate the ast
 pub fn evaluate(
-    ast: &TranslationUnit,
+    ast: &mut TranslationUnit,
     map: &HashMap<String, Symbol>,
     backend: &mut dyn Backend,
     struct_table: StructTable,
     optimization_settings: &OptimizationSettings,
 ) -> (Vec<IRFunction>, Vec<IRGlobal>, HashSet<String>) {
+    self::optimize::optimize(ast, backend, &struct_table, optimization_settings);
+
     let mut functions = Vec::<IRFunction>::new();
     let mut function_names = HashSet::<String>::new();
     for global in &ast.global_declarations {

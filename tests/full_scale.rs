@@ -26,7 +26,7 @@ fn get_options(path: &PathBuf) -> utcc::options::Options {
             obj: false,
         },
         optimization_settings: OptimizationSettings {
-            optimization_level: 0,
+            optimization_level: 2,
             optimizations: Vec::new(),
         },
         register_allocator: String::from("briggs"),
@@ -68,16 +68,12 @@ where
     Ok(fail_count)
 }
 
-fn test_stage<F, G>(
+fn test_stage(
     dir: PathBuf,
     failures: &mut Vec<String>,
-    valid: &F,
-    invalid: &G,
-) -> io::Result<i32>
-where
-    F: Fn(PathBuf, &mut Vec<String>, &mut i32),
-    G: Fn(PathBuf, &mut Vec<String>, &mut i32),
-{
+    valid: &dyn Fn(PathBuf, &mut Vec<String>, &mut i32),
+    invalid: &dyn Fn(PathBuf, &mut Vec<String>, &mut i32),
+) -> io::Result<i32> {
     let mut valid_dir = dir.clone();
     let mut invalid_dir = dir.clone();
     valid_dir.push("valid/");
@@ -87,10 +83,11 @@ where
     Ok(fail_count)
 }
 
-fn test_valid<F>(dir: &Path, failures: &mut Vec<String>, test: &F) -> io::Result<i32>
-where
-    F: Fn(PathBuf, &mut Vec<String>, &mut i32),
-{
+fn test_valid(
+    dir: &Path,
+    failures: &mut Vec<String>,
+    test: &dyn Fn(PathBuf, &mut Vec<String>, &mut i32),
+) -> io::Result<i32> {
     let mut fail_count = 0;
     if !dir.is_dir() {
         return Ok(0);
@@ -106,10 +103,11 @@ where
     Ok(fail_count)
 }
 
-fn test_invalid<F>(dir: &Path, failures: &mut Vec<String>, test: &F) -> io::Result<i32>
-where
-    F: Fn(PathBuf, &mut Vec<String>, &mut i32),
-{
+fn test_invalid(
+    dir: &Path,
+    failures: &mut Vec<String>,
+    test: &dyn Fn(PathBuf, &mut Vec<String>, &mut i32),
+) -> io::Result<i32> {
     let mut fail_count = 0;
     if !dir.is_dir() {
         return Ok(0);
