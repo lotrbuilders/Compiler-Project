@@ -100,10 +100,25 @@ mcon64:  m mem64                    "{m}"
 %ireg:  Gt s32s64 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetg {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"       {3}
 %ireg:  Ge s32s64 (a %ireg , b %ireg)  "cmp {a}, {b}\n\tsetge {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"      {3}
 
-%ireg:  Lt p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetb {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"       {3}
-%ireg:  Le p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetbe {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"      {3}
-%ireg:  Gt p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tseta {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"       {3}
-%ireg:  Ge p (a %ireg , b %ireg)    "cmp {a:.64}, {a:.64}\n\tsetae {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"      {3}
+%ireg:  Lt p (a %ireg , b %ireg)    "cmp {a:.64}, {b:.64}\n\tsetb {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"       {3}
+%ireg:  Le p (a %ireg , b %ireg)    "cmp {a:.64}, {b:.64}\n\tsetbe {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"      {3}
+%ireg:  Gt p (a %ireg , b %ireg)    "cmp {a:.64}, {b:.64}\n\tseta {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"       {3}
+%ireg:  Ge p (a %ireg , b %ireg)    "cmp {a:.64}, {b:.64}\n\tsetae {res:.8}\n\tmovsx {res},{res:.8}; {res} = {a} == {b}\n"      {3}
+
+:  Jcc(Eq pi64i32(a %ireg , b %ireg),#l)      "cmp {a}, {b}\n\tje  .L{l}\n"   {1}
+:  Jcc(Ne pi64i32(a %ireg , b %ireg),#l)      "cmp {a}, {b}\n\tjne .L{l}\n"   {1}
+:  Jcc(Eq pi64i32(a %ireg , Imm(#_i)),#l)     "test {a}, {a}\n\tjz  .L{l}\n"  {self.range(self.get_right_index(self.get_left_index(index)),0,0)+1}
+:  Jcc(Ne pi64i32(a %ireg , Imm(#_i)),#l)     "test {a}, {a}\n\tjnz .L{l}\n"  {self.range(self.get_right_index(self.get_left_index(index)),0,0)+1}
+
+:  Jcc(Lt s32s64 (a %ireg , b %ireg),#l)  "cmp {a}, {b}\n\tjl  .L{l}\n"       {1}
+:  Jcc(Le s32s64 (a %ireg , b %ireg),#l)  "cmp {a}, {b}\n\tjle .L{l}\n"       {1}
+:  Jcc(Gt s32s64 (a %ireg , b %ireg),#l)  "cmp {a}, {b}\n\tjg .L{l}\n"       {1}
+:  Jcc(Ge s32s64 (a %ireg , b %ireg),#l)  "cmp {a}, {b}\n\tjge .L{l}\n"       {1}
+
+:  Jcc(Lt p (a %ireg , b %ireg),#l)    "cmp {a:.64}, {b:.64}\n\tjb  .L{l}\n"      {1}
+:  Jcc(Le p (a %ireg , b %ireg),#l)    "cmp {a:.64}, {b:.64}\n\tjbe .L{l}\n"      {1}
+:  Jcc(Gt p (a %ireg , b %ireg),#l)    "cmp {a:.64}, {b:.64}\n\tja  .L{l}\n"      {1}
+:  Jcc(Ge p (a %ireg , b %ireg),#l)    "cmp {a:.64}, {b:.64}\n\tjae .L{l}\n"      {1}
 
 %ireg:  Cvp (_r %ireg)              #"#extend/truncuate" {2}
 %ireg:  Cvs s64s32s16s8(_r %ireg)   #"#extend/truncuate" {2}

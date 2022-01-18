@@ -196,7 +196,7 @@ impl RegisterBackend for BackendAMD64 {
 
     fn simple_get_spot(&self, vreg: u32) -> u32 {
         /*self.stack_size.abs() as u32 + 8 +*/
-        8 * vreg
+        8 + 8 * vreg
     }
 
     fn simple_adjust_stack_size(&mut self, vreg: i32) {
