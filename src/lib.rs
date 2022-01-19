@@ -6,6 +6,7 @@ mod eval;
 pub mod file_table;
 pub mod lexer;
 pub mod logger;
+mod optimization;
 pub mod options;
 pub mod parser;
 pub mod semantic_analysis;

@@ -7,6 +7,7 @@ use colored::Colorize;
 use crate::backend;
 use crate::eval::evaluate;
 use crate::lexer::Lexer;
+use crate::optimization;
 use crate::options::Options;
 use crate::parser::Parser;
 use crate::semantic_analysis::SemanticAnalyzer;
@@ -100,13 +101,16 @@ pub fn compile(filename: String, output: String, options: &Options) -> Result<()
     }
 
     log::info!("Evaluation started");
-    let (ir_functions, ir_globals, function_names) = evaluate(
+    let (mut ir_functions, ir_globals, function_names) = evaluate(
         &mut ast,
         &global_table,
         &mut *backend,
         struct_table,
         &options.optimization_settings,
     );
+
+    optimization::optimize(&mut ir_functions, &options.optimization_settings);
+
     for ir in &ir_functions {
         log::debug!("Evaluation result:\n{}", ir);
     }
