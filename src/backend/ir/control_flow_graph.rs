@@ -3,11 +3,13 @@ use std::{
     ops::{Index, IndexMut, Range},
 };
 
+use smallvec::SmallVec;
+
 use super::{ir_phi::IRPhi, IRInstruction};
 
 pub struct ControlFlowNode {
-    pub predecessors: Vec<u32>,
-    pub successors: Vec<u32>,
+    pub predecessors: SmallVec<[u32; 4]>,
+    pub successors: SmallVec<[u32; 4]>,
     pub instructions: Range<usize>,
     pub label: u32,
 }
@@ -25,8 +27,8 @@ impl Display for ControlFlowNode {
 impl ControlFlowNode {
     pub fn new(range: Range<usize>, label: u32) -> ControlFlowNode {
         ControlFlowNode {
-            predecessors: Vec::new(),
-            successors: Vec::new(),
+            predecessors: SmallVec::new(),
+            successors: SmallVec::new(),
             instructions: range,
             label,
         }
@@ -178,3 +180,24 @@ impl<'a> ControlFlowGraph {
         self.graph.len()
     }
 }
+
+/*
+pub struct CFGRevPostIter<'a> {
+    cfg: &'a ControlFlowGraph,
+    visited: HashSet<u32>,
+    stack: Vec<u32>,
+}
+
+impl<'a> Iterator for CFGRevPostIter<'a> {
+    type Item = ControlFlowNode;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(node) = self.stack.pop() {
+            if !self.visited.contains(&node) {
+                self.visited.insert(node);
+
+            }
+        }
+        None
+    }
+}*/
