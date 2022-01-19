@@ -2,11 +2,9 @@ mod promotable;
 
 use promotable::find_promotable_variables;
 
-use std::collections::HashSet;
-
 use crate::backend::ir::*;
 
-use super::analysis::{self, ControlFlowGraph};
+use super::analysis::{self, live_variable, ControlFlowGraph};
 use analysis::{find_vreg_use_count, DominatorTree};
 
 pub fn mem2reg(function: &mut IRFunction) {
@@ -17,4 +15,5 @@ pub fn mem2reg(function: &mut IRFunction) {
     let candidates = &function.variables;
     let promotions = find_promotable_variables(&function.instructions, &vreg_use_count, candidates);
     log::info!("Promotable variables:{:?}", promotions);
+    let live_variables = live_variable(&cfg, function, Some(&promotions));
 }
