@@ -109,8 +109,6 @@ pub fn compile(filename: String, output: String, options: &Options) -> Result<()
         &options.optimization_settings,
     );
 
-    optimization::optimize(&mut ir_functions, &options.optimization_settings);
-
     for ir in &ir_functions {
         log::debug!("Evaluation result:\n{}", ir);
     }
@@ -120,6 +118,9 @@ pub fn compile(filename: String, output: String, options: &Options) -> Result<()
     for name in &function_names {
         log::debug!("Function: {}", name);
     }
+
+    log::info!("Started optimizations");
+    optimization::optimize(&mut ir_functions, &options.optimization_settings);
 
     log::info!("Started the backend");
     log::info!("Using backend amd64");
