@@ -1,29 +1,33 @@
+use bitvec::prelude::BitVec;
 use std::{
     collections::{HashSet, VecDeque},
+    fmt::Debug,
     iter::repeat,
 };
 
 use crate::backend::ir::*;
 
 use super::ControlFlowGraph;
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct LiveVariableAnalysis {
-    live_in: Vec<HashSet<u32>>,
-    live_out: Vec<HashSet<u32>>,
-    gen: Vec<HashSet<u32>>,
-    used: Vec<HashSet<u32>>,
+    live_in: Vec<BitVec>,
+    live_out: Vec<BitVec>,
+    gen: Vec<BitVec>,
+    used: Vec<BitVec>,
 }
+
 pub fn live_variable(
     cfg: &ControlFlowGraph,
     function: &IRFunction,
     variables: Option<&HashSet<u32>>,
 ) -> LiveVariableAnalysis {
     let len = cfg.len();
+    let var_count = function.variables.len();
     let mut analysis = LiveVariableAnalysis {
-        live_in: vec![HashSet::new(); len],
-        live_out: vec![HashSet::new(); len],
-        gen: vec![HashSet::new(); len],
-        used: vec![HashSet::new(); len],
+        live_in: vec![BitVec::repeat(false, var_count); len],
+        live_out: vec![BitVec::repeat(false, var_count); len],
+        gen: vec![BitVec::repeat(false, var_count); len],
+        used: vec![BitVec::repeat(false, var_count); len],
     };
 
     find_local_use(
@@ -48,9 +52,10 @@ fn work_list(analysis: &mut LiveVariableAnalysis, cfg: &ControlFlowGraph) {
         let old_in = analysis.live_in[n].clone();
 
         for &succ in &cfg[node].successors {
-            analysis.live_out[n] = &analysis.live_out[n] | &analysis.live_in[succ as usize];
+            analysis.live_out[n] |= &analysis.live_in[succ as usize];
         }
-        analysis.live_in[n] = &analysis.used[n] | &(&analysis.live_out[n] - &analysis.gen[n]);
+        analysis.live_in[n] =
+            (!analysis.gen[n].clone() & &analysis.live_out[n]) | &analysis.used[n];
         if old_in != analysis.live_in[n] {
             for &pred in &cfg[node].predecessors {
                 work_list.push_front(pred);
@@ -80,14 +85,32 @@ fn find_local_use(
         let destination = instructions.get(index + 1);
         match destination {
             Some(IRInstruction::Load(..)) => {
-                if !analysis.gen[block].contains(&variable) {
-                    analysis.used[block].insert(variable);
+                if !analysis.gen[block][variable as usize] {
+                    analysis.used[block].set(variable as usize, true);
                 }
             }
             Some(IRInstruction::Store(..)) => {
-                analysis.gen[block].insert(variable);
+                analysis.gen[block].set(variable as usize, true);
             }
             _ => (),
         }
+    }
+}
+
+impl Debug for LiveVariableAnalysis {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let len = self.live_in.len();
+        for i in 0..len {
+            writeln!(
+                f,
+                "{} => in:{:?} out:{:?} gen:{:?} use:{:?}",
+                i,
+                self.live_in[i].iter_ones().collect::<Vec<_>>(),
+                self.live_out[i].iter_ones().collect::<Vec<_>>(),
+                self.gen[i].iter_ones().collect::<Vec<_>>(),
+                self.used[i].iter_ones().collect::<Vec<_>>(),
+            )?;
+        }
+        Ok(())
     }
 }
