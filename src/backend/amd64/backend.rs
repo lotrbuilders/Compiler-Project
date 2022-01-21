@@ -135,7 +135,7 @@ impl RegisterBackend for BackendAMD64 {
                 for target in &phi.targets {
                     creation[*target as usize] = i as u32;
                 }
-                for source in phi.sources.iter().flat_map(|src| src.iter()) {
+                for (_, source) in phi.sources.iter().flat_map(|src| src.iter()) {
                     let vreg = *source as usize;
                     uses[vreg].push(i as u32);
                     assert_eq!(last_use[vreg], 0);

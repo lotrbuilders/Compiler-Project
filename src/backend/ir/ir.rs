@@ -337,7 +337,12 @@ impl IRInstruction {
         use std::iter::once;
         use IRInstruction::*;
         match self {
-            Label(Some(phi), _) => phi.sources.iter().flat_map(|v| v.iter()).cloned().collect(),
+            Label(Some(phi), _) => phi
+                .sources
+                .iter()
+                .flat_map(|v| v.iter())
+                .map(|&(_l, v)| v)
+                .collect(),
 
             Call(_, _, _, arg) => arg.arguments.iter().filter_map(|&arg| arg).collect(),
 

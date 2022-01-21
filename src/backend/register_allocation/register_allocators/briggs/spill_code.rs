@@ -105,8 +105,9 @@ impl SpillCode {
         for block in cfg {
             if let Some(phi) = block.phi(instructions) {
                 for (i, &result) in phi.targets.iter().enumerate() {
-                    for (sources, &location) in phi.sources.iter().zip(phi.locations.iter()) {
-                        let source = sources[i];
+                    for sources in phi.sources.iter() {
+                        let (location, source) = sources[i];
+
                         let loc = cfg.graph[location as usize].last() as usize;
                         if spills.contains(&source) {
                             self.code[loc].push(MemoryCopy::Reload(source))

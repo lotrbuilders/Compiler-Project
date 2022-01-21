@@ -109,7 +109,7 @@ impl Display for IRInstruction {
                 write!(f, "\t%{} = {} {} {} %{}", to_r, to_s, ins, from_s, from_r)
             }
             PhiSrc(label) => write!(f, "\tphisrc L{}:", label),
-            Phi(phi) => write!(f, "\t{}", phi),
+            Phi(phi) => write!(f, "{}", phi),
 
             Ret(size, reg) => write!(f, "\t{} {} %{}", ins, size, reg),
         }
@@ -166,11 +166,14 @@ impl Display for IRSize {
 
 impl Display for IRPhi {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?} = phi  {:?} [ ", self.targets, self.size)?;
-        for (label, registers) in self.locations.iter().zip(self.sources.iter()) {
-            write!(f, "L{} {:?} ", label, registers)?;
+        for i in 0..self.targets.len() {
+            write!(f, "\t{} = phi {} [", self.targets[i], self.size[i])?;
+            for (label, register) in self.sources[i].iter() {
+                write!(f, "L{} {} ", label, register)?;
+            }
+            write!(f, " ]")?;
         }
-        write!(f, " ]")?;
+
         Ok(())
     }
 }

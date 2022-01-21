@@ -55,15 +55,17 @@ impl<R: RegisterInterface, B: RegisterBackend<RegisterType = R>> RegisterAllocat
             if let IRInstruction::Label(Some(phi), _lbl) =
                 backend.get_instructions()[instruction].clone()
             {
-                for (&block, source) in phi.locations.iter().zip(phi.sources.iter()) {
-                    let register_index: usize = R::REG_DEFAULT.into();
+                for (&target, sources) in phi.targets.iter().zip(phi.sources.iter()) {
+                    let register_index: usize = R::REG_DEFAULT.into(); //This is likely not safe
                     used_registers[register_index] = true;
-                    let last = cfg[block as usize].last();
-                    let index = last;
-                    let last = &mut assignments.reg_relocations[last as usize];
-                    for (&vreg, &target) in source.iter().zip(phi.targets.iter()) {
+
+                    for &(block, source) in sources {
+                        let last = cfg[block as usize].last();
+                        let index = last;
+                        let last = &mut assignments.reg_relocations[last as usize];
+
                         let target = backend.simple_get_spot(target);
-                        let vreg = backend.simple_get_spot(vreg);
+                        let vreg = backend.simple_get_spot(source);
                         log::trace!("Insert memmove {}<-{} at {}", vreg, target, index);
                         last.push(RegisterRelocation::MemMove(vreg, target, R::REG_DEFAULT));
                         last.sort_unstable_by_key(move_cmp);

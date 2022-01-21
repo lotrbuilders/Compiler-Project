@@ -316,15 +316,18 @@ fn find_live_in<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
             .iter()
             .filter_map(|s| cfg[*s as usize].phi(instructions))
         {
-            for (index, _) in phi
+            /*for (index, _) in phi
                 .locations
                 .iter()
                 .enumerate()
                 .filter(|(_, &label)| label == block.label)
-            {
-                let last_instruction = block.instructions.end - 1;
-                let location = last_instruction as u32;
-                for &target in &phi.sources[index] {
+            {*/
+            for (index, _) in phi.targets.iter().enumerate() {
+                for &(_location, target) in &phi.sources[index] {
+                    // Might have been changed wrong during phi change
+                    let last_instruction = block.instructions.end - 1;
+                    let location = last_instruction as u32;
+
                     let target = numbers.translate(target, location) as usize;
                     if !live.get(target).unwrap() {
                         last_used[target].push(last_instruction as u32);
@@ -332,6 +335,8 @@ fn find_live_in<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
                     }
                 }
             }
+
+            //}
         }
 
         // live |= block.operands.input
@@ -365,8 +370,8 @@ fn find_live_in<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
 
         // live -= block.phi.output
         if let Some(phi) = block.phi(instructions) {
-            for &target in &phi.targets {
-                for &location in &phi.locations {
+            for (i, &target) in phi.targets.iter().enumerate() {
+                for &(location, _source) in &phi.sources[i] {
                     let location = cfg[location].last();
                     let target = numbers.translate(target, location) as usize;
                     live.set(target, false);

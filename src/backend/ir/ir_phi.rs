@@ -1,21 +1,23 @@
+use smallvec::{smallvec, SmallVec};
+
 use super::{IRLabel, IRReg, IRSize};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct IRPhi {
     pub targets: Vec<IRReg>,
     pub size: Vec<IRSize>,
-    pub locations: Vec<IRLabel>,
-    pub sources: Vec<Vec<IRReg>>,
+    //pub locations: Vec<IRLabel>,
+    pub sources: Vec<SmallVec<[(IRLabel, IRReg); 2]>>,
 }
 
 impl IRPhi {
     pub fn empty(locations: Vec<IRLabel>) -> Box<IRPhi> {
         let len = locations.len();
+        let _ = locations;
         Box::new(IRPhi {
             targets: Vec::new(),
             size: Vec::new(),
-            locations,
-            sources: vec![Vec::new(); len],
+            sources: vec![SmallVec::new(); len],
         })
     }
     pub fn ternary(
@@ -29,8 +31,7 @@ impl IRPhi {
         Box::new(IRPhi {
             targets: vec![result],
             size: vec![size],
-            locations: vec![l1, l2],
-            sources: vec![vec![v1], vec![v2]],
+            sources: vec![smallvec![(l1, v1)], smallvec![(l2, v2)]],
         })
     }
 }

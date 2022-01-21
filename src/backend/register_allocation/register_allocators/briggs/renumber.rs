@@ -216,8 +216,8 @@ pub(super) fn renumber<R: RegisterInterface, B: RegisterBackend<RegisterType = R
                 }
 
                 //let sources = &phi.sources[i];
-                for (sources, &location) in phi.sources.iter().zip(phi.locations.iter()) {
-                    let source = sources[i];
+                for sources in phi.sources.iter() {
+                    let (location, source) = sources[i];
                     let loc = cfg.graph[location as usize].last() as usize;
                     copies[loc].push(VregCopy::PhiCopy {
                         from: source,
