@@ -1,4 +1,4 @@
-use smallvec::SmallVec;
+use smallvec::{smallvec, SmallVec};
 
 use super::ir_phi::IRPhi;
 
@@ -77,6 +77,8 @@ pub enum IRInstruction {
     Phi(Box<IRPhi>),
     PhiSrc(IRLabel),
 
+    Nop,
+
     Ret(IRSize, IRReg),
 }
 
@@ -121,6 +123,8 @@ pub enum IRType {
 
     Phi,
     PhiSrc,
+
+    Nop,
 
     Ret,
 }
@@ -195,6 +199,8 @@ impl IRInstruction {
             &Self::Phi(..) => IRType::Phi,
             &Self::PhiSrc(..) => IRType::PhiSrc,
 
+            &Self::Nop => IRType::Nop,
+
             &Self::Ret(..) => IRType::Ret,
         }
     }
@@ -229,6 +235,35 @@ impl IRInstruction {
         }
     }
 
+    pub fn get_left_mut<'a>(&'a mut self) -> Option<&'a mut IRReg> {
+        match self {
+            Self::Ret(_, left)
+            | Self::Arg(_, left, _)
+            | Self::Load(_, _, left)
+            | Self::Store(_, left, _)
+            | Self::Add(_, _, left, _)
+            | Self::Sub(_, _, left, _)
+            | Self::Mul(_, _, left, _)
+            | Self::Div(_, _, left, _)
+            | Self::Xor(_, _, left, _)
+            | Self::Or(_, _, left, _)
+            | Self::And(_, _, left, _)
+            | Self::Eq(_, _, left, _)
+            | Self::Ne(_, _, left, _)
+            | Self::Lt(_, _, left, _)
+            | Self::Le(_, _, left, _)
+            | Self::Gt(_, _, left, _)
+            | Self::Ge(_, _, left, _)
+            | Self::Jcc(_, left, _)
+            | Self::Jnc(_, left, _)
+            | Self::Cvp(.., left)
+            | Self::Cvs(.., left)
+            | Self::Cvu(.., left)
+            | Self::CallV(_, _, left, _) => Some(left),
+            _ => None,
+        }
+    }
+
     // Returns the right vregister if it exists
     pub fn get_right(&self) -> Option<IRReg> {
         match self {
@@ -246,6 +281,26 @@ impl IRInstruction {
             | &Self::Le(.., right)
             | &Self::Gt(.., right)
             | &Self::Ge(.., right) => Some(right),
+            _ => None,
+        }
+    }
+
+    pub fn get_right_mut<'a>(&'a mut self) -> Option<&'a mut IRReg> {
+        match self {
+            Self::Store(.., right)
+            | Self::Add(.., right)
+            | Self::Sub(.., right)
+            | Self::Mul(.., right)
+            | Self::Div(.., right)
+            | Self::Xor(.., right)
+            | Self::Or(.., right)
+            | Self::And(.., right)
+            | Self::Eq(.., right)
+            | Self::Ne(.., right)
+            | Self::Lt(.., right)
+            | Self::Le(.., right)
+            | Self::Gt(.., right)
+            | Self::Ge(.., right) => Some(right),
             _ => None,
         }
     }
@@ -312,7 +367,9 @@ impl IRInstruction {
                 *to
             }
 
-            Self::Jmp(_) | Self::Label(..) | Self::PhiSrc(..) | Self::Phi(..) => IRSize::P,
+            Self::Nop | Self::Jmp(_) | Self::Label(..) | Self::PhiSrc(..) | Self::Phi(..) => {
+                IRSize::P
+            }
         }
     }
 
@@ -358,6 +415,58 @@ impl IRInstruction {
                 .iter()
                 .filter_map(|&v| v)
                 .collect(),
+        }
+    }
+
+    pub fn get_mut_used<'a>(&'a mut self) -> SmallVec<[&'a mut u32; 4]> {
+        use std::iter::once;
+        use IRInstruction::*;
+        match self {
+            Label(Some(phi), _) => phi
+                .sources
+                .iter_mut()
+                .flat_map(|v| v.iter_mut())
+                .map(|(_l, v)| v)
+                .collect(),
+
+            Call(_, _, _, arg) => arg
+                .arguments
+                .iter_mut()
+                .filter_map(|arg| arg.as_mut())
+                .collect(),
+
+            CallV(_, _, vreg, arg) => arg
+                .arguments
+                .iter_mut()
+                .filter_map(|arg| arg.as_mut())
+                .chain(once(vreg))
+                .collect(),
+
+            _ => match self {
+                Self::Load(_, right, left)
+                | Self::Store(_, left, right)
+                | Self::Add(_, _, left, right)
+                | Self::Sub(_, _, left, right)
+                | Self::Mul(_, _, left, right)
+                | Self::Div(_, _, left, right)
+                | Self::Xor(_, _, left, right)
+                | Self::Or(_, _, left, right)
+                | Self::And(_, _, left, right)
+                | Self::Eq(_, _, left, right)
+                | Self::Ne(_, _, left, right)
+                | Self::Lt(_, _, left, right)
+                | Self::Le(_, _, left, right)
+                | Self::Gt(_, _, left, right)
+                | Self::Ge(_, _, left, right) => smallvec![left, right],
+                Self::Ret(_, left)
+                | Self::Arg(_, left, _)
+                | Self::Jcc(_, left, _)
+                | Self::Jnc(_, left, _)
+                | Self::Cvp(.., left)
+                | Self::Cvs(.., left)
+                | Self::Cvu(.., left) => smallvec![left],
+                _ => SmallVec::new(),
+            },
         }
     }
 }

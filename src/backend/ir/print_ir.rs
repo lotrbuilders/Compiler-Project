@@ -100,7 +100,7 @@ impl Display for IRInstruction {
             CallV(size, result, addr, arguments) => {
                 write!(f, "\t%{} = {} call %{}({})", result, size, addr, arguments)
             }
-            Label(Some(phi), label) => write!(f, "L{}:\t{}", label, phi),
+            Label(Some(phi), label) => write!(f, "L{}:\n{}", label, phi),
             Label(None, label) => write!(f, "L{}:", label),
 
             Cvs(to_s, to_r, from_s, from_r)
@@ -110,6 +110,8 @@ impl Display for IRInstruction {
             }
             PhiSrc(label) => write!(f, "\tphisrc L{}:", label),
             Phi(phi) => write!(f, "{}", phi),
+
+            Nop => write!(f, "\tnop"),
 
             Ret(size, reg) => write!(f, "\t{} {} %{}", ins, size, reg),
         }
@@ -143,6 +145,7 @@ impl Display for IRType {
             Cvp => write!(f, "cvp"),
             Cvs => write!(f, "cvs"),
             Cvu => write!(f, "cvu"),
+            Nop => write!(f, "nop"),
 
             _ => unreachable!(),
         }
@@ -167,9 +170,9 @@ impl Display for IRSize {
 impl Display for IRPhi {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for i in 0..self.targets.len() {
-            write!(f, "\t{} = phi {} [", self.targets[i], self.size[i])?;
+            write!(f, "\t%{} = phi {} [", self.targets[i], self.size[i])?;
             for (label, register) in self.sources[i].iter() {
-                write!(f, "L{} {} ", label, register)?;
+                write!(f, "L{} %{} ", label, register)?;
             }
             write!(f, " ]")?;
         }
