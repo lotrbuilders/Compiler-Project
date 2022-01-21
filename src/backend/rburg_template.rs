@@ -202,8 +202,6 @@ macro_rules! generate {
             assembly
         }
 
-
-
         // Generates assembly for globals
         // Should be generated automatically
         fn generate_globals(&mut self, globals: &Vec<IRGlobal>) -> String {
