@@ -10,10 +10,10 @@ use crate::backend::ir::*;
 use super::ControlFlowGraph;
 #[derive(Clone)]
 pub struct LiveVariableAnalysis {
-    live_in: Vec<BitVec>,
-    live_out: Vec<BitVec>,
-    gen: Vec<BitVec>,
-    used: Vec<BitVec>,
+    pub live_in: Vec<BitVec>,
+    pub live_out: Vec<BitVec>,
+    pub gen: Vec<BitVec>,
+    pub used: Vec<BitVec>,
 }
 
 pub fn live_variable(

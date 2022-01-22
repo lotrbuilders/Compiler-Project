@@ -1,6 +1,7 @@
 use super::ControlFlowGraph;
+use bitvec::prelude::BitVec;
 use smallvec::SmallVec;
-use std::collections::HashSet;
+use std::collections::{HashSet, VecDeque};
 
 pub struct DominatorTree {
     pub immediate_dominator: Vec<u32>,
@@ -80,7 +81,7 @@ impl DominatorTree {
         log::debug!("untranslated dominator: {:?}", doms);
         let mut idom = vec![0; cfg.len()];
         for (i, &b) in post_order.iter().enumerate() {
-            idom[b as usize] = post_order[doms[i].unwrap() as usize];
+            idom[b as usize] = post_order[doms[i].unwrap_or(i as u32) as usize];
         }
         log::debug!("translated dominator:{:?}", idom);
         idom
@@ -105,8 +106,10 @@ impl DominatorTree {
         for (i, &dom) in idom.iter().enumerate() {
             doms[dom as usize].push(i as u32);
         }
-        for i in 1..doms.len() {
-            doms[i].push(i as u32);
+        for i in 0..doms.len() {
+            if !doms[i].contains(&(i as u32)) {
+                doms[i].push(i as u32);
+            }
         }
         doms
     }
@@ -119,9 +122,14 @@ impl DominatorTree {
         let mut df = vec![SmallVec::new(); cfg.len()];
 
         for block in cfg.iter().filter(|&b| b.predecessors.len() > 1) {
+            log::trace!("b{}", block.label);
+            let b = block.label as usize;
+            log::trace!("i{}", idom[b]);
             for &pred in &block.predecessors {
+                log::trace!("p{}", pred);
                 let mut temp = pred;
-                while temp != idom[pred as usize] {
+                while temp != idom[b] && temp != idom[temp as usize] {
+                    log::trace!("t{}", temp);
                     df[temp as usize].push(block.label);
                     temp = idom[temp as usize];
                 }
@@ -130,6 +138,35 @@ impl DominatorTree {
 
         df
     }
+
+    pub fn iterated_dominance_frontier(
+        cfg: &ControlFlowGraph,
+        immediate_dominator: &[u32],
+    ) -> Vec<BitVec> {
+        let idom = immediate_dominator;
+        let mut idf = vec![BitVec::repeat(false, cfg.len()); cfg.len()];
+
+        let mut work_list: VecDeque<_> = (0..cfg.len() as u32)
+            .filter(|&b| cfg[b].predecessors.len() > 1)
+            .map(|b| (b, b))
+            .collect();
+
+        while let Some((b, a)) = work_list.pop_front() {
+            let block = &cfg[a];
+            let b = b as usize;
+            for &pred in &block.predecessors {
+                let mut temp = pred;
+                while temp != idom[b] && temp != idom[temp as usize] {
+                    if !idf[temp as usize].replace(b, true) {
+                        work_list.push_back((b as u32, temp as u32));
+                    }
+                    temp = idom[temp as usize];
+                }
+            }
+        }
+
+        idf
+    }
 }
 
 impl<'a> ControlFlowGraph {
@@ -137,7 +174,10 @@ impl<'a> ControlFlowGraph {
         let mut visited = HashSet::new();
         let mut list = Vec::with_capacity(self.len());
 
-        self.reverse_post_order(&mut list, &mut visited, 0);
+        for n in self.iter().filter(|&b| b.predecessors.is_empty()) {
+            self.reverse_post_order(&mut list, &mut visited, n.label);
+        }
+
         list
     }
 
