@@ -23,7 +23,7 @@ rburg::rburg_main! {
     }
     instructions:
 :       Nop(#_l)                        ""
-:       Ret pi64i32i16i8v(_a %eax)      "return"
+:       Ret pi64i32i16i8v(_a %eax)      #"return"
 :       Store i8(r %ireg, a %ireg)      "\tmov [{a:.64}],{r:.8}\n"
 :       Store i8(r %ireg, a adr)        "\tmov [{a}],{r:.8}\n"
 :       Store i16(r %ireg, a %ireg)     "\tmov [{a:.64}],{r:.16}\n"
