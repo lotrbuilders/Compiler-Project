@@ -174,7 +174,7 @@ impl Display for IRPhi {
             for (label, register) in self.sources[i].iter() {
                 write!(f, "L{} %{} ", label, register)?;
             }
-            write!(f, " ]")?;
+            write!(f, " ]\n")?;
         }
 
         Ok(())

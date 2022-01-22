@@ -31,7 +31,7 @@ impl IRPhi {
         Box::new(IRPhi {
             targets: vec![result],
             size: vec![size],
-            sources: vec![smallvec![(l1, v1)], smallvec![(l2, v2)]],
+            sources: vec![smallvec![(l1, v1), (l2, v2)]],
         })
     }
 }
