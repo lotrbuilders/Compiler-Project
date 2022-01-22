@@ -30,10 +30,10 @@ macro_rules! reduce_instruction  {
             let child_non_terminals: Vec<usize> =
                 self.get_child_non_terminals(instruction, rule_number);
             let kids: Vec<u32> = self.get_kids(instruction, rule_number);
+            self.rules[instruction as usize] = rule_number;
             for i in 0..kids.len() {
                 self.reduce_instruction(kids[i], child_non_terminals[i]);
             }
-            self.rules[instruction as usize] = rule_number;
         }
     };
 }
