@@ -19,21 +19,25 @@ macro_rules! get_rule {
 macro_rules! reduce_instruction  {
     {} => {
         fn reduce_instruction(&mut self, instruction: u32, non_terminal: usize) -> () {
+            log::info!("intermidiate rules {}: {:?}",instruction, self.rules);
             if self.rules[instruction as usize] != 0xffff {
                 log::trace!("{} already reduced correctly", instruction);
                 return ();
             }
 
             let rule_number = self.get_rule(instruction, non_terminal);
+
             self.reduce_terminals(instruction, rule_number);
+            self.rules[instruction as usize] = rule_number;
 
             let child_non_terminals: Vec<usize> =
                 self.get_child_non_terminals(instruction, rule_number);
             let kids: Vec<u32> = self.get_kids(instruction, rule_number);
-            self.rules[instruction as usize] = rule_number;
+
             for i in 0..kids.len() {
                 self.reduce_instruction(kids[i], child_non_terminals[i]);
             }
+            self.rules[instruction as usize] = rule_number;
         }
     };
 }
