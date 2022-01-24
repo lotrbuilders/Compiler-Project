@@ -82,6 +82,7 @@ impl ExternalDeclaration {
         //let mut variable_location; //= Vec::new();
         for arg in 0..arguments.len() {
             let variable = IRVariable {
+                number: arg as u32,
                 size: ir_arguments[arg].clone(),
                 count: 1,
             };

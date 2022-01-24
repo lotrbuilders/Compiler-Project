@@ -3,7 +3,7 @@ use crate::utility::padding;
 use super::ir::*;
 use super::register_allocation::RegisterInterface;
 use smallvec::SmallVec;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 mod backend;
 mod emit;
@@ -194,45 +194,53 @@ impl BackendAMD64 {
         &self,
         variable_types: &Vec<IRVariable>,
         arguments: &IRArguments,
-    ) -> (Vec<i32>, i32) {
+    ) -> (HashMap<u32, i32>, i32) {
         let mut arg_offset = 8;
         let mut offset = 0;
-        let mut result = Vec::new();
+        let mut result = HashMap::new();
         let callee_saved_registers = self.get_callee_saved_registers();
         let saved_offset = -8 * callee_saved_registers.len() as i32;
 
+        log::trace!("{:?}", arguments.arguments);
+
         for i in 0..variable_types.len() {
             let count = variable_types[i].count as i32;
-            result.push(match arguments.arguments.get(i) {
-                // Either a normal variable or an argument passed via register
-                None | Some(Some(..)) => {
-                    offset += padding(
-                        offset,
-                        match variable_types[i].size {
-                            IRSize::S8 | IRSize::S16 | IRSize::S32 => -4,
-                            IRSize::P | IRSize::S64 => -8,
-                            IRSize::B(size) => -(std::cmp::max(size, 4) as i32),
-                            IRSize::V => unreachable!(),
-                        },
-                    );
-                    offset += count
-                        * match variable_types[i].size {
-                            IRSize::S8 => -1,
-                            IRSize::S16 => -2,
-                            IRSize::S32 => -4,
-                            IRSize::P | IRSize::S64 => -8,
-                            IRSize::B(size) => -(size as i32),
-                            IRSize::V => unreachable!(),
-                        };
-                    offset + saved_offset
-                }
-                // Stack argument
-                Some(None) => {
-                    arg_offset += 8;
-                    arg_offset
-                }
-            });
+            let var = variable_types[i].number;
+            result.insert(
+                var,
+                match arguments.arguments.get(var as usize) {
+                    // Either a normal variable or an argument passed via register
+                    None | Some(Some(..)) => {
+                        offset += padding(
+                            offset,
+                            match variable_types[i].size {
+                                IRSize::S8 | IRSize::S16 | IRSize::S32 => -4,
+                                IRSize::P | IRSize::S64 => -8,
+                                IRSize::B(size) => -(std::cmp::max(size, 4) as i32),
+                                IRSize::V => unreachable!(),
+                            },
+                        );
+                        offset += count
+                            * match variable_types[i].size {
+                                IRSize::S8 => -1,
+                                IRSize::S16 => -2,
+                                IRSize::S32 => -4,
+                                IRSize::P | IRSize::S64 => -8,
+                                IRSize::B(size) => -(size as i32),
+                                IRSize::V => unreachable!(),
+                            };
+                        offset + saved_offset
+                    }
+                    // Stack argument
+                    Some(None) => {
+                        arg_offset += 8;
+                        arg_offset
+                    }
+                },
+            );
         }
+
+        log::trace!("{:?}", result);
 
         (result, -offset + -saved_offset)
     }

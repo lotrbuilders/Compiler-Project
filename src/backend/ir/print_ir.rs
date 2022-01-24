@@ -31,11 +31,11 @@ impl Display for IRFunction {
         write!(f, "define {} @{}(", self.return_size, self.name)?;
         fmt_argument(&self.arguments, f)?;
         writeln!(f, ") [")?;
-        for (local, i) in self.variables.iter().zip(0usize..) {
+        for local in &self.variables {
             if local.count == 1 {
-                writeln!(f, "\t${}: {}", i, local.size)?;
+                writeln!(f, "\t${}: {}", local.number, local.size)?;
             } else {
-                writeln!(f, "\t${}: [{}:{}]", i, local.size, local.count)?;
+                writeln!(f, "\t${}: [{}:{}]", local.number, local.size, local.count)?;
             }
         }
         writeln!(f, "] {{")?;

@@ -16,6 +16,7 @@ pub struct IRFunction {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct IRVariable {
+    pub number: u32,
     pub size: IRSize,
     pub count: usize,
 }

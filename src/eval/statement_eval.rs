@@ -42,6 +42,7 @@ impl Evaluate for Statement {
                 let variable = IRVariable {
                     size,
                     count: array_count,
+                    number: index as u32,
                 };
                 context.variables.push(variable);
                 if let Some(exp) = init {
