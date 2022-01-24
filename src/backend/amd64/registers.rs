@@ -143,15 +143,15 @@ impl Register {
             Self::Rdx => "dl",
             Self::Rdi => "dil",
             Self::Rsi => "sil",
-            Self::R8 => "r8l",
-            Self::R9 => "r9l",
-            Self::R10 => "r10l",
-            Self::R11 => "r11d",
+            Self::R8 => "r8b",
+            Self::R9 => "r9b",
+            Self::R10 => "r10b",
+            Self::R11 => "r11b",
             Self::Rbx => "bl",
-            Self::R12 => "r12l",
-            Self::R13 => "r13l",
-            Self::R14 => "r14l",
-            Self::R15 => "r15l",
+            Self::R12 => "r12b",
+            Self::R13 => "r13b",
+            Self::R14 => "r14b",
+            Self::R15 => "r15b",
         }
     }
 }
