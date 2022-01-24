@@ -182,8 +182,9 @@ impl BackendAMD64 {
         );
 
         let callee_saved_registers = self.get_callee_saved_registers();
+        let stack_arguments = self.arguments.arguments.contains(&None);
 
-        if self.stack_size != 0 || !callee_saved_registers.is_empty() {
+        if self.stack_size != 0 || !callee_saved_registers.is_empty() || stack_arguments {
             prologue.push_str("\tpush rbp\n\tmov rbp,rsp\n");
         }
         for reg in &callee_saved_registers {
@@ -215,10 +216,13 @@ impl BackendAMD64 {
                 self.stack_size - 8 * callee_saved_registers.len() as i32
             ));
         }
+
         for reg in callee_saved_registers.iter().rev() {
             epilogue.push_str(&format!("\tpop {:.64}\n", reg));
         }
-        if self.stack_size != 0 || !callee_saved_registers.is_empty() {
+
+        let stack_arguments = self.arguments.arguments.contains(&None);
+        if self.stack_size != 0 || !callee_saved_registers.is_empty() || stack_arguments {
             epilogue.push_str(&format!("\tpop rbp\n"));
         }
         epilogue.push_str(&format!("\tret\n"));

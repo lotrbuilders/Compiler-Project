@@ -104,6 +104,8 @@ fn build_pruned_ssa(
         &vreg_mutations,
     );
 
+    remove_variables(function, &promotions);
+
     log::debug!("ir:\n{}", function);
 }
 
@@ -237,4 +239,10 @@ fn write_back(
             }
         }
     }
+}
+
+fn remove_variables(function: &mut IRFunction, promotions: &HashSet<u32>) {
+    function
+        .variables
+        .retain(|v| !promotions.contains(&v.number));
 }
