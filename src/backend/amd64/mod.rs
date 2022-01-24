@@ -155,6 +155,7 @@ impl BackendAMD64 {
 
     // Returns the set of registers which are clobbered before an instruction
     // Or during an instruction with multiple steps(see x86-64 divide for example)
+    // Most instructions that clobber a register are clobber after
     fn clobber(&self, index: usize) -> Vec<Register> {
         let instruction = &self.instructions[index];
         use IRInstruction::*;

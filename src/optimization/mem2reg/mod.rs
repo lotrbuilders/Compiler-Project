@@ -145,13 +145,18 @@ fn replace_mem(
                 stack[var].push(store);
                 stack_size[var] += 1;
             }
-            (&AddrL(_, a, var), &Load(_size, load, address))
+            (&AddrL(_, a, var), &Load(size, load, address))
                 if promotions.contains(&(var as u32)) && a == address =>
             {
                 instructions[this] = IRInstruction::Nop;
-                instructions[next] = IRInstruction::Nop;
-                let vreg = stack[var].last().cloned().unwrap_or(0);
-                vreg_mutations.insert(load, vreg);
+                if let Some(vreg) = stack[var].last().cloned() {
+                    instructions[next] = IRInstruction::Nop;
+                    vreg_mutations.insert(load, vreg);
+                } else {
+                    instructions[next] = IRInstruction::Imm(size, load, 0);
+                    stack[var].push(load);
+                    stack_size[var] += 1;
+                }
             }
 
             _ => (),
@@ -160,8 +165,11 @@ fn replace_mem(
 
     for &succ in &cfg[b].successors {
         for phi in phi_list[succ as usize].iter_mut() {
-            phi.src
-                .push((block, stack[phi.var as usize].last().cloned().unwrap_or(0)));
+            if let Some(vreg) = stack[phi.var as usize].last().cloned() {
+                phi.src.push((block, vreg));
+            } else {
+                log::warn!("Unfixable use of undefined variable");
+            }
         }
     }
 
