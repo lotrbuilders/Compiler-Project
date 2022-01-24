@@ -1,5 +1,5 @@
+use std::collections::VecDeque;
 use std::fmt::Debug;
-use std::{collections::VecDeque, ops::RangeBounds};
 
 use bitvec::prelude::BitVec;
 use smallvec::SmallVec;
@@ -41,150 +41,13 @@ pub fn find_live_in<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
     numbers: &Renumber<R>,
     spill_code: &SpillCode,
 ) -> LiveIn {
-    let mut visited = vec![false; cfg.len()];
+    let _visited = vec![false; cfg.len()];
     //let mut loop_header = Vec::new();
     //let mut last_block = Vec::new();
-    let mut loop_depth = vec![0; cfg.len()];
+    let loop_depth = vec![0; cfg.len()];
 
-    let (gen_used, uses) = find_gen_used(backend, ins_info, cfg, numbers, spill_code);
-
-    //let instructions = backend.get_instructions();
-    /*for block in cfg.iter().rev() {
-        let mut live = BitVec::repeat(false, numbers.length);
-        let label = block.label as usize;
-
-        // live = union succors.live
-        for s in &block.successors {
-            let s = *s as usize;
-            if !visited[s] {
-                loop_header.push(s as u32);
-                last_block.push(block.label);
-            } else {
-                live |= live_in[s].clone();
-            }
-        }
-        visited[label] = true;
-
-        // live |= union succesors.phi.input from b
-        for phi in block
-            .successors
-            .iter()
-            .filter_map(|s| cfg[*s as usize].phi(instructions))
-        {
-            /*for (index, _) in phi
-                .locations
-                .iter()
-                .enumerate()
-                .filter(|(_, &label)| label == block.label)
-            {*/
-            for (index, _) in phi.targets.iter().enumerate() {
-                for &(_location, target) in &phi.sources[index] {
-                    // Might have been changed wrong during phi change
-                    let last_instruction = block.instructions.end - 1;
-                    let location = last_instruction as u32;
-
-                    let target = numbers.translate(target, location) as usize;
-                    if !live.get(target).unwrap() {
-                        last_used[target].push(last_instruction as u32);
-                        live.set(target, true);
-                    }
-                }
-            }
-
-            //}
-        }
-
-        // live |= block.operands.input
-        // live -= block.operands.output
-        for index in block
-            .instructions
-            .clone()
-            .rev()
-            .filter(|&i| ins_info.is_instruction[i])
-        {
-            let used = &ins_info.used[index];
-            let result = &ins_info.result[index];
-            let location = index as u32;
-
-            for &(result, _) in result {
-                let result = numbers.translate(result, location) as usize;
-                if !live.get(result).unwrap() {
-                    last_used[result].push(index as u32);
-                }
-                live.set(result, false);
-            }
-            for &(vreg, _) in used {
-                let vreg = numbers.translate(vreg, location) as usize;
-                if !live.get(vreg).unwrap() {
-                    last_used[vreg].push(index as u32);
-                    live.set(vreg, true);
-                }
-            }
-            //}
-        }
-
-        // live -= block.phi.output
-        if let Some(phi) = block.phi(instructions) {
-            for (i, &target) in phi.targets.iter().enumerate() {
-                for &(location, _source) in &phi.sources[i] {
-                    let location = cfg[location].last();
-                    let target = numbers.translate(target, location) as usize;
-                    live.set(target, false);
-                }
-            }
-        }
-
-        // live -= spilled variables
-        for index in block
-            .instructions
-            .clone()
-            .rev()
-            .filter(|&i| ins_info.is_instruction[i])
-        {
-            let location = index as u32;
-            for copy in &spill_code.code[index] {
-                let vreg = copy.vreg();
-                let live_range = numbers.translate(vreg, location) as usize;
-                live.set(live_range, false);
-            }
-        }
-
-        // extend ranges if b is a loop header
-        for (index, _) in loop_header
-            .iter()
-            .enumerate()
-            .filter(|(_, &label)| label == block.label)
-        {
-            let loop_end = last_block[index];
-
-            // For all blocks between the loop_header and loop end extend any variables live in the loop header
-            for part in block.label..loop_end {
-                //This migh overshoot the actual loop depth when continue is used a lot
-                loop_depth[part as usize] += 1;
-                let part = part as usize;
-                let clone = live.clone();
-                live_in[part] |= clone;
-            }
-
-            // For all live variables at the loop header move the last_use to the end of the loop if inside the loop
-            let start = block.instructions.start as u32;
-            let end = cfg[loop_end].instructions.end as u32;
-            let range = start..end;
-            let loop_end = end + 1;
-
-            for (_, last_uses) in live.iter().zip(last_used.iter_mut()).filter(|(b, _)| **b) {
-                for last_use in last_uses {
-                    if range.contains(last_use) {
-                        *last_use = loop_end;
-                    }
-                }
-            }
-        }
-
-        live_in[label] = live;
-    }*/
-
-    let (live_in, live_out) = live_in_out(backend, cfg, &gen_used, numbers.length);
+    let (gen_used, _) = find_gen_used(backend, ins_info, cfg, numbers, spill_code);
+    let (live_in, live_out) = live_in_out(cfg, &gen_used, numbers.length);
 
     for b in 0..cfg.len() {
         log::trace!(
@@ -307,15 +170,13 @@ fn find_last_use<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
     last_used
 }
 
-fn live_in_out<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
-    backend: &B,
+fn live_in_out(
     cfg: &ControlFlowGraph,
     gen_used: &[(BitVec, BitVec)],
     live_count: usize,
 ) -> (Vec<BitVec>, Vec<BitVec>) {
     let mut live_in = vec![BitVec::repeat(false, live_count); cfg.len()]; //live_ranges x blocks
     let mut live_out = vec![BitVec::repeat(false, live_count); cfg.len()];
-    let instructions = backend.get_instructions();
 
     let mut work_list: VecDeque<u32> = (0..cfg.len() as u32).collect();
     while let Some(node) = work_list.pop_back() {
@@ -336,10 +197,6 @@ fn live_in_out<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
             }
         }
     }
-
-    /*for &arg in backend.get_arguments().iter().flat_map(|arg| arg) {
-        live_in[0].set(arg as usize, true)
-    }*/
 
     (live_in, live_out)
 }
