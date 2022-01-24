@@ -22,9 +22,8 @@ pub(super) fn find_promotable_variables(
     // If a variable is not a basic type (pointer,integer,[float]) it cannot be promoted
     let mut candidates: HashSet<_> = candidates
         .iter()
-        .enumerate()
-        .filter(|(_, candidate)| candidate.size.is_promotable() && candidate.count == 1)
-        .map(|(index, _)| index as u32)
+        .filter(|&candidate| candidate.size.is_promotable() && candidate.count == 1)
+        .map(|candidate| candidate.number)
         .collect();
 
     // Remove all stack arguments(These could be promoted, but that requires a beter optimization framework then currently available)
