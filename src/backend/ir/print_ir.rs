@@ -19,7 +19,7 @@ fn fmt_argument(arguments: &IRArguments, f: &mut fmt::Formatter) -> fmt::Result 
         if let Some(vreg) = vreg {
             write!(f, ", {} %{}", size, vreg)?;
         } else {
-            write!(f, "{} ${}", size, stack_arg)?;
+            write!(f, ", {} ${}", size, stack_arg)?;
             stack_arg += 1;
         }
     }

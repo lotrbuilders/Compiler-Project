@@ -31,6 +31,7 @@ pub struct IRGlobal {
 #[derive(Clone, Debug, PartialEq)]
 pub struct IRArguments {
     pub sizes: Vec<IRSize>,
+    pub variables: Vec<Option<u32>>,
     pub arguments: Vec<Option<IRReg>>,
     pub count: usize,
 }

@@ -79,6 +79,7 @@ impl ExternalDeclaration {
         let vreg_count = in_register.iter().filter(|&&in_reg| in_reg).count() as u32;
         context.vreg_counter += vreg_count * 2;
         let mut vregs = Vec::new();
+        //let mut variable_location; //= Vec::new();
         for arg in 0..arguments.len() {
             let variable = IRVariable {
                 size: ir_arguments[arg].clone(),
@@ -99,9 +100,11 @@ impl ExternalDeclaration {
                 vregs.push(None);
             }
         }
+
         IRArguments {
             sizes: ir_arguments,
             arguments: vregs,
+            variables: (0..arguments.len() as u32).map(|i| Some(i)).collect(),
             count,
         }
     }

@@ -19,8 +19,12 @@ pub fn mem2reg(function: &mut IRFunction) {
     let vreg_use_count = find_vreg_use_count(function);
     let dominator_tree = DominatorTree::new(&cfg);
 
-    let candidates = &function.variables;
-    let promotions = find_promotable_variables(&function.instructions, &vreg_use_count, candidates);
+    let promotions = find_promotable_variables(
+        &function.instructions,
+        &vreg_use_count,
+        &function.variables,
+        &function.arguments,
+    );
     log::info!("Promotable variables:{:?}", promotions);
     let live_variables = live_variable(&cfg, function, Some(&promotions));
 
@@ -52,11 +56,7 @@ fn build_pruned_ssa(
     let mut vreg_mutations = HashMap::new();
     let mut count = function.vreg_count;
 
-    let idf = DominatorTree::iterated_dominance_frontier(
-        cfg,
-        &dom_tree.immediate_dominator,
-        //&dom_tree.dominance_frontier,
-    );
+    let idf = DominatorTree::iterated_dominance_frontier(cfg, &dom_tree.immediate_dominator);
     for df in &idf {
         log::debug!("idf: {:?}", df);
     }
@@ -150,7 +150,7 @@ fn replace_mem(
             {
                 instructions[this] = IRInstruction::Nop;
                 instructions[next] = IRInstruction::Nop;
-                let vreg = *stack[var].last().unwrap();
+                let vreg = stack[var].last().cloned().unwrap_or(0);
                 vreg_mutations.insert(load, vreg);
             }
 
@@ -161,7 +161,7 @@ fn replace_mem(
     for &succ in &cfg[b].successors {
         for phi in phi_list[succ as usize].iter_mut() {
             phi.src
-                .push((block, *stack[phi.var as usize].last().unwrap()));
+                .push((block, stack[phi.var as usize].last().cloned().unwrap_or(0)));
         }
     }
 

@@ -17,6 +17,7 @@ pub(super) fn find_promotable_variables(
     instructions: &[IRInstruction],
     use_count: &[u32],
     candidates: &[IRVariable],
+    arguments: &IRArguments,
 ) -> HashSet<u32> {
     // If a variable is not a basic type (pointer,integer,[float]) it cannot be promoted
     let mut candidates: HashSet<_> = candidates
@@ -25,6 +26,14 @@ pub(super) fn find_promotable_variables(
         .filter(|(_, candidate)| candidate.size.is_promotable() && candidate.count == 1)
         .map(|(index, _)| index as u32)
         .collect();
+
+    // Remove all stack arguments(These could be promoted, but that requires a beter optimization framework then currently available)
+    let arg_iter = arguments.arguments.iter().zip(arguments.variables.iter());
+    for (_argument, variable) in arg_iter.filter(|&(&arg, _var)| arg.is_none()) {
+        if let Some(variable) = variable {
+            candidates.remove(variable);
+        }
+    }
 
     for (index, instruction) in instructions.iter().enumerate() {
         // AddrL is the only way to access the address of a variable, other instructions can be discarded for escape analysis

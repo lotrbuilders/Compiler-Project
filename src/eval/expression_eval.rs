@@ -140,6 +140,7 @@ impl Evaluate for Expression {
                 };
 
                 let arguments = Box::new(IRArguments {
+                    variables: Vec::new(), //Not used in expressions, only in globals
                     arguments,
                     sizes,
                     count,
