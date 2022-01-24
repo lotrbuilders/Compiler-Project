@@ -216,8 +216,8 @@ pub(super) fn renumber<R: RegisterInterface, B: RegisterBackend<RegisterType = R
                 }
 
                 //let sources = &phi.sources[i];
-                for sources in phi.sources.iter() {
-                    let (location, source) = sources[i];
+                for &(location, source) in phi.sources[i].iter() {
+                    //let = sources[i];
                     let loc = cfg.graph[location as usize].last() as usize;
                     copies[loc].push(VregCopy::PhiCopy {
                         from: source,
@@ -231,7 +231,7 @@ pub(super) fn renumber<R: RegisterInterface, B: RegisterBackend<RegisterType = R
 
             for (vreg, class) in used.iter() {
                 if let Some(target) = class.is_target() {
-                    let _from = vreg2live_old[*vreg as usize].unwrap();
+                    //let _from = vreg2live_old[*vreg as usize].unwrap();
                     let copy = VregCopy::TargetBefore {
                         vreg: *vreg,
                         reg: target.into(),
@@ -249,7 +249,7 @@ pub(super) fn renumber<R: RegisterInterface, B: RegisterBackend<RegisterType = R
                 }
 
                 if let Some(source) = class.is_target() {
-                    let _to = vreg2live_old[result as usize].unwrap();
+                    //let _to = vreg2live_old[result as usize].unwrap();
                     let copy = VregCopy::TargetAfter {
                         reg: source.into(),
                         vreg: result,
@@ -260,8 +260,8 @@ pub(super) fn renumber<R: RegisterInterface, B: RegisterBackend<RegisterType = R
 
             if backend.is_two_address(rule) {
                 let (used, result) = (used[0].0, result.as_ref().unwrap().0);
-                let _from = vreg2live_old[used as usize].unwrap();
-                let _to = vreg2live_old[result as usize].unwrap();
+                //let _from = vreg2live_old[used as usize].unwrap();
+                //let _to = vreg2live_old[result as usize].unwrap();
                 let copy = VregCopy::TwoAddress {
                     from: used,
                     to: result,
