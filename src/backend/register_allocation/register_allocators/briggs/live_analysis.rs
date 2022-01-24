@@ -46,7 +46,7 @@ pub fn find_live_in<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
     //let mut last_block = Vec::new();
     let loop_depth = vec![0; cfg.len()];
 
-    let (gen_used, _) = find_gen_used(backend, ins_info, cfg, numbers, spill_code);
+    let gen_used = find_gen_used(backend, ins_info, cfg, numbers, spill_code);
     let (live_in, live_out) = live_in_out(cfg, &gen_used, numbers.length);
 
     for b in 0..cfg.len() {
@@ -201,50 +201,19 @@ fn live_in_out(
     (live_in, live_out)
 }
 
-#[derive(Debug, Clone)]
-struct Locations {
-    use_loc: SmallVec<[u32; 4]>,
-    gen_loc: u32,
-}
-
-impl Locations {
-    fn new() -> Locations {
-        Locations {
-            gen_loc: 0,
-            use_loc: SmallVec::new(),
-        }
-    }
-}
-
 fn find_gen_used<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
     backend: &B,
     ins_info: &InstructionInformation<R>,
     cfg: &ControlFlowGraph,
     numbers: &Renumber<R>,
     spill_code: &SpillCode,
-) -> (Vec<(BitVec, BitVec)>, Vec<Locations>) {
+) -> Vec<(BitVec, BitVec)> {
     let mut result = Vec::new();
-    let use_gen_loc = vec![Locations::new(); numbers.length];
     let instructions = backend.get_instructions();
 
     for block in cfg {
         let mut gen_set = BitVec::repeat(false, numbers.length);
         let mut use_set = BitVec::repeat(false, numbers.length);
-
-        // This is not completely accurate due to the insertion of phicopies at an earlier stage
-        // Instead the variables should already be live for all live_out in predececessors
-        // However this should not matter
-        // gen |= block.phi.output
-        /*if let Some(phi) = block.phi(instructions) {
-            for (i, &target) in phi.targets.iter().enumerate() {
-                for &(location, _source) in &phi.sources[i] {
-                    let location = cfg[location].last();
-                    let target = numbers.translate(target, location) as usize;
-                    gen_set.set(target, true);
-                }
-                //use_gen_loc[target as usize].gen_loc = block.instructions.start as u32;
-            }
-        }*/
 
         // used |= block.operands.input
         // gen |= block.operands.output
@@ -315,5 +284,5 @@ fn find_gen_used<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
 
         result.push((gen_set, use_set));
     }
-    (result, use_gen_loc)
+    result
 }
