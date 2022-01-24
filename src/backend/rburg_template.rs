@@ -19,7 +19,7 @@ macro_rules! get_rule {
 macro_rules! reduce_instruction  {
     {} => {
         fn reduce_instruction(&mut self, instruction: u32, non_terminal: usize) -> () {
-            log::info!("intermidiate rules {}: {:?}",instruction, self.rules);
+            //log::trace!("intermidiate rules {}: {:?}",instruction, self.rules);
             if self.rules[instruction as usize] != 0xffff {
                 log::trace!("{} already reduced correctly", instruction);
                 return ();

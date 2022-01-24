@@ -23,7 +23,16 @@ pub fn build<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
     mut numbers: Renumber<R>,
 ) -> (Graph<R>, Vec<SmallVec<[VregCopy; 2]>>) {
     log::debug!("Starting build stage");
-    log::trace!("Vreg2Reg: {:?}", numbers.live_ranges);
+    log::trace!("LiveRanges: {:?}", numbers.live_ranges);
+    log::trace!(
+        "Vreg2Live: {:?}",
+        numbers
+            .vreg2live
+            .iter()
+            .enumerate()
+            .map(|(i, v)| format!("{} => {:?}", i, v))
+            .collect::<Vec<_>>()
+    );
     let mut graph = Graph::new(
         numbers.live_ranges.clone(),
         numbers.vreg2live.clone(),
@@ -80,12 +89,10 @@ fn build_first_iteration<R: RegisterInterface, B: RegisterBackend<RegisterType =
         .map(|&i| 10.0_f32.powi(i as i32))
         .collect();
 
-    log::trace!("Last Used: {:?}", last_used);
-
     for block in &cfg.graph {
         let label = block.label as usize;
         let block_cost = loop_cost[block.label as usize];
-        log::debug!("block {}", block.label);
+
         // Possibly needs a method to ensure correctness
 
         // Make a hashset of the live_in bitset for this block
@@ -105,7 +112,6 @@ fn build_first_iteration<R: RegisterInterface, B: RegisterBackend<RegisterType =
             .clone()
             .filter(|&i| ins_info.is_instruction[i])
         {
-            log::trace!("instruction {}", index);
             //log::trace!("First build {}", index);
             //log::trace!("live_in: {:?}", live_in);
             let location = index as u32;

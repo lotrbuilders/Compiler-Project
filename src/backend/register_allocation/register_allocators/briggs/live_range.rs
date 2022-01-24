@@ -1,5 +1,5 @@
 use std::{
-    fmt::Debug,
+    fmt::{Debug, Display},
     iter::Zip,
     ops::{Index, IndexMut, Range},
 };
@@ -113,7 +113,7 @@ where
 
 impl<T, U> Index<T> for IntervalVector<T, U>
 where
-    T: Copy + Debug + PartialOrd,
+    T: Copy + Debug + PartialOrd + Display,
     U: Clone + Debug,
 {
     type Output = U;
@@ -123,13 +123,18 @@ where
                 return item;
             }
         }
+        log::warn!(
+            "Entered unreachable code: index {} not included in {:?}",
+            index,
+            self
+        );
         unreachable!()
     }
 }
 
 impl<T, U> IndexMut<T> for IntervalVector<T, U>
 where
-    T: Copy + Debug + PartialOrd,
+    T: Copy + Debug + PartialOrd + Display,
     U: Clone + Debug,
 {
     fn index_mut(&mut self, index: T) -> &mut Self::Output {
@@ -138,6 +143,10 @@ where
                 return item;
             }
         }
+        log::warn!(
+            "Entered unreachable code: index {} not included in interval vector",
+            index,
+        );
         unreachable!()
     }
 }
