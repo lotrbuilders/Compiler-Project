@@ -52,7 +52,7 @@ impl BackendAMD64 {
                     };
 
                     format!(
-                        "{}{}",
+                        "{}\txor eax,eax\n{}",
                         alignment_instruction,
                         if length > 6 || alignment != 0 {
                             // Only hold for integer and pointer arguments

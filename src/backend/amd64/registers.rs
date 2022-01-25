@@ -9,6 +9,11 @@ pub const REG_COUNT: usize = 14;
 pub const REG_CLASS_EAX: RegisterClass<Register> = RegisterClass::new(&[
     true, false, false, false, false, false, false, false, false, false, false, false, false, false,
 ]);
+
+pub const REG_CLASS_CALLV: RegisterClass<Register> = RegisterClass::new(&[
+    false, true, true, true, true, true, true, true, true, true, true, true, true, true,
+]);
+
 pub const REG_CLASS_EDI: RegisterClass<Register> = RegisterClass::new(&[
     false, false, false, true, false, false, false, false, false, false, false, false, false, false,
 ]);

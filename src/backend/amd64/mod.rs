@@ -126,9 +126,9 @@ mcon64:  m mem64                    "{m}"
 
 :       Arg pi32i64(r %ireg)         #"\tpush {r:.64}\n" {1}
 %eax:   Call pi64i32i16i8v(#name)    #"#call {name}\n" {20}
-%eax:   CallV pi64i32i16i8v(r %ireg) #"#call {r}\n"    {20}
+%eax:   CallV pi64i32i16i8v(r %callv) #"#call {r}\n"    {20}
 :       Call v(#name)                #"#call {name}\n" {20}
-:       CallV v(r %ireg)             #"#call {r}\n"    {20}
+:       CallV v(r %callv)             #"#call {r}\n"    {20}
 }
 
 impl BackendAMD64 {
@@ -139,7 +139,7 @@ impl BackendAMD64 {
     fn get_stack_alignment(&self, arguments: &IRArguments) -> i32 {
         let length = arguments.count as i32;
         let extra_stack_size = (std::cmp::max(length, 6) - 6) * 8;
-        let next_alignment = self.stack_size + extra_stack_size as i32 + 8;
+        let next_alignment = self.stack_size + extra_stack_size as i32 + 0;
         match next_alignment % 16 {
             0 => 0,
             i => 16 - i,
