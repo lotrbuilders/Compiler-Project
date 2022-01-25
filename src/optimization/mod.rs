@@ -1,6 +1,6 @@
 use crate::{backend::ir::IRFunction, options::OptimizationSettings};
 
-mod analysis;
+pub mod analysis;
 mod mem2reg;
 
 pub fn optimize(ir_functions: &mut [IRFunction], optimization_settings: &OptimizationSettings) {

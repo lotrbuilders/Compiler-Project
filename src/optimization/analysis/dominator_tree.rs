@@ -10,6 +10,16 @@ pub struct DominatorTree {
 }
 
 impl DominatorTree {
+    pub fn dominates(&self, a: u32, b: u32) -> bool {
+        let mut b = b;
+        while b != a && self.immediate_dominator[b as usize] != b {
+            b = self.immediate_dominator[b as usize];
+        }
+        b == a
+    }
+}
+
+impl DominatorTree {
     // To create the dominator tree we create a post order
     // That post order is used to efficiently index into the list of immidiate dominators
     // Most importantly the lookup of predecessors needs to map from forward index to reverse post index

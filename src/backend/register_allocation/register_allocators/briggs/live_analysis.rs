@@ -44,7 +44,6 @@ pub fn find_live_in<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
     let _visited = vec![false; cfg.len()];
     //let mut loop_header = Vec::new();
     //let mut last_block = Vec::new();
-    let loop_depth = vec![0; cfg.len()];
 
     let gen_used = find_gen_used(backend, ins_info, cfg, numbers, spill_code);
     let (live_in, live_out) = live_in_out(cfg, &gen_used, numbers.length);
@@ -73,6 +72,7 @@ pub fn find_live_in<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
     }
 
     let last_used = find_last_use(backend, numbers, cfg, ins_info, spill_code, &live_out);
+    let loop_depth = find_loop_depth(cfg);
 
     let result = LiveIn {
         live_in,
@@ -285,4 +285,12 @@ fn find_gen_used<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(
         result.push((gen_set, use_set));
     }
     result
+}
+
+fn find_loop_depth(cfg: &ControlFlowGraph) -> Vec<u32> {
+    use crate::optimization::analysis::{loops, DominatorTree, Loop};
+    let dom_tree = DominatorTree::new(cfg);
+    let loops = loops(cfg, &dom_tree);
+    log::debug!("loops: {:?}", loops);
+    Loop::depth(&loops, cfg.len())
 }
