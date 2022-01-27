@@ -1,0 +1,3 @@
+[submodule "src/rburg"]
+	path = src/rburg
+	url = https://github.com/lotrbuilders/rburg
