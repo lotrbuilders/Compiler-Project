@@ -100,8 +100,37 @@ pub fn drive(options: Options) -> Result<(), ()> {
 
         if begin_stage == Stage::C {
             // Invoke preprocessor
-            /*Currently ignored*/
+
+            let preprocess_filename = next_filename;
+            let compiler_filename = parent.clone() + "/" + &file_stem + ".ppc";
+            let compiler_filename =
+                new_or_final(&compiler_filename, &last_filename, last_stage, Stage::C);
+            next_filename = compiler_filename.clone();
+
             log::info!("Preprocessor started");
+
+            let include_directory = format!("-I{}include/", "/usr/local/lib/dcc/");
+
+            let output = Command::new("cpp")
+                .args([
+                    "-nostdinc",
+                    &include_directory,
+                    "-o",
+                    &compiler_filename,
+                    &preprocess_filename,
+                ])
+                .output()
+                .expect("failed to run assembler");
+
+            log::info!(
+                "status {}\nstdout: {}\nstderr: {}",
+                output.status,
+                String::from_utf8(output.stdout).unwrap(),
+                String::from_utf8(output.stderr).unwrap()
+            );
+            if !output.status.success() {
+                return Err(());
+            }
         }
         if begin_stage >= Stage::Ppc && last_stage < Stage::Ppc {
             // Invoke compiler

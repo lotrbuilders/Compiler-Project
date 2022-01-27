@@ -83,7 +83,7 @@ pub fn compile(filename: String, output: String, options: &Options) -> Result<()
         parser.parse(tokens)
     };
     log::debug!("Parser result:\n {}", ast);
-    let _ = crate::parser::ast_graph::print_graph("graph.gv", &ast);
+    //let _ = crate::parser::ast_graph::print_graph("graph.gv", &ast);
 
     let (analysis_errors, global_table, struct_table) = {
         log::info!("Analyzer started");

@@ -9,13 +9,17 @@ struct SimpleLogger;
 
 impl log::Log for SimpleLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level()
-            <= match metadata.target() {
-                "lexer" => Level::Info,
-                "parser" => Level::Info,
-                "utcc::semantic_analysis" => Level::Trace,
-                _ => Level::Trace,
-            }
+        if cfg!(debug_assertions) {
+            metadata.level()
+                <= match metadata.target() {
+                    "lexer" => Level::Info,
+                    "parser" => Level::Info,
+                    "utcc::semantic_analysis" => Level::Trace,
+                    _ => Level::Trace,
+                }
+        } else {
+            metadata.level() <= Level::Warn
+        }
     }
 
     fn log(&self, record: &Record) {

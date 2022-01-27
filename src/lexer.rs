@@ -71,6 +71,10 @@ impl Lexer {
                         errors.push(err);
                     }
                 },
+                '#' => match self.line_command(input) {
+                    Ok(()) => (),
+                    Err(err) => errors.push(err),
+                },
                 '\'' => match self.lex_char(input) {
                     (token, Ok(_)) => output.push(token),
                     (token, Err(err)) => {
@@ -336,5 +340,40 @@ impl Lexer {
                 )),
             ),
         }
+    }
+
+    fn line_command<T: Iterator<Item = char>>(&mut self, input: &mut T) -> Result<(), String> {
+        let mut line = String::new();
+        while let Some(c) = self.peek(input) {
+            self.next(input);
+            if c == '\n' {
+                break;
+            }
+            line.push(c);
+        }
+
+        let split = line.split(' ').collect::<Vec<_>>();
+
+        if split[0] != "#" {
+            return Err(String::from("Bad line command"));
+        }
+
+        let line = match u32::from_str_radix(split[1], 10) {
+            Ok(i) => i,
+            Err(e) => {
+                return Err(e.to_string());
+            }
+        };
+
+        // Removes both the first and last character of a utf-8 string
+        //let file = split[2].chars().skip(1);
+        //let filename: String = file.clone().zip(file.skip(1)).map(|(c, _)| c).collect();
+        let filename = String::from(split[2]);
+
+        self.column = 1;
+        self.line = line;
+        self.file_index = file_table::add_sourcefile(&filename) as u32;
+
+        Ok(())
     }
 }
