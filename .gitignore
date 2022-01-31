@@ -8,6 +8,7 @@ test.*
 *.s
 *.exe
 *.out
+*.ppc
 
 tests/src/stage_*/valid/*         #ignore all files in each directory
 !tests/src/stage_*/valid/*.c      #unignore .c files in each directory
