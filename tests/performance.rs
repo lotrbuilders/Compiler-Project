@@ -79,8 +79,7 @@ fn perf_test2() -> io::Result<()> {
     let test_path = Path::new(&test_file);
     let mut test_file = File::create(test_path)?;
 
-    let _tests = vec!["sudoku", "gcd", "primes", "fibonacci"];
-    let tests = vec!["sudoku"];
+    let tests = vec!["sudoku", "gcd", "primes", "fibonacci"];
 
     for test in tests {
         let map = find_dir(test)?;
