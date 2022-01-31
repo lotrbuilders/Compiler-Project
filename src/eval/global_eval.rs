@@ -1,8 +1,8 @@
 use super::{evaluation_context::EvaluateSize, Evaluate, EvaluationContext};
 use crate::backend::{ir::*, Backend, TypeInfo};
 use crate::options::OptimizationSettings;
-use crate::parser::ast::*;
 use crate::parser::r#type::DeclarationType;
+use crate::parser::{ast::*, Type};
 use crate::table::Symbol;
 use std::collections::{HashMap, HashSet};
 
@@ -114,6 +114,7 @@ impl ExternalDeclaration {
         &self,
         map: &HashMap<String, Symbol>,
         defined: &mut HashSet<String>,
+        context: &mut EvaluationContext,
     ) -> Option<IRGlobal> {
         if self.name.is_none() {
             return None;
@@ -135,9 +136,15 @@ impl ExternalDeclaration {
             if map[name].declaration_type == DeclarationType::Definition {
                 None
             } else {
+                let array_type: Type = map[name].symbol_type.get_return_type().unwrap().into();
+                let size = context
+                    .type_info
+                    .get_irsize(&array_type.get_element(), &context.struct_size_table);
+
                 Some(IRGlobal {
                     name: name.clone(),
-                    size: IRSize::S32,
+                    size: size,
+                    count: 0,
                     value: None,
                     function: true,
                 })
@@ -146,9 +153,15 @@ impl ExternalDeclaration {
             if let Some(expression) = &self.expression {
                 defined.insert(name.clone());
                 if let ExpressionVariant::ConstI(value) = expression.variant {
+                    let (array_type, array_count) = map[name].symbol_type.deconstruct();
+                    let size = context
+                        .type_info
+                        .get_irsize(&array_type, &context.struct_size_table);
+
                     Some(IRGlobal {
                         name: name.clone(),
-                        size: IRSize::S32,
+                        size,
+                        count: array_count,
                         value: Some(value),
                         function: false,
                     })
@@ -157,9 +170,16 @@ impl ExternalDeclaration {
                 }
             } else if map[name].declaration_type == DeclarationType::Declaration {
                 defined.insert(name.clone());
+
+                let (array_type, array_count) = map[name].symbol_type.deconstruct();
+                let size = context
+                    .type_info
+                    .get_irsize(&array_type, &context.struct_size_table);
+
                 Some(IRGlobal {
                     name: name.clone(),
-                    size: IRSize::S32,
+                    size,
+                    count: array_count,
                     value: None,
                     function: false,
                 })

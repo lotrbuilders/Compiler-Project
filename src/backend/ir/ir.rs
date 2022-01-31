@@ -26,6 +26,7 @@ pub struct IRGlobal {
     pub name: String,
     pub size: IRSize,
     pub value: Option<i128>,
+    pub count: usize,
     pub function: bool,
 }
 

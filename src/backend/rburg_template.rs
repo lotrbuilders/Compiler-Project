@@ -214,9 +214,9 @@ macro_rules! generate {
                 if global.function {
                     result.push_str(&self.emit_function_declaration(&global.name));
                 } else if let Some(value) = global.value {
-                    result.push_str(&self.emit_global_definition(&global.name, value, &global.size));
+                    result.push_str(&self.emit_global_definition(&global.name, value, &global.size,global.count));
                 } else {
-                    result.push_str(&self.emit_common(&global.name, &global.size));
+                    result.push_str(&self.emit_common(&global.name, &global.size,global.count));
                 }
             }
             result

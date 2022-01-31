@@ -52,9 +52,25 @@ pub fn evaluate(
 
     let mut globals = Vec::new();
     let mut defined = HashSet::new();
+
+    let mut context = EvaluationContext {
+        vreg_counter: 0,
+        label_counter: 1,
+        variables: Vec::new(),
+        strings: Vec::new(),
+        unfixed_break: Vec::new(),
+        unfixed_continue: Vec::new(),
+        loop_depth: 0,
+        backend,
+        struct_size_table: &struct_table.info,
+        struct_offset_table: &struct_table.offsets,
+        type_info: backend.get_type_info_table(),
+        optimization_settings,
+    };
+
     for global in &ast.global_declarations {
         log::trace!("Evaluating individual global");
-        if let Some(declaration) = global.eval_global(map, &mut defined) {
+        if let Some(declaration) = global.eval_global(map, &mut defined, &mut context) {
             globals.push(declaration);
         }
     }

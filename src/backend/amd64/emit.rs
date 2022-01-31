@@ -129,7 +129,14 @@ impl BackendAMD64 {
         format!("section .text\nextern {}\n", name)
     }
 
-    pub fn emit_global_definition(&self, name: &String, value: i128, size: &IRSize) -> String {
+    pub fn emit_global_definition(
+        &self,
+        name: &String,
+        value: i128,
+        size: &IRSize,
+        count: usize,
+    ) -> String {
+        let _ = count;
         let (align, c) = match size {
             IRSize::S8 => (1, 'b'),
             IRSize::S16 => (2, 'w'),
@@ -143,7 +150,7 @@ impl BackendAMD64 {
         )
     }
 
-    pub fn emit_common(&self, name: &String, size: &IRSize) -> String {
+    pub fn emit_common(&self, name: &String, size: &IRSize, count: usize) -> String {
         let (align, size) = match size {
             IRSize::S8 => (1, 1),
             IRSize::S16 => (2, 2),
@@ -154,7 +161,9 @@ impl BackendAMD64 {
         };
         format!(
             "section .bss\n\talignb {}\n{}:\n\tresb {}\n",
-            align, name, size
+            align,
+            name,
+            size * count as i32
         )
     }
 
