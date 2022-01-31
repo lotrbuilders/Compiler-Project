@@ -1,4 +1,3 @@
-use std::env;
 use std::ffi::OsStr;
 use std::path::Path;
 use std::process::Command;
@@ -95,6 +94,8 @@ pub fn drive(options: Options) -> Result<(), ()> {
             })
             .collect::<String>();
 
+        let temp_directory = option_env!("UTCC_TEMP_DIR").unwrap_or(&parent);
+
         log::debug!("Going from {:?} to {:?}", begin_stage, last_stage);
         log::debug!("file_stem {}, parent {}", file_stem, parent);
         let mut next_filename = filename.clone();
@@ -103,7 +104,7 @@ pub fn drive(options: Options) -> Result<(), ()> {
             // Invoke preprocessor
 
             let preprocess_filename = next_filename;
-            let compiler_filename = parent.clone() + "/" + &file_stem + ".ppc";
+            let compiler_filename = String::from(temp_directory) + "/" + &file_stem + ".ppc";
             let compiler_filename =
                 new_or_final(&compiler_filename, &last_filename, last_stage, Stage::C);
             next_filename = compiler_filename.clone();
@@ -111,7 +112,7 @@ pub fn drive(options: Options) -> Result<(), ()> {
             log::info!("Preprocessor started");
 
             let include_directory = format!("/usr/local/lib/utcc/include/");
-            let include_directory = env::var("INCLUDE_DIRECTORY").unwrap_or(include_directory);
+            let include_directory = option_env!("UTCC_INCLUDE_DIR").unwrap_or(&include_directory);
             let include_directory = format!("-I{}", include_directory);
             let target_directory = format!("{}/x86-64/", include_directory);
 
@@ -140,7 +141,7 @@ pub fn drive(options: Options) -> Result<(), ()> {
         if begin_stage >= Stage::Ppc && last_stage < Stage::Ppc {
             // Invoke compiler
             let compiler_filename = next_filename;
-            let assembler_filename = parent.clone() + "/" + &file_stem + ".s";
+            let assembler_filename = String::from(temp_directory) + "/" + &file_stem + ".s";
             let assembler_filename =
                 new_or_final(&assembler_filename, &last_filename, last_stage, Stage::Ppc);
             next_filename = assembler_filename.clone();
@@ -159,7 +160,7 @@ pub fn drive(options: Options) -> Result<(), ()> {
             // Invoke assembler
             let assembler_filename = next_filename;
             if parent.contains(":/") {}
-            let linker_filename = parent.clone() + "/" + &file_stem + ".o";
+            let linker_filename = String::from(temp_directory) + "/" + &file_stem + ".o";
             let linker_filename =
                 new_or_final(&linker_filename, &last_filename, last_stage, Stage::Asm);
             next_filename = linker_filename.clone();
@@ -189,19 +190,6 @@ pub fn drive(options: Options) -> Result<(), ()> {
             // Invoke linker
             let linker_filename = next_filename;
             let result = last_filename.clone();
-
-            /*let result = if result.contains(":\\") {
-                "/mnt/".to_string()
-                    + &result
-                        .chars()
-                        .next()
-                        .unwrap()
-                        .to_ascii_lowercase()
-                        .to_string()
-                    + &result.chars().skip_while(|c| *c != '/').collect::<String>()
-            } else {
-                result
-            };*/
 
             log::info!("Linker started -o {} {}", result, linker_filename);
 
