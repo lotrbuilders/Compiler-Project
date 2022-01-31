@@ -35,8 +35,8 @@ pub const REG_CLASS_R9: RegisterClass<Register> = RegisterClass::new(&[
 pub const CALL_REGS: &'static [RegisterClass<Register>] = &[
     REG_CLASS_EDI,
     REG_CLASS_ESI,
-    REG_CLASS_ECX,
     REG_CLASS_EDX,
+    REG_CLASS_ECX,
     REG_CLASS_R8,
     REG_CLASS_R9,
 ];
