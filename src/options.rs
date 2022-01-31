@@ -20,7 +20,7 @@ pub struct Options {
     pub optimization_settings: OptimizationSettings,
 
     /// Register allocator to use. Normally use briggs
-    #[clap(long="reg-alloc", default_value_t = String::from("simple"), possible_values(&["simple", "briggs"]))]
+    #[clap(long="reg-alloc", default_value_t = String::from("briggs"), possible_values(&["simple", "briggs"]))]
     pub register_allocator: String,
 }
 
