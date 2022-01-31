@@ -1,3 +1,4 @@
+use std::env;
 use std::ffi::OsStr;
 use std::path::Path;
 use std::process::Command;
@@ -109,12 +110,16 @@ pub fn drive(options: Options) -> Result<(), ()> {
 
             log::info!("Preprocessor started");
 
-            let include_directory = format!("-I{}include/", "/usr/local/lib/dcc/");
+            let include_directory = format!("/usr/local/lib/utcc/include/");
+            let include_directory = env::var("INCLUDE_DIRECTORY").unwrap_or(include_directory);
+            let include_directory = format!("-I{}", include_directory);
+            let target_directory = format!("{}/x86-64/", include_directory);
 
             let output = Command::new("cpp")
                 .args([
                     "-nostdinc",
                     &include_directory,
+                    &target_directory,
                     "-o",
                     &compiler_filename,
                     &preprocess_filename,
