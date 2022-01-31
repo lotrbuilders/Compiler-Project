@@ -5,6 +5,7 @@ use smallvec::{smallvec, SmallVec};
 use super::{ControlFlowGraph, DominatorTree};
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct Loop {
     header: u32,
     body: SmallVec<[u32; 4]>,
