@@ -21,8 +21,8 @@ There is a makefile to install the compiler for system wide use, using `make ins
 
 ## Test Suite
 The test suite consists of a large selection of correctness tests and a small selection of performance tests.
-The first can be ran by executing `cargo test fullscale`. Specific tests can be run using `cargo test fullscale -- full_scale_{NAME_OF_TEST_FOLDER} --exact`
-The later can be ran using `cargo test performance`
+The former can be ran by executing `cargo test --test=fullscale`. Specific tests can be run using `cargo test --test=fullscale -- full_scale_{NAME_OF_TEST_FOLDER} --exact`
+The latter can be ran using `cargo test --test=performance`
 
 ## Licensing
 The test-suite(found under /tests/src/) is licensed under MIT. The rest of the compiler is licensed under TODO
