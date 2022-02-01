@@ -19,5 +19,10 @@ There is a makefile to install the compiler for system wide use, using `make ins
 - [nasm](https://www.nasm.us/) (x86-64 backend)
 - An x86-64 compiler with C standard library for linking (x86-64 backend)
 
+## Test Suite
+The test suite consists of a large selection of correctness tests and a small selection of performance tests.
+The first can be ran by executing `cargo test fullscale`. Specific tests can be run using `cargo test fullscale -- full_scale_{NAME_OF_TEST_FOLDER} --exact`
+The later can be ran using `cargo test performance`
+
 ## Licensing
 The test-suite(found under /tests/src/) is licensed under MIT. The rest of the compiler is licensed under TODO
