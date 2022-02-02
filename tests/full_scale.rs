@@ -26,7 +26,7 @@ fn get_options(path: &PathBuf) -> utcc::options::Options {
             obj: false,
         },
         optimization_settings: OptimizationSettings {
-            optimization_level: 2,
+            optimization_level: -1,
             optimizations: Vec::new(),
         },
         register_allocator: String::from("briggs"),
