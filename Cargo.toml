@@ -1,5 +1,6 @@
 [package]
 edition = "2018"
+license = "MPL-2.0"
 name = "utcc"
 version = "0.1.0"
 
@@ -16,9 +17,9 @@ path = "src/main.rs"
 
 [dependencies]
 bitvec = "~1.0.0" #MIT
-clap = {version = "~3.0.9", features = ["derive"]}#apache 2.0 or MIT 
+clap = {version = "~3.0.9", features = ["derive"]}#apache 2.0 or MIT     
 colored = "~2.0.0" #MPL 2.0
 lazy_static = "1.4.0" #apache 2.0 or MIT
 log = "~0.4.14" #apache 2.0 or MIT
-rburg = {path = "./src/rburg"} 
+rburg = {path = "./src/rburg"}#MPL 
 smallvec = {version = "~1.7.0", features = ["union"]}#apache 2.0 or MIT
