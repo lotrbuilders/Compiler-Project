@@ -11,7 +11,7 @@ The compiler does not currently handle xor, shifts, modulus, modify-assign and i
 ## Installing
 Using cargo the compiler can be built directly from the main directory without any necessary configuration. It defaults to debug mode, which is only interesting for compiler development. It is recomended to use `cargo run --release` for normal testing. 
 
-There is a makefile to install the compiler for system wide use, using `make install`. By default it installs the compiler at /usr/local/lib/utcc/ and /usr/local/bin/ and temp files are stored at /tmp/. These settings can all be changed by setting the environment variables LIBDIR, BINDIR and TMPDIR respectively. The makefile requires super user rights to install these files. Users are encouraged to check the makefile themselves to ensure that it safe.
+There is a makefile to install the compiler for system wide use, using `make install`. By default it installs the compiler at `/usr/local/lib/utcc/` and `/usr/local/bin/` and temp files are stored at /tmp/. These settings can all be changed by setting the environment variables **LIBDIR**, **BINDIR** and **TMPDIR** respectively. The makefile requires super user rights to install these files. Users are encouraged to check the makefile themselves to ensure that it safe.
 
 ### Submodule
 This repository contains submodules. To properly initialize these execute `git submodule init` followed by `git submodule update` after cloning the repository.
