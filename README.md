@@ -17,8 +17,8 @@ There is a makefile to install the compiler for system wide use, using `make ins
 This repository contains submodules. To properly initialize these execute `git submodule init` followed by `git submodule update` after cloning the repository.
 
 ### Requirements
-- Linux or WSL
-- Cargo
+- A unix compatible system or subsystem. On windows [WSL 2.0](https://docs.microsoft.com/en-us/windows/wsl/install) is recommended
+- [Rust](https://www.rust-lang.org/tools/install)
 - A C preprocessor installed
 - [nasm](https://www.nasm.us/) (x86-64 backend)
 - An x86-64 compiler with C standard library for linking (x86-64 backend)
