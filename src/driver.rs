@@ -111,7 +111,7 @@ pub fn drive(options: Options) -> Result<(), ()> {
 
             log::info!("Preprocessor started");
 
-            let include_directory = format!("/usr/local/lib/utcc/include/");
+            let include_directory = format!("{}/include/", env!("CARGO_MANIFEST_DIR"));
             let include_directory = option_env!("UTCC_INCLUDE_DIR").unwrap_or(&include_directory);
             let include_directory = format!("-I{}", include_directory);
             let target_directory = format!("{}/x86-64/", include_directory);
@@ -193,7 +193,7 @@ pub fn drive(options: Options) -> Result<(), ()> {
 
             log::info!("Linker started -o {} {}", result, linker_filename);
 
-            let output = Command::new("gcc")
+            let output = Command::new("cc")
                 .args(["-m64", "-fPIC", "-o", &result, &linker_filename])
                 .output()
                 .expect("failed to run linker");

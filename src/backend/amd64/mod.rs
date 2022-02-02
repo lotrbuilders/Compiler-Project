@@ -37,7 +37,7 @@ rburg::rburg_main! {
 :       Label(#i)                       ".L{i}:\n"
 %ireg:  Label(#i)                       ".L{i}:\n"
 :       Jmp(#i)                         "\tjmp .L{i}\n" {2}
-:       Jmp(#i)                         "\t;jmp .L{}\n" {self.empty_jump_target(index)}
+:       Jmp(#i)                         "\t;jmp .L{i}\n" {self.empty_jump_target(index)}
 :       Jcc pi64i32(r %ireg,#l)         "\ttest {r},{r}\n\tjnz .L{l}\n" {2}
 :       Jnc pi64i32(r %ireg,#l)         "\ttest {r},{r}\n\tjz .L{l}\n"  {2}
 
@@ -81,8 +81,8 @@ mcon64:  m mem64            "{m}"
 %ireg:  Sub pi64i32(Imm(#_i), b %ireg)      ?"\tneg {res} ; {res} = -{b}\n"   {self.range(self.get_left_index(index),0,0)+1}
 
 %ireg:  Mul s32s64(a %ireg , b %ireg)       ?"\timul {res}, {b} ; {res} = {a} * {b}\n"  {1}
-%eax:   Div s32(a %eax  , b %ireg)          ?"\tcdq\n\tidiv {b} ; {res} = {a} / {b}\n"  {1}
-%eax:   Div s64(a %eax  , b %ireg)          ?"\tcqo\n\tidiv {b:.64}     ; {res:.64} = {a:.64} / {b:.64}\n"  {1}
+%eax:   Div s32(a %eax  , b %ireg)           "\tcdq\n\tidiv {b} ; {res} = {a} / {b}\n"  {1}
+%eax:   Div s64(a %eax  , b %ireg)           "\tcqo\n\tidiv {b:.64}     ; {res:.64} = {a:.64} / {b:.64}\n"  {1}
 
 %ireg:  And i64i32 (a %ireg , b %ireg)      ?"\tand {res}, {b} ; {res} = {a} & {b}\n"   {1}
 %ireg:  Or  i64i32 (a %ireg , b %ireg)      ?"\tor  {res}, {b} ; {res} = {a} | {b}\n"   {1}
