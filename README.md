@@ -2,7 +2,7 @@
 This is an optimizing and retargetable compiler for a significant subset of C, written in RUST using an SSA quadruples style IR; A retargetable DAG covering burg style instruction selector and a chaitin-briggs allocator. 
 
 ## Backend
-The backend uses [rburg])(https://github.com/lotrbuilders/rburg) and aims to create an easily retargetable backend for any register-based processor. The code needed to create a new backend is minimized as much as possible by making heavy use of both procedural macros and `macro_rules!` macros. Minimizing this is an ongoing effort.
+The backend uses [rburg](https://github.com/lotrbuilders/rburg) and aims to create an easily retargetable backend for any register-based processor. The code needed to create a new backend is minimized as much as possible by making heavy use of both procedural macros and `macro_rules!` macros. Minimizing this is an ongoing effort.
 
 ## Limitations
 The compiler does not currently handle xor, shifts, modulus, modify-assign and increment/decrement operations. Enums, typedefs, unions, floats and unsigned numbers are also not supported and no declaration specifiers are currently implemented. Both switch statements and goto are currently missing. Lastly K&R style function declarations and compound assignments are currently not supported.
