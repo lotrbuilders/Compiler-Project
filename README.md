@@ -29,4 +29,4 @@ The former can be ran by executing `cargo test --test=fullscale`. Specific tests
 The latter can be ran using `cargo test --test=performance`
 
 ## Licensing
-The test-suite(found under /tests/src/) is licensed under MIT. All other files are licensed under MPL-2.0
+The test-suite(found under `/tests/src/`) is licensed under MIT. All other files are licensed under MPL-2.0
