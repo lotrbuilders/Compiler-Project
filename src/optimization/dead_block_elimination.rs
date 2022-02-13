@@ -3,7 +3,7 @@ use crate::backend::ir::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::mem;
 
-pub fn eliminate_dead_code(function: &mut IRFunction) {
+pub fn eliminate_dead_blocks(function: &mut IRFunction) {
     let mut cfg = ControlFlowGraph::construct(&function.instructions);
     let dead_blocks = find_dead_blocks(&mut cfg);
     remove_blocks(function, &dead_blocks);

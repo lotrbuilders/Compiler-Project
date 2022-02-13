@@ -1,16 +1,16 @@
 use crate::{backend::ir::IRFunction, options::OptimizationSettings};
 
 pub mod analysis;
-mod dead_code_elimination;
+mod dead_block_elimination;
 mod mem2reg;
 mod remove_variable;
 
-use dead_code_elimination as dce;
+use dead_block_elimination as dbe;
 
 pub fn optimize(ir_functions: &mut [IRFunction], optimization_settings: &OptimizationSettings) {
     if optimization_settings.optimization_level >= 1 {
         for function in &mut *ir_functions {
-            dce::eliminate_dead_code(function);
+            dbe::eliminate_dead_blocks(function);
         }
     }
     if optimization_settings.optimization_level >= 1 {
