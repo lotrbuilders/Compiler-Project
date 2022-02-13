@@ -2,6 +2,7 @@ use crate::{backend::ir::IRFunction, options::OptimizationSettings};
 
 pub mod analysis;
 mod mem2reg;
+mod remove_variable;
 
 pub fn optimize(ir_functions: &mut [IRFunction], optimization_settings: &OptimizationSettings) {
     if optimization_settings.optimization_level >= 1 {
