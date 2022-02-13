@@ -3,6 +3,9 @@ use crate::backend::ir::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::mem;
 
+/// Optimization which removes any block in the cfg without any predecessors.
+/// Only removes dead blocks, not any unused variables.
+// It first finds all blocks that need to be modified, removes them and renumbers them
 pub fn eliminate_dead_blocks(function: &mut IRFunction) {
     let mut cfg = ControlFlowGraph::construct(&function.instructions);
     let dead_blocks = find_dead_blocks(&mut cfg);
@@ -10,6 +13,9 @@ pub fn eliminate_dead_blocks(function: &mut IRFunction) {
     renumber_blocks(function, &dead_blocks)
 }
 
+/// Finds all blocks of code without predecessors using a worklist.
+/// Never removes block 0 and cannot remove loops.
+/// Disconnects the block from the cfg.
 fn find_dead_blocks(cfg: &mut ControlFlowGraph) -> HashSet<u32> {
     let mut work_list: VecDeque<_> = (1..cfg.len() as u32).collect();
     let mut dead_code = HashSet::new();
@@ -31,6 +37,7 @@ fn find_dead_blocks(cfg: &mut ControlFlowGraph) -> HashSet<u32> {
     dead_code
 }
 
+/// Removes block by only keeping instructions outside the loops
 fn remove_blocks(function: &mut IRFunction, dead_blocks: &HashSet<u32>) {
     let instruction = mem::take(&mut function.instructions);
     function.instructions = instruction
@@ -49,6 +56,7 @@ fn remove_blocks(function: &mut IRFunction, dead_blocks: &HashSet<u32>) {
         .collect();
 }
 
+/// Renumbers all blocks. Then rewrites all instructions which reference labels.
 fn renumber_blocks(function: &mut IRFunction, dead_blocks: &HashSet<u32>) {
     let label_map: HashMap<u32, u32> = function
         .instructions
