@@ -74,6 +74,7 @@ impl ControlFlowGraph {
     }
 
     pub fn find_successors(cfg: &mut ControlFlowGraph, instructions: &Vec<IRInstruction>) {
+        let length = cfg.len() as u32;
         for (block, i) in cfg.graph.iter_mut().zip(0..) {
             let end = block.instructions.end - 1;
             use IRInstruction::*;
@@ -84,7 +85,8 @@ impl ControlFlowGraph {
                     block.successors.push(i + 1)
                 }
                 Ret(..) => (),
-                _ => block.successors.push(i + 1),
+                _ if (i + 1) < length => block.successors.push(i + 1), // The last instruction in the last block has no successors
+                _ => (),
             }
         }
 

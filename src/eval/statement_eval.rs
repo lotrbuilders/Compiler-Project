@@ -185,6 +185,7 @@ impl Evaluate for Statement {
                     result.push(IRInstruction::Imm(context.get_size(&Type::int()), vreg, 0));
                     result.push(IRInstruction::Ret(IRSize::V, vreg))
                 }
+                context.insert_label(result);
             }
         }
         0
