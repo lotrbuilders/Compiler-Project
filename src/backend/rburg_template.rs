@@ -157,6 +157,7 @@ macro_rules! generate {
             self.arguments = function.arguments.clone();
             self.function_names = function_names.clone();
             self.vreg_count = function.vreg_count;
+            self.valid_until= backend::get_valid_until(function);
 
 
             for instruction in (0..function.instructions.len()).rev() {

@@ -472,4 +472,13 @@ impl IRInstruction {
             },
         }
     }
+
+    pub fn affected_by_side_effect(&self) -> bool {
+        matches!(self, IRInstruction::Load(..))
+    }
+
+    pub fn has_side_effect(&self) -> bool {
+        use IRInstruction::*;
+        matches!(self, Store(..) | Call(..) | CallV(..))
+    }
 }

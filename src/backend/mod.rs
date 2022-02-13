@@ -145,3 +145,23 @@ fn get_use_count(instructions: &Vec<IRInstruction>, definitions: &Vec<u32>) -> V
     log::debug!("Use count: {:?}", use_count);
     use_count
 }
+
+fn get_valid_until(function: &IRFunction) -> Vec<u32> {
+    let length = function.instructions.len() as usize;
+    let end = length as u32;
+    let mut result = vec![end; length];
+    let mut affected = Vec::new();
+
+    for (index, instruction) in function.instructions.iter().enumerate() {
+        if instruction.affected_by_side_effect() {
+            let result = index;
+            affected.push(result);
+        } else if instruction.has_side_effect() {
+            for vreg in affected.drain(0..) {
+                result[vreg] = index as u32;
+            }
+        }
+    }
+
+    result
+}
