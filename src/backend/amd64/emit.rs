@@ -193,9 +193,14 @@ impl BackendAMD64 {
         let callee_saved_registers = self.get_callee_saved_registers();
         let stack_arguments = self.arguments.arguments.contains(&None);
 
-        if self.stack_size != 0 || !callee_saved_registers.is_empty() || stack_arguments {
-            prologue.push_str("\tpush rbp\n\tmov rbp,rsp\n");
-        }
+        let offset =
+            if self.stack_size != 0 || !callee_saved_registers.is_empty() || stack_arguments {
+                prologue.push_str("\tpush rbp\n\tmov rbp,rsp\n");
+                0
+            } else {
+                8
+            };
+
         for reg in &callee_saved_registers {
             self.stack_size += 8;
             prologue.push_str(&format!("\tpush {:.64}\n", reg));
@@ -203,10 +208,10 @@ impl BackendAMD64 {
 
         self.stack_size += padding(self.stack_size, 16);
 
-        if self.stack_size != 0 {
+        if self.stack_size != 0 || offset != 0 {
             prologue.push_str(&format!(
                 "\tsub rsp, {}\n",
-                self.stack_size - 8 * callee_saved_registers.len() as i32
+                self.stack_size + offset - 8 * callee_saved_registers.len() as i32
             ));
         }
         prologue
@@ -217,12 +222,20 @@ impl BackendAMD64 {
     // Emits the epilogue for a function, such that it will be correct for the compiler
     pub fn emit_epilogue(&self) -> String {
         let mut epilogue = ".end:\n".to_string();
-
         let callee_saved_registers = self.get_callee_saved_registers();
-        if self.stack_size != 0 {
+        let stack_arguments = self.arguments.arguments.contains(&None);
+
+        let offset =
+            if self.stack_size != 0 || !callee_saved_registers.is_empty() || stack_arguments {
+                0
+            } else {
+                8
+            };
+
+        if self.stack_size != 0 || offset != 0 {
             epilogue.push_str(&format!(
                 "\tadd rsp, {}\n",
-                self.stack_size - 8 * callee_saved_registers.len() as i32
+                self.stack_size + offset - 8 * callee_saved_registers.len() as i32
             ));
         }
 
@@ -230,7 +243,6 @@ impl BackendAMD64 {
             epilogue.push_str(&format!("\tpop {:.64}\n", reg));
         }
 
-        let stack_arguments = self.arguments.arguments.contains(&None);
         if self.stack_size != 0 || !callee_saved_registers.is_empty() || stack_arguments {
             epilogue.push_str(&format!("\tpop rbp\n"));
         }
