@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use smallvec::{smallvec, SmallVec};
 
@@ -27,7 +27,7 @@ impl Loop {
 }
 
 pub fn loops(cfg: &ControlFlowGraph, dom_tree: &DominatorTree) -> Vec<Loop> {
-    let mut loops = Vec::new();
+    let mut loops = HashMap::new();
 
     for b in 0..cfg.len() {
         for &header in cfg[b]
@@ -35,17 +35,21 @@ pub fn loops(cfg: &ControlFlowGraph, dom_tree: &DominatorTree) -> Vec<Loop> {
             .iter()
             .filter(|&&succ| dom_tree.dominates(succ, b as u32))
         {
-            let body = search_loop_body(cfg, b, header);
-            let back_edges = smallvec![b as u32];
-            loops.push(Loop {
+            let mut body = search_loop_body(cfg, b, header);
+            body.sort();
+            let entry = loops.entry(header).or_insert_with(|| Loop {
                 header,
-                body,
-                back_edges,
+                body: SmallVec::new(),
+                back_edges: SmallVec::new(),
             });
+            entry.back_edges.push(b as u32);
+            entry.body.append(&mut body);
+            entry.body.sort();
+            entry.body.dedup();
         }
     }
 
-    loops
+    loops.into_values().collect()
 }
 
 fn search_loop_body(cfg: &ControlFlowGraph, back_edge: usize, header: u32) -> SmallVec<[u32; 4]> {
