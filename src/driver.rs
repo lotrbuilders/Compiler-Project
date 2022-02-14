@@ -66,6 +66,14 @@ pub fn drive(options: Options) -> Result<(), ()> {
     log::info!("driver started");
     let last_stage = options.last_stage.clone().into();
     let last_filename = options.output.clone();
+
+    if options.input.len() > 1 && last_stage != Stage::Exe {
+        log::error!("Multiple inputs must lead to an executable file");
+        return Err(());
+    }
+
+    let mut link_files = Vec::new();
+
     for filename in options.input.clone() {
         let file_stem = Path::new(&filename)
             .file_stem()
@@ -186,27 +194,31 @@ pub fn drive(options: Options) -> Result<(), ()> {
                 return Err(());
             }
         }
-        if last_stage < Stage::Obj {
-            // Invoke linker
-            let linker_filename = next_filename;
-            let result = last_filename.clone();
+        link_files.push(next_filename);
+    }
 
-            log::info!("Linker started -o {} {}", result, linker_filename);
+    if last_stage < Stage::Obj {
+        // Invoke linker
+        let filenames: Vec<&str> = link_files.iter().map(|s| &s as &str).collect();
+        let result = last_filename.clone();
 
-            let output = Command::new("cc")
-                .args(["-m64", "-fPIC", "-o", &result, &linker_filename])
-                .output()
-                .expect("failed to run linker");
+        log::info!("Linker started -o {} {:?}", result, link_files);
 
-            log::info!(
-                "status {}\nstdout: {}\nstderr: {}",
-                output.status,
-                String::from_utf8(output.stdout).unwrap(),
-                String::from_utf8(output.stderr).unwrap()
-            );
-            if !output.status.success() {
-                return Err(());
-            }
+        let output = Command::new("cc")
+            .args(["-m64", "-fPIC"])
+            .args(["-o", &result])
+            .args(&filenames)
+            .output()
+            .expect("failed to run linker");
+
+        log::info!(
+            "status {}\nstdout: {}\nstderr: {}",
+            output.status,
+            String::from_utf8(output.stdout).unwrap(),
+            String::from_utf8(output.stderr).unwrap()
+        );
+        if !output.status.success() {
+            return Err(());
         }
     }
     Ok(())
