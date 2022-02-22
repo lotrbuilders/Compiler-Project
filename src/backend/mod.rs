@@ -82,10 +82,6 @@ pub trait Backend {
     // Gives the backend type for processing
     fn backend_type(&self) -> &'static str;
 
-    fn label(&mut self, _index: u32) -> () {
-        log::error!("This is not an rburg based backend");
-    }
-
     fn to_string(&self) -> String {
         log::error!("To string is not implemented for this backend");
         String::new()
@@ -125,10 +121,6 @@ pub trait Backend {
     fn argument_evaluation_direction_stack(&self) -> Direction;
 
     fn get_type_info_table(&self) -> TypeInfoTable;
-
-    /*fn get_size(&self, typ: &TypeNode) -> IRSize;
-    fn sizeof_pointer(&self) -> u32;
-    fn typeof_size_t(&self) -> TypeNode;*/
 }
 
 fn get_use_count(instructions: &Vec<IRInstruction>, definitions: &Vec<u32>) -> Vec<u32> {

@@ -8,7 +8,7 @@ use crate::backend::{self, ir::*, Backend, TypeInfoTable};
 
 impl Backend for BackendAMD64 {
     fn backend_type(&self) -> &'static str {
-        "burg"
+        "rburg"
     }
 
     backend::rburg_template::generate! {}
