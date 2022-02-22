@@ -34,7 +34,7 @@ pub fn evaluate(
     backend: &mut dyn Backend,
     struct_table: StructTable,
     optimization_settings: &OptimizationSettings,
-) -> (Vec<IRFunction>, Vec<IRGlobal>, HashSet<String>) {
+) -> IRModule {
     self::optimize::optimize(ast, backend, &struct_table, optimization_settings);
 
     let mut functions = Vec::<IRFunction>::new();
@@ -75,7 +75,12 @@ pub fn evaluate(
             globals.push(declaration);
         }
     }
-    (functions, globals, function_names)
+
+    IRModule {
+        functions,
+        globals,
+        function_names,
+    }
 }
 
 impl StructTable {

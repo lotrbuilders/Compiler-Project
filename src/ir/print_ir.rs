@@ -26,6 +26,18 @@ fn fmt_argument(arguments: &IRArguments, f: &mut fmt::Formatter) -> fmt::Result 
     Ok(())
 }
 
+impl Display for IRModule {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for function in &self.functions {
+            writeln!(f, "{}", function)?;
+        }
+        for global in &self.globals {
+            write!(f, "{}", global)?;
+        }
+        Ok(())
+    }
+}
+
 impl Display for IRFunction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "define {} @{}(", self.return_size, self.name)?;

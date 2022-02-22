@@ -1,6 +1,15 @@
+use std::collections::HashSet;
+
 use smallvec::{smallvec, SmallVec};
 
 use super::ir_phi::IRPhi;
+
+#[derive(Clone, Debug)]
+pub struct IRModule {
+    pub functions: Vec<IRFunction>,
+    pub globals: Vec<IRGlobal>,
+    pub function_names: HashSet<String>,
+}
 
 /// Stores a function and all the associated information
 #[derive(Clone, Debug, PartialEq)]

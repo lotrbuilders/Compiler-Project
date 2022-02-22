@@ -12,21 +12,19 @@ use crate::ir::*;
 
 pub fn generate_code(
     backend: &mut dyn Backend,
-    functions: Vec<IRFunction>,
-    globals: Vec<IRGlobal>,
-    function_names: HashSet<String>,
+    module: IRModule,
     options: &Options,
 ) -> Result<String, String> {
     let mut assembly = backend.generate_global_prologue();
 
-    for function in &functions {
+    for function in &module.functions {
         assembly.push_str(&backend.generate(
             &function,
-            &function_names,
+            &module.function_names,
             &options.register_allocator,
         ));
     }
-    assembly.push_str(&backend.generate_globals(&globals));
+    assembly.push_str(&backend.generate_globals(&module.globals));
 
     Ok(assembly)
 }

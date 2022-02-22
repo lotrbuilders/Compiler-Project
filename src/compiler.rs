@@ -101,7 +101,7 @@ pub fn compile(filename: String, output: String, options: &Options) -> Result<()
     }
 
     log::info!("Evaluation started");
-    let (mut ir_functions, ir_globals, function_names) = evaluate(
+    let mut ir_module = evaluate(
         &mut ast,
         &global_table,
         &mut *backend,
@@ -109,28 +109,17 @@ pub fn compile(filename: String, output: String, options: &Options) -> Result<()
         &options.optimization_settings,
     );
 
-    for ir in &ir_functions {
-        log::debug!("Evaluation result:\n{}", ir);
-    }
-    for ir in &ir_globals {
-        log::debug!("Evaluation result global: {}", ir);
-    }
-    for name in &function_names {
+    log::debug!("Evaluation results:\n{}", ir_module);
+    for name in &ir_module.function_names {
         log::debug!("Function: {}", name);
     }
 
     log::info!("Started optimizations");
-    optimization::optimize(&mut ir_functions, &options.optimization_settings);
+    optimization::optimize(&mut ir_module, &options.optimization_settings);
 
     log::info!("Started the backend");
     log::info!("Using backend amd64");
-    let assembly = backend::generate_code(
-        &mut *backend,
-        ir_functions,
-        ir_globals,
-        function_names,
-        &options,
-    )?;
+    let assembly = backend::generate_code(&mut *backend, ir_module, &options)?;
 
     write(output, assembly)?;
     Ok(())
