@@ -4,6 +4,7 @@ pub mod driver;
 mod error;
 mod eval;
 pub mod file_table;
+pub mod ir;
 pub mod lexer;
 pub mod logger;
 mod optimization;

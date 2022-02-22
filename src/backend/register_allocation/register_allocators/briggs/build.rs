@@ -9,10 +9,8 @@ use super::{
     spill_code::SpillCode,
     Graph, Renumber,
 };
-use crate::backend::{
-    ir::control_flow_graph::ControlFlowGraph,
-    register_allocation::{RegisterBackend, RegisterInterface},
-};
+use crate::backend::register_allocation::{RegisterBackend, RegisterInterface};
+use crate::ir::ControlFlowGraph;
 
 // The build function covers both the build-coalesce loop and also keeps track of the spill cost directly
 pub fn build<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>(

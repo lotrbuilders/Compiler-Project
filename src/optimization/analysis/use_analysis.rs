@@ -1,4 +1,4 @@
-use crate::backend::ir::*;
+use crate::ir::*;
 use smallvec::SmallVec;
 
 pub struct UseAnalysis {

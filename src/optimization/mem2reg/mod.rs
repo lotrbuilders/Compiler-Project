@@ -5,7 +5,7 @@ use std::collections::{HashMap, HashSet};
 use promotable::find_promotable_variables;
 use smallvec::SmallVec;
 
-use crate::backend::ir::*;
+use crate::ir::*;
 
 use super::analysis::{
     self,

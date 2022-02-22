@@ -4,7 +4,8 @@ use super::registers::Register;
 use super::{stmt_NT, BackendAMD64, State};
 use crate::backend::register_allocation::{RegisterBackend, RegisterInterface};
 use crate::backend::register_allocation::{RegisterClass, RegisterUse};
-use crate::backend::{self, ir::*, Backend, TypeInfoTable};
+use crate::backend::{self, Backend, TypeInfoTable};
+use crate::ir::*;
 
 impl Backend for BackendAMD64 {
     fn backend_type(&self) -> &'static str {

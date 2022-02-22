@@ -5,7 +5,7 @@ use std::{
     iter::repeat,
 };
 
-use crate::backend::ir::*;
+use crate::ir::*;
 
 use super::ControlFlowGraph;
 #[derive(Clone)]

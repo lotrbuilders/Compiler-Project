@@ -2,12 +2,12 @@ use std::ops::Not;
 
 use smallvec::SmallVec;
 
-use crate::backend::ir::ir::IRSize;
 use crate::eval::evaluation_context::EvaluateSize;
 use crate::eval::Evaluate;
+use crate::ir::*;
+use crate::parser::ast::Expression;
 use crate::parser::ast::{BinaryExpressionType, UnaryExpressionType};
 use crate::semantic_analysis::type_promotion::TypePromotion;
-use crate::{backend::ir::ir::IRInstruction, parser::ast::Expression};
 
 use super::evaluation_context::EvaluationContext;
 use super::ExpressionVariant;

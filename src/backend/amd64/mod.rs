@@ -1,7 +1,7 @@
 use crate::utility::padding;
 
-use super::ir::*;
 use super::register_allocation::RegisterInterface;
+use crate::ir::*;
 use smallvec::SmallVec;
 use std::collections::{HashMap, HashSet};
 

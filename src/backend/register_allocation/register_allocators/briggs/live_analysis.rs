@@ -5,10 +5,8 @@ use bitvec::prelude::BitVec;
 use smallvec::SmallVec;
 
 use super::{instruction_information::InstructionInformation, spill_code::SpillCode, Renumber};
-use crate::backend::{
-    ir::control_flow_graph::ControlFlowGraph,
-    register_allocation::{RegisterBackend, RegisterInterface},
-};
+use crate::backend::register_allocation::{RegisterBackend, RegisterInterface};
+use crate::ir::ControlFlowGraph;
 
 #[derive(Clone)]
 pub struct LiveIn {

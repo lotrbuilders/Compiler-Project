@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::backend::ir::{IRFunction, IRInstruction};
+use crate::ir::{IRFunction, IRInstruction};
 
 impl IRFunction {
     pub fn remove_variables(&mut self) {

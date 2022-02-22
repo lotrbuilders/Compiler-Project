@@ -1,4 +1,4 @@
-use crate::{backend::ir::IRFunction, options::OptimizationSettings};
+use crate::{ir::IRFunction, options::OptimizationSettings};
 
 pub mod analysis;
 mod dead_block_elimination;

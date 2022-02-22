@@ -1,10 +1,10 @@
-use crate::backend::ir::control_flow_graph::ControlFlowGraph;
 use crate::backend::register_allocation::briggs::instruction_information::InstructionInformation;
 use crate::backend::register_allocation::briggs::spill_code::SpillCode;
 use crate::backend::register_allocation::register_allocators::{
     RegisterAllocator, RegisterAllocatorBriggs,
 };
 use crate::backend::register_allocation::{RegisterBackend, RegisterInterface};
+use crate::ir::ControlFlowGraph;
 
 use super::build::build;
 use super::renumber;

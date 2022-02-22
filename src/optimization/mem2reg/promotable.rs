@@ -1,4 +1,4 @@
-use crate::backend::ir::*;
+use crate::ir::*;
 use std::collections::HashSet;
 
 impl IRSize {

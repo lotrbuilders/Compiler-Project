@@ -6,8 +6,7 @@ use super::super::{
 };
 
 use super::{RegisterAllocator, RegisterAllocatorSimple};
-use crate::backend::ir::control_flow_graph::ControlFlowGraph;
-use crate::backend::ir::IRInstruction;
+use crate::ir::{ControlFlowGraph, IRInstruction};
 
 impl<R: RegisterInterface, B: RegisterBackend<RegisterType = R>> RegisterAllocator<R, B>
     for RegisterAllocatorSimple

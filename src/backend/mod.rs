@@ -1,5 +1,4 @@
 mod amd64;
-pub mod ir;
 mod rburg_template;
 mod register_allocation;
 
@@ -7,7 +6,7 @@ use std::collections::HashSet;
 
 use crate::{options::Options, parser::TypeNode};
 
-use self::ir::*;
+use crate::ir::*;
 
 // Generates all functions for the specific backend specified
 

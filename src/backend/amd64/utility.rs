@@ -1,5 +1,5 @@
 use super::BackendAMD64;
-use crate::backend::ir::*;
+use crate::ir::*;
 
 impl BackendAMD64 {
     crate::backend::rburg_template::default_utility!();

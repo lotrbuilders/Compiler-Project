@@ -1,5 +1,6 @@
 use super::{evaluation_context::EvaluateSize, Evaluate, EvaluationContext};
-use crate::backend::{ir::*, Backend, TypeInfo};
+use crate::backend::{Backend, TypeInfo};
+use crate::ir::*;
 use crate::options::OptimizationSettings;
 use crate::parser::r#type::DeclarationType;
 use crate::parser::{ast::*, Type};

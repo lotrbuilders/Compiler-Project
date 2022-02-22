@@ -1,11 +1,7 @@
-use std::ops::{Index, IndexMut, Range};
-
+use crate::backend::register_allocation::{RegisterBackend, RegisterInterface};
+use crate::ir::*;
 use smallvec::SmallVec;
-
-use crate::backend::{
-    ir::{control_flow_graph::ControlFlowGraph, IRInstruction},
-    register_allocation::{RegisterBackend, RegisterInterface},
-};
+use std::ops::{Index, IndexMut, Range};
 
 use super::{
     instruction_information::InstructionInformation,

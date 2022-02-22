@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::backend::{ir::*, Backend, TypeInfo, TypeInfoTable};
+use crate::backend::{Backend, TypeInfo, TypeInfoTable};
+use crate::ir::*;
 use crate::options::OptimizationSettings;
 use crate::parser::ast::*;
 use crate::parser::r#type::StructType;

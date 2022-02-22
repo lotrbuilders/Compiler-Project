@@ -1,13 +1,9 @@
+use smallvec::SmallVec;
 use std::collections::{HashMap, HashSet};
 
-use smallvec::SmallVec;
-
-use crate::backend::{
-    ir::control_flow_graph::ControlFlowGraph,
-    register_allocation::{RegisterBackend, RegisterInterface},
-};
-
 use super::instruction_information::InstructionInformation;
+use crate::backend::register_allocation::{RegisterBackend, RegisterInterface};
+use crate::ir::ControlFlowGraph;
 
 #[derive(Debug, Clone, Copy)]
 pub enum MemoryCopy {

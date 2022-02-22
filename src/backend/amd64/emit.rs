@@ -1,5 +1,5 @@
 use super::{registers::Register, BackendAMD64};
-use crate::{backend::ir::*, utility::padding};
+use crate::{ir::*, utility::padding};
 
 impl BackendAMD64 {
     // Should be handwritten for any backend

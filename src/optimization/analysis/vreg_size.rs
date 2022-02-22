@@ -1,4 +1,4 @@
-use crate::backend::ir::*;
+use crate::ir::*;
 
 #[allow(dead_code)]
 pub fn vreg_size(function: &IRFunction, int_size: IRSize) -> Vec<IRSize> {

@@ -1,5 +1,5 @@
 use super::analysis::ControlFlowGraph;
-use crate::backend::ir::*;
+use crate::ir::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::mem;
 

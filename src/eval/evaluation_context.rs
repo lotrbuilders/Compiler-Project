@@ -1,5 +1,6 @@
 use crate::{
-    backend::{ir::*, Backend, TypeInfo, TypeInfoTable},
+    backend::{Backend, TypeInfo, TypeInfoTable},
+    ir::*,
     options::OptimizationSettings,
     parser::{
         ast::{BinaryExpressionType, SizeofType},

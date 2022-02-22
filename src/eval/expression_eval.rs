@@ -1,7 +1,7 @@
 use super::{Evaluate, EvaluationContext};
-use crate::backend::ir::*;
 use crate::eval::evaluation_context::EvaluateSize;
 use crate::eval::jump_eval::JumpType;
+use crate::ir::*;
 use crate::parser::{ast::*, Type};
 use crate::semantic_analysis::type_promotion::TypePromotion;
 
