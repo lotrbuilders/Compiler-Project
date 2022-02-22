@@ -50,7 +50,6 @@ pub(super) fn write_back<R: RegisterInterface, B: RegisterBackend<RegisterType =
         }
     }
 
-    //TODO add range for spills here
     for &vreg in spill_code.spills() {
         for (range, live_range) in &vreg2live[vreg] {
             let live_range = *live_range as usize;
@@ -67,10 +66,11 @@ pub(super) fn write_back<R: RegisterInterface, B: RegisterBackend<RegisterType =
         for copy in copies {
             match copy {
                 &MemoryCopy::Reload(vreg) => {
+                    let size = backend.get_vreg_size(vreg);
                     let from = backend.simple_get_spot(spill_code.get_slot(vreg));
                     let live_range = vreg2live[vreg][location];
                     let to = colors[live_range as usize];
-                    relocation.push(RegisterRelocation::Reload(to, from));
+                    relocation.push(RegisterRelocation::Reload(size, to, from));
                 }
                 _ => (),
             }
@@ -84,34 +84,39 @@ pub(super) fn write_back<R: RegisterInterface, B: RegisterBackend<RegisterType =
             use RegisterRelocation::*;
             match copy {
                 VregCopy::ArgumentCopy { reg, vreg } => {
+                    let size = backend.get_vreg_size(*vreg);
                     let from = R::REG_LOOKUP[*reg as usize];
                     let to = translate_color(colors, vreg2live, *vreg, location);
-                    relocation.push(Move(from, to));
+                    relocation.push(Move(size, from, to));
                     used_registers[*reg as usize] = true;
                 }
                 VregCopy::TwoAddress { from, to } => {
+                    let size = backend.get_vreg_size(*to);
                     let from = translate_color(colors, vreg2live, *from, location);
                     let to = translate_color(colors, vreg2live, *to, location);
-                    relocation.push(TwoAddressMove(from, to));
+                    relocation.push(TwoAddressMove(size, from, to));
                 }
                 VregCopy::TargetBefore { vreg, reg } => {
+                    let size = backend.get_vreg_size(*vreg);
                     let from = translate_color(colors, vreg2live, *vreg, location);
                     let to = R::REG_LOOKUP[*reg as usize];
-                    relocation.push(Move(from, to));
+                    relocation.push(Move(size, from, to));
                     allocation[*vreg as usize].insert(to, i as u32);
                     used_registers[*reg as usize] = true;
                 }
                 VregCopy::TargetAfter { reg, vreg } => {
+                    let size = backend.get_vreg_size(*vreg);
                     let from = R::REG_LOOKUP[*reg as usize];
                     let to = translate_color(colors, vreg2live, *vreg, location);
-                    relocation.push(MoveAfter(from, to));
+                    relocation.push(MoveAfter(size, from, to));
                     allocation[*vreg as usize].insert(from, i as u32);
                     used_registers[*reg as usize] = true;
                 }
                 VregCopy::PhiCopy { from, to } => {
+                    let size = backend.get_vreg_size(*to);
                     let from = translate_color(colors, vreg2live, *from, location);
                     let to = translate_color(colors, vreg2live, *to, location);
-                    relocation.push(Move(from, to));
+                    relocation.push(Move(size, from, to));
                 }
                 VregCopy::Coalesced => (),
             }
@@ -126,11 +131,11 @@ pub(super) fn write_back<R: RegisterInterface, B: RegisterBackend<RegisterType =
             let live_range = vreg2live[vreg][location];
             let from = colors[live_range as usize];
             let to = backend.simple_get_spot(spill_code.get_slot(vreg));
-
+            let size = backend.get_vreg_size(vreg);
             if backend.is_jump(i) {
-                relocation.push(RegisterRelocation::SpillEarly(from, to));
+                relocation.push(RegisterRelocation::SpillEarly(size, from, to));
             } else {
-                relocation.push(RegisterRelocation::Spill(from, to));
+                relocation.push(RegisterRelocation::Spill(size, from, to));
             }
         }
     }

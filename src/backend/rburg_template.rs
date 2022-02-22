@@ -51,9 +51,9 @@ macro_rules! emit_asm {
             for instruction in &mut self.reg_relocations {
                 for copy in instruction {
                     match copy {
-                        RegisterRelocation::Reload(_, spot)
-                        | RegisterRelocation::Spill(_, spot)
-                        | RegisterRelocation::SpillEarly(_, spot) => {
+                        RegisterRelocation::Reload(.., spot)
+                        | RegisterRelocation::Spill(.., spot)
+                        | RegisterRelocation::SpillEarly(.., spot) => {
                             *spot += i32::abs(stack_growth) as u32;
                         }
                         _ => (),
@@ -316,6 +316,11 @@ macro_rules! register_backend {
             }
             fn get_vreg_count(&self) -> u32 {
                 self.vreg_count
+            }
+
+            fn get_vreg_size(&self, vreg:u32) -> IRSize {
+                let location = self.definition_index[vreg as usize];
+                BackendAMD64::get_vreg_size(self, location, vreg)
             }
 
             fn set_reg_relocations(

@@ -58,15 +58,20 @@ impl<R: RegisterInterface, B: RegisterBackend<RegisterType = R>> RegisterAllocat
                     let register_index: usize = R::REG_DEFAULT.into(); //This is likely not safe
                     used_registers[register_index] = true;
 
-                    for &(block, source) in sources {
+                    for &(block, source) in sources.iter() {
                         let last = cfg[block as usize].last();
                         let index = last;
                         let last = &mut assignments.reg_relocations[last as usize];
-
+                        let size = backend.get_vreg_size(source);
                         let target = backend.simple_get_spot(target);
                         let vreg = backend.simple_get_spot(source);
                         log::trace!("Insert memmove {}<-{} at {}", vreg, target, index);
-                        last.push(RegisterRelocation::MemMove(vreg, target, R::REG_DEFAULT));
+                        last.push(RegisterRelocation::MemMove(
+                            size,
+                            vreg,
+                            target,
+                            R::REG_DEFAULT,
+                        ));
                         last.sort_unstable_by_key(move_cmp);
                     }
                 }
@@ -127,7 +132,9 @@ fn allocate_register<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>
             global_used_register[i] = true;
 
             let mem = backend.simple_get_spot(vreg);
-            assignments.reg_relocations[index as usize].push(RegisterRelocation::Reload(reg, mem));
+            let size = backend.get_vreg_size(vreg);
+            assignments.reg_relocations[index as usize]
+                .push(RegisterRelocation::Reload(size, reg, mem));
 
             assignments.allocation[vreg as usize].start(reg, index);
             reg
@@ -141,9 +148,11 @@ fn allocate_register<R: RegisterInterface, B: RegisterBackend<RegisterType = R>>
     if let Some((vreg, result_class)) = result_vreg {
         let reg = *try_allocate2(&result_class).unwrap();
         let mem = backend.simple_get_spot(vreg);
+        let size = backend.get_vreg_size(vreg);
         let i: usize = reg.into();
         global_used_register[i] = true;
-        assignments.reg_relocations[(index) as usize].push(RegisterRelocation::Spill(reg, mem));
+        assignments.reg_relocations[(index) as usize]
+            .push(RegisterRelocation::Spill(size, reg, mem));
         assignments.allocation[vreg as usize].start(reg, index);
         assignments.allocation[vreg as usize].end(index);
     }
@@ -157,7 +166,6 @@ fn move_cmp<R: RegisterInterface>(mov: &RegisterRelocation<R>) -> i32 {
         TwoAddressMove(..) => 20,
         Spill(..) => 0,
         Reload(..) => 20,
-        ReloadTemp(..) => 20,
         _ => unreachable!(),
     }
 }
@@ -167,10 +175,11 @@ fn peephole_optimization<R: RegisterInterface>(relocations: &mut Vec<Vec<Registe
     use RegisterRelocation::*;
     for relocations in relocations {
         match (relocations.get(0), relocations.get(1)) {
-            (Some(Spill(reg1, mem1)), Some(Reload(reg2, mem2))) if reg1 == reg2 && mem1 == mem2 => {
+            (Some(Spill(_, reg1, mem1)), Some(Reload(_, reg2, mem2)))
+                if reg1 == reg2 && mem1 == mem2 =>
+            {
                 relocations.remove(1);
             }
-
             _ => (),
         }
     }

@@ -266,21 +266,31 @@ impl BackendAMD64 {
     pub fn emit_move(&self, modification: &super::RegisterRelocation<Register>) -> String {
         use super::RegisterRelocation::*;
         match modification {
-            &TwoAddressMove(from, to) => format!("\tmov {:.64},{:.64}\n", to, from),
-            &Move(from, to) | &MoveAfter(from, to) => {
-                format!("\tmov {:.64},{:.64}\n", to, from)
+            &TwoAddressMove(size, from, to)
+            | &Move(size, from, to)
+            | &MoveAfter(size, from, to) => {
+                let size = self.get_default_register_width2(size);
+                format!("\tmov {:.size$}, {:.size$}\n", to, from, size = size)
             }
-            &Reload(reg, mem) => format!("\tmov {:.64}, [rbp-{}]\n", reg, mem),
-            &Spill(reg, mem) | &SpillEarly(reg, mem) => {
-                format!("\tmov [rbp-{}],{:.64} \n", mem, reg)
+            &Reload(size, reg, mem) => {
+                let size = self.get_default_register_width2(size);
+                format!("\tmov {:.size$}, [rbp-{}]\n", reg, mem, size = size)
             }
-            &MemMove(from, to, reg) => {
+            &Spill(size, reg, mem) | &SpillEarly(size, reg, mem) => {
+                let size = self.get_default_register_width2(size);
+                format!("\tmov [rbp-{}], {:.size$} \n", mem, reg, size = size)
+            }
+            &MemMove(size, from, to, reg) => {
+                let size = self.get_default_register_width2(size);
                 format!(
-                    "\tmov {:.64}, [rbp-{}]\n\tmov [rbp-{}], {:.64}\n",
-                    reg, from, to, reg
+                    "\tmov {:.size$}, [rbp-{}]\n\tmov [rbp-{}], {:.size$}\n",
+                    reg,
+                    from,
+                    to,
+                    reg,
+                    size = size
                 )
             }
-            _ => unimplemented!(),
         }
     }
 }

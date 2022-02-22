@@ -5,6 +5,7 @@ use crate::backend::{
     ir::IRInstruction,
     register_allocation::{RegisterAllocation, RegisterClass, RegisterRelocation, RegisterUse},
 };
+use crate::ir::ir::IRSize;
 
 pub trait RegisterInterface
 where
@@ -41,6 +42,7 @@ pub trait RegisterBackend {
     fn get_arguments<'a>(&'a self) -> &'a Vec<Option<u32>>;
     fn get_function_length(&self) -> usize;
     fn get_vreg_count(&self) -> u32;
+    fn get_vreg_size(&self, vreg: u32) -> IRSize;
 
     fn simple_get_spot(&self, vreg: u32) -> u32;
     fn simple_adjust_stack_size(&mut self, vreg: i32);
